@@ -1886,13 +1886,13 @@ button.account-tile:active { transform: scale(.98); }
   --elev-1: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.05);
   --elev-2: 0 1px 2px rgba(16,24,40,.04), 0 6px 16px -6px rgba(16,24,40,.10);
   --elev-3: 0 2px 6px -1px rgba(16,24,40,.06), 0 14px 32px -10px rgba(16,24,40,.16);
-  --elev-card: 0 1px 2px rgba(0,0,0,.10), 0 10px 22px -10px rgba(0,0,0,.35);
+  --elev-card: 0 2px 7px -3px rgba(16,24,40,.14);
   --shadow: var(--elev-1); --shadow-sm: var(--elev-1);
 }
 .movo-app.theme-dark {
   --elev-1: none; --elev-2: 0 6px 16px -8px rgba(0,0,0,.5);
   --elev-3: 0 14px 34px -12px rgba(0,0,0,.65), 0 0 0 .5px rgba(255,255,255,.06);
-  --elev-card: 0 1px 2px rgba(0,0,0,.35), 0 12px 24px -12px rgba(0,0,0,.7);
+  --elev-card: 0 2px 5px -3px rgba(0,0,0,.18);
   --shadow: none; --shadow-sm: none;
 }
 .movo-app.movo-app :is(.credit-card, .credit-card.has-sticker, .acct-preview .credit-card) { box-shadow: var(--elev-card); }
@@ -2646,18 +2646,12 @@ button.account-tile:active { transform: scale(.98); }
   aspect-ratio: 856 / 540;
   min-height: 0;
   border-radius: clamp(15px, 1.6vw, 22px);
-  box-shadow:
-    0 2px 5px rgba(16, 24, 40, .10),
-    0 8px 18px rgba(16, 24, 40, .14),
-    0 18px 30px rgba(16, 24, 40, .10);
+  box-shadow: var(--elev-card);
   transition: box-shadow .22s ease, transform .22s ease;
 }
 .movo-app .wallet-card-item:hover > .credit-card {
   transform: translateY(-2px);
-  box-shadow:
-    0 3px 7px rgba(16, 24, 40, .12),
-    0 12px 24px rgba(16, 24, 40, .17),
-    0 22px 34px rgba(16, 24, 40, .12);
+  box-shadow: var(--elev-card);
 }
 .movo-app .wallet-card-item:focus-visible {
   outline: 2px solid var(--accent);
@@ -2713,19 +2707,11 @@ button.account-tile:active { transform: scale(.98); }
   aspect-ratio: 54 / 85.6;
   overflow: hidden;
   border: 0;
-  box-shadow:
-    0 0 10px rgba(16, 24, 40, .09),
-    0 0 24px rgba(16, 24, 40, .08),
-    0 8px 16px rgba(16, 24, 40, .12),
-    0 18px 28px rgba(16, 24, 40, .09);
+  box-shadow: var(--elev-card);
   transition: transform .22s ease, box-shadow .22s ease;
 }
 .movo-app .wallet-card-item:hover > .credit-card.orientation-portrait {
-  box-shadow:
-    0 0 12px rgba(16, 24, 40, .10),
-    0 0 28px rgba(16, 24, 40, .09),
-    0 12px 22px rgba(16, 24, 40, .15),
-    0 22px 34px rgba(16, 24, 40, .11);
+  box-shadow: var(--elev-card);
 }
 @media (max-width: 760px) {
   .movo-app .wallet-card-item { max-width: 216px; }
@@ -3286,15 +3272,10 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard i { width: 6.8cqw; height: 6.8cqw; }
 .movo-app .credit-card.ccx .ccx-net.net-visa { text-transform: uppercase; }
 
-/* Card depth: no border ring. Blended outer shadow tinted by the card colour, plus inner light and shade. */
+/* Bank and card faces share a short neutral shadow, with less elevation in dark mode. */
 .movo-app.movo-app .credit-card.ccx {
   border: 0;
-  box-shadow:
-    0 1px 1px rgba(10, 14, 24, .05),
-    0 3px 6px -1px rgba(10, 14, 24, .07),
-    0 10px 20px -6px color-mix(in srgb, var(--card-tint, #1b2433) 38%, transparent),
-    0 22px 44px -14px color-mix(in srgb, var(--card-tint, #1b2433) 46%, transparent),
-    0 36px 64px -28px rgba(10, 14, 24, .3);
+  box-shadow: var(--elev-card);
 }
 .movo-app.movo-app .credit-card.ccx::before {
   content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; pointer-events: none;
@@ -4237,12 +4218,12 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .card-pile-item.front:active { transform: scale(.985); }
 .movo-app .card-pile .credit-card,
 .movo-app .card-stack .credit-card {
-  box-shadow: 0 1px 2px rgba(12, 16, 24, .08), 0 10px 22px -10px rgba(12, 16, 24, .32), 0 28px 44px -26px rgba(12, 16, 24, .38);
+  box-shadow: var(--elev-card);
 }
-/* Each card casts a soft shadow up onto the card behind it, so the layers read without hard lines. */
-.movo-app .card-pile-item + .card-pile-item .credit-card { box-shadow: 0 -10px 22px -14px rgba(12, 16, 24, .5), 0 1px 2px rgba(12, 16, 24, .08), 0 10px 22px -10px rgba(12, 16, 24, .32), 0 28px 44px -26px rgba(12, 16, 24, .38); }
+/* Shared, restrained elevation keeps bank and card layers consistent in both themes. */
+.movo-app .card-pile-item + .card-pile-item .credit-card { box-shadow: var(--elev-card); }
 .movo-app .card-pile-item.front { animation: wallet-rise .6s cubic-bezier(.22, .61, .36, 1) both; }
-.theme-dark .movo-app .card-pile .credit-card, .theme-dark.movo-app .card-pile .credit-card { box-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 26px -10px rgba(0, 0, 0, .6); }
+.theme-dark .movo-app .card-pile .credit-card, .theme-dark.movo-app .card-pile .credit-card { box-shadow: var(--elev-card); }
 
 /* Card view, Stack transition: peeks behind the front card (sizes in the "Wallet card stack" block below). */
 .movo-app .card-stack[data-fx="stack"] .card-stack-card { position: relative; z-index: 2; }
@@ -8780,6 +8761,17 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 /* Referral rewards and verification labels can wrap at larger text sizes. */
 .referral-points-redeem small { white-space: normal; }
 .referral-points-redeem button { max-width: 50%; white-space: normal; overflow-wrap: anywhere; }
+
+/* Offline and live store quotes keep their amount and billing period readable. */
+.movo-app .plan-usage-sheet .plan-store-prices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+.movo-app .plan-store-prices .settings-row { display: grid; align-content: start; gap: 8px; min-width: 0; padding: 8px; border-radius: 12px; background: var(--field); }
+.movo-app .plan-store-prices .settings-row-main { display: grid; gap: 5px; min-width: 0; }
+.movo-app .plan-store-prices .settings-row-main strong { font-size: 14px; font-weight: 650; }
+.movo-app .plan-store-prices .settings-row-main small { font-size: 12px; line-height: 1.4; color: var(--muted); overflow-wrap: anywhere; }
+.movo-app .plan-store-prices .settings-row > button { min-height: 40px; padding: 8px; font-size: 12px; }
+.movo-app .loan-details-form > .legal-disclosure-check { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding-block: 4px; }
+.movo-app .loan-details-form > .legal-disclosure-check input[type="checkbox"] { flex: 0 0 18px; width: 18px; min-height: 18px; height: 18px; margin: 2px 0 0; padding: 0; }
+.movo-app .loan-details-form > .legal-disclosure-check > span { flex: 1; font-size: 12px; line-height: 1.5; }
 
 /* Profile actions and private friend invites */
 .movo-app .profile-card-wrap > .profile-card { gap: 12px; min-height: 84px; padding: 12px 14px; }

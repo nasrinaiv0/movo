@@ -1,0 +1,55 @@
+{
+  "product": [
+    "MOVO (Money Organizer & Visual Outflow) is a product of NasrinAI. These terms cover MOVO’s personal financial tracking features."
+  ],
+  "eligibility": [
+    "MOVO is intended for adults aged 18 or older. You must be at least 18 and legally able to accept these terms. The setup confirmation is a self-declaration of age, not independent age verification."
+  ],
+  "termsLocal": [
+    "MOVO keeps records and working copies in device or browser storage, including local storage and IndexedDB. Some read caches and chat history are encrypted by MOVO, but not every local financial record, pending sync payload, attachment or preference is encrypted. These copies are specific to the device; sync requires the relevant account, settings and connection. Keep a separate protected export of important records."
+  ],
+  "privacyOwner": [
+    "MOVO (Money Organizer & Visual Outflow) is a product of NasrinAI. NasrinAI operates the service and is responsible for the processing described in this policy.",
+    "Privacy and Data Protection Officer contact: Nasrin Abubakar, dpo@nasrinai.com. Support: support@nasrinai.com. Postal contact: 142 Pag-asa Village, Matina Aplaya, Davao City, Davao del Sur, 8000, Philippines. Contact us to identify the operator responsible for a particular service or request."
+  ],
+  "privacyArtworkBullet": [
+    "Theme, display and notification preferences, selected card styles, and custom sticker artwork may be kept on the device. When signed in, supported preferences and custom sticker artwork may also be saved with your cloud account. Scenery photos and device-only profile-photo copies may stay on the device; an uploaded account avatar uses its separate account storage."
+  ],
+  "privacyPurchase": [
+    "Apple or Google processes your store payment. MOVO receives product and transaction identifiers, verification results, purchase status and expiry information. MOVO does not receive your full payment-card number or store-account password.",
+    "Google purchase-token hashes are stored for verification and duplicate protection. If acknowledgement is pending, an encrypted copy of the purchase token may also be retained in a restricted processing job until acknowledgement or remediation completes. Successful acknowledgement clears that encrypted copy. Some purchase-processing records can remain after account deletion for unresolved payment processing, fraud prevention, disputes or lawful retention; ask dpo@nasrinai.com about a particular record."
+  ],
+  "privacyLocal": [
+    "Local and offline operation uses local storage, IndexedDB and device storage for accounts, transactions, working copies, queued changes, attachments, QR images and preferences. Records stay on that device or browser profile until removed, storage is cleared, or the device removes them. Unsynced records can be lost if storage or encryption keys are lost.",
+    "MOVO applies AES-256-GCM to supported financial read caches, local chat-history caches and cached verified-plan data. The main local finance records, offline working copies, sync outbox, attachments, QR images and some preferences are not all protected by that encryption. This is not end-to-end encryption: authorized server and AI processing can read the data needed for the requested feature. An unlocked or compromised device or active same-origin code can expose local information.",
+    "Supported updated versions add application-level encryption for selected local financial records, offline workspaces, queued sync payloads and bank QR images after verified device-key migration. Older versions, attachments, exports and other preferences may remain unencrypted. Encryption does not protect against active code running with access to the unlocked app. Losing the device key can make unsynced records unrecoverable."
+  ],
+  "privacyArtwork": [
+    "Custom card-sticker artwork is processed on the device. Signed-in users’ supported custom stickers, including image data, may also be saved in account preferences and downloaded on other devices. Removing a local copy does not necessarily remove an account copy. You can manage individual stickers in Card Style or request account-data deletion."
+  ],
+  "privacyRetention": [
+    "Local copies remain until cleared or removed on that device. Cloud records, account preferences and chat history generally remain while your account is active or until you use a supported deletion function. Some standard Archive entries become eligible for cleanup after 90 days; cleanup currently runs when MOVO opens, so removal is not guaranteed on day 90. Archived loans and receivables have different handling and can remain until permanently removed or the account is deleted.",
+    "Clear records resets supported device records and preferences and, with Cloud Sync on, removes supported cloud transactions, financial accounts, budgets, chat conversations, preferences and account QR files. It does not close your account or remove every cloud feature: loans, receivables, bills, goals, automations, Friends records and receipt attachments may remain. Use Settings → Security & Privacy → Delete Account for an account-deletion request.",
+    "Verified account deletion removes the cloud account and associated data subject to lawful, limited retention and unresolved purchase processing. It does not retract exports, shared copies or local data on another device. Backups and restricted security, billing or legal records follow the purpose and retention requirements that apply to them. Ask dpo@nasrinai.com about retention, access, correction, export, objection or deletion. We verify requests without asking for passwords or full card details."
+  ],
+  "privacySecurity": [
+    "MOVO uses HTTPS, account authentication, owner-scoped database controls, server-side checks and separation of server credentials. Supported local caches use the application encryption described in section 3; other device copies are not all encrypted. The app lock is a convenience control and does not independently encrypt those records.",
+    "No storage method is risk-free. Secure your device and sign-in account, protect exports and report suspected unauthorized access to dpo@nasrinai.com or support@nasrinai.com. Legally notifiable incidents are assessed and reported under the applicable requirements; this policy is not a security certification."
+  ],
+  "privacyChildren": [
+    "MOVO is intended for people aged 18 or older. Do not create or use an account if you are under 18. If a minor’s information was submitted, contact dpo@nasrinai.com so we can review and handle it under the applicable law."
+  ],
+  "privacyAISharing": [
+    "Optional chat sends your question and a bounded, owner-scoped financial snapshot to MOVO’s server and its configured AI services, including NasrinAI and, when used, OpenRouter and its selected model provider. Receipt AI and voice send the selected receipt or short audio needed for that request. MOVO requests that OpenRouter not collect submitted content for training; provider processing, retention and international transfers remain subject to their applicable terms and safeguards.",
+    "You can withdraw this device’s chat and voice consent in Settings → Security & Privacy → AI data sharing. Withdrawal stops future optional requests from that device and stops active voice capture; it does not undo material already sent or delete existing chat history. Review the setting on other devices too. AI receipt scanning keeps its separate per-receipt confirmation. You can continue using manual tracking and on-device functions without enabling these optional AI requests."
+  ],
+  "clearScope": [
+    "This resets supported MOVO records and preferences on this device. If Cloud Sync is on, it also removes supported cloud transactions, financial accounts, budgets, chat conversations, preferences and account QR files. Other cloud records, including loans, bills, goals, automations, Friends and receipt attachments, may remain. Your sign-in account remains. Use Delete Account to request deletion of the account and its associated data. Exported or shared copies must be removed separately."
+  ],
+  "aiConsentShort": [
+    "NasrinAI and its configured providers, including OpenRouter when used, process this request. Voice sends short audio; receipt AI has a separate confirmation. Stop future chat and voice sharing on this device in Settings → Security & Privacy → AI data sharing. This does not retract material already submitted."
+  ],
+  "deleteScope": [
+    "This requests permanent deletion of your MOVO cloud account and associated records. Some restricted purchase-processing, backup, security or legal records may be retained for the purposes described in the Privacy Policy. Copies on other devices, exports and files already shared with others need separate removal. Store subscriptions must be cancelled separately. This cannot be undone."
+  ]
+}

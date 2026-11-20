@@ -57,8 +57,10 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save a MOVO friend profile QR image when you choose Save Image in the share sheet.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>MOVO uses the camera to capture receipts you choose to scan.</string>
+	<string>MOVO uses the camera when you choose to scan a receipt or a friend invite QR code. Friend QR images are read on your device.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>MOVO uses the microphone only while you talk to NasrinAI or dictate a record.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

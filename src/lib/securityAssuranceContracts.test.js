@@ -26,7 +26,7 @@ test('user-facing claims disclose limits, local-version differences and rights',
   expect(page).toContain('support@nasrinai.com');
   expect(privacy).toContain('Older versions');
   expect(privacy).toContain('application-level encryption');
-  expect(terms).toContain('Supported updated app versions');
+  expect(terms).toContain('not every local financial record');
   expect(privacy).toContain('href="/security"');
   expect(terms).toContain('href="/security"');
   expect(fromRoot('docs/security/MOVO_USER_DATA_SECURITY_ASSURANCE_2026-11-13.md')).toContain('not yet included in the production app');

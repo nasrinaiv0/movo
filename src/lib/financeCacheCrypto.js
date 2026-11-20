@@ -11,6 +11,7 @@ import { MovoNative } from './native';
 import { isNativeApp } from './platform';
 
 export const CACHE_PREFIX = 'movo.readCache.v1:';
+export const CHAT_CACHE_PREFIX = 'movo.chatHistory.v1:';
 export const CACHE_VAULT_KEY = 'movo-finance-cache-key-v1';
 const DB_NAME = 'movo-finance-cache-keys-v1';
 const DB_STORE = 'keys';
@@ -48,7 +49,8 @@ function cacheContainsCiphertext() {
     const storage = globalThis.localStorage;
     for (let i = 0; i < storage.length; i++) {
       const name = storage.key(i);
-      if (name?.startsWith(CACHE_PREFIX) && /"v"\s*:\s*2/.test(storage.getItem(name) || '')) return true;
+      if ((name?.startsWith(CACHE_PREFIX) || name?.startsWith(CHAT_CACHE_PREFIX))
+          && /"v"\s*:\s*2/.test(storage.getItem(name) || '')) return true;
     }
   } catch { throw new Error('offline_cache_storage_unavailable'); }
   return false;

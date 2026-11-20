@@ -2,11 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import FriendsDiscovery from './FriendsDiscovery';
 import Icon from './Icon';
+import { MovoMark } from './MovoLogo';
+import { friendCardImage } from '../lib/friendCardImage';
+import './FriendsConnect.css';
 import { Sheet } from './ui';
 import { useConfirm } from './ConfirmDialog';
 import { t as tr } from '../lib/i18n';
 import { nativePlatform } from '../lib/platform';
 import { friendDisplayName, friendInviteToken, friendInviteUrl, copyFriendInvite, friendsRequest, shareFriendInvite } from '../lib/friends';
+
+const FriendQrScanner = React.lazy(() => import('./FriendQrScanner'));
 
 export function friendErrorMessage(error) {
   switch (error?.code) {
@@ -45,6 +50,7 @@ export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled
   const [listError, setListError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [mode, setMode] = useState(inviteToken ? 'join' : 'list');
   const [refresh, setRefresh] = useState(0);
   const [incoming, setIncoming] = useState('');
@@ -55,6 +61,7 @@ export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled
   const [activeUntil, setActiveUntil] = useState(null);
   const [inviteClock, setInviteClock] = useState(Date.now);
   const lock = useRef(false);
+  const card = useRef(null);
   const confirm = useConfirm();
   const validName = friendDisplayName(name);
   const hasActiveInvite = Date.parse(activeUntil) > inviteClock;
@@ -104,6 +111,7 @@ export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled
   }, [invite]);
 
   function showMode(next) {
+    setScanning(false);
     setMode(next);
     if (next !== mode && next !== 'join') setRefresh(value => value + 1);
     setError('');
@@ -134,22 +142,35 @@ export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled
     setLookup(token);
   }
 
+  function scanned(value) {
+    const token = friendInviteToken(value);
+    if (!token) { setError(tr('Enter a valid MOVO invite link.')); return; }
+    setError(''); setScanning(false); setMode('join'); setIncoming(''); setLookup(token);
+  }
+
+  const connectMethods = <div className="friend-connect-methods" role="group" aria-label={tr('Add friend')}>
+    <button type="button" onClick={() => { showMode('join'); setLookup(''); setPreview(null); setScanning(true); }}><Icon name="scan" size={19} />{tr('Scan QR code')}</button>
+    <button type="button" onClick={() => { showMode('join'); setLookup(''); setPreview(null); }}><Icon name="link" size={19} />{tr('Paste invite link')}</button>
+  </div>;
+
   async function share(copyOnly = false) {
-    if (!url || busy) return;
-    setError('');
+    if (!url || busy || lock.current) return;
+    lock.current = true; setBusy(true); setError('');
     try {
-      const outcome = copyOnly ? await copyFriendInvite(url).then(() => 'copied') : await shareFriendInvite(url, tr('MOVO friend invite'));
+      const image = copyOnly ? undefined : await friendCardImage(card.current?.querySelector('svg.friends-qr'), invite.name, tr('An invite can be used once and expires after 24 hours.'));
+      const outcome = copyOnly ? await copyFriendInvite(url).then(() => 'copied') : await shareFriendInvite(url, tr('MOVO friend invite'), image);
+      if (outcome === 'downloaded') setNotice(tr('Profile QR image downloaded.'));
       if (outcome === 'copied') setNotice(tr('Invite link copied.'));
     } catch (cause) {
       if (cause?.name !== 'AbortError') setError(tr('Sharing is unavailable. Scan the QR or select and copy the link.'));
-    }
+    } finally { lock.current = false; setBusy(false); }
   }
 
   function createInvite(event) {
     event.preventDefault();
     if (!validName) return;
     run('create', { name: validName }, result => {
-      setInvite(result);
+      setInvite({ ...result, name: validName });
       setInviteClock(Date.now());
       setActiveUntil(result.expiresAt);
       setRefresh(value => value + 1);
@@ -201,13 +222,13 @@ export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled
         <p>{tr('Sign in to send or accept a friend invite.')}</p>
         <button type="button" className="primary-button" onClick={onSignIn}>{tr('Sign in')}</button>
       </div> : <>
-        <nav className={`friends-tabs${socialAvailable ? ' friends-tabs-expanded' : ''}`} aria-label={tr('Friends')}>
+        <nav className="friends-tabs" aria-label={tr('Friends')}>
           <button type="button" disabled={busy} aria-pressed={mode === 'list'} onClick={() => showMode('list')}>{tr('Friends')}</button>
-          {socialAvailable && <button type="button" disabled={busy} aria-pressed={mode === 'search'} onClick={() => showMode('search')}>{tr('Add friend')}</button>}
-          <button type="button" disabled={busy} aria-pressed={mode === 'invite'} onClick={() => showMode('invite')}>{tr('Invite')}</button>
-          <button type="button" disabled={busy} aria-pressed={mode === 'join'} onClick={() => showMode('join')}>{tr('Join')}</button>
+          <button type="button" disabled={busy} aria-pressed={mode === 'search' || mode === 'join'} onClick={() => showMode('search')}>{tr('Add friend')}</button>
+          <button type="button" disabled={busy} aria-pressed={mode === 'invite'} onClick={() => showMode('invite')}>{tr('Share profile')}</button>
         </nav>
-        {mode === 'search' && (directory ? <FriendsDiscovery directory={directory} busy={busy} run={run} reload={reload} /> :
+        {mode === 'search' && connectMethods}
+        {mode === 'search' && socialAvailable && (directory ? <FriendsDiscovery directory={directory} busy={busy} run={run} reload={reload} /> :
           <><p className="friends-note" role={directoryError ? 'alert' : 'status'}>{directoryError || tr('Loading…')}</p>
             {directoryError && <button type="button" className="friends-secondary" onClick={reload}>{tr('Try again')}</button>}</>)}
         {mode === 'list' && <>
@@ -228,7 +249,7 @@ export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled
           {friends?.length === 0 && <div className="friends-empty">
             <Icon name="userPlus" size={26} />
             <p>{tr('Your friends will appear here after they accept an invite.')}</p>
-            <button type="button" className="primary-button" onClick={() => showMode(socialAvailable ? 'search' : 'invite')}>{tr('Add a friend')}</button>
+            <button type="button" className="primary-button" onClick={() => showMode('search')}>{tr('Add a friend')}</button>
           </div>}
           {friends?.length > 0 && <ul className="friends-list">
             {friends.map(friend => <li key={friend.id}>
@@ -246,10 +267,17 @@ export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled
         </>}
         {mode === 'invite' && <>
           {url ? <div className="friends-invite">
-            <QRCodeSVG className="friends-qr" value={url} size={164} level="M" marginSize={4} title={tr('Friend invite QR code')} />
+            <div ref={card} className="friend-profile-card" aria-label={tr('Friend invite profile card')}>
+              <span className="friend-profile-initial" aria-hidden="true">{Array.from(invite.name || '')[0]?.toLocaleUpperCase()}</span>
+              <h3 dir="auto">{invite.name}</h3>
+              {directory?.handle && <span className="friend-profile-handle" dir="ltr">@{directory.handle}</span>}
+              <QRCodeSVG className="friends-qr" value={url} size={224} level="M" marginSize={4} title={tr('Friend invite QR code')} />
+              <span className="friend-profile-brand"><MovoMark size={21} tone="mono" />MOVO</span>
+              <small className="friend-profile-expiry">{tr('An invite can be used once and expires after 24 hours.')}</small>
+            </div>
             <label className="friends-field"><span>{tr('Invite link')}</span><input dir="ltr" readOnly value={url} onFocus={event => event.target.select()} /></label>
             <div className="friends-actions">
-              <button type="button" className="primary-button" onClick={() => share()}><Icon name="send" size={17} />{tr('Share invite')}</button>
+              <button type="button" className="primary-button" onClick={() => share()}><Icon name="send" size={17} />{tr('Share profile')}</button>
               <button type="button" className="friends-secondary" onClick={() => share(true)}><Icon name="copy" size={17} />{tr('Copy link')}</button>
             </div>
             <p className="friends-note">{platform === 'ios' ? tr('Choose AirDrop in the share sheet.') : platform === 'android' ? tr('Choose Quick Share when it appears in the share sheet.') : tr('Ask a friend to scan the QR with their phone camera.')}</p>
@@ -261,7 +289,8 @@ export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled
           {hasActiveInvite && <button type="button" className="friends-secondary" disabled={busy}
             onClick={() => run('revoke', {}, () => { setInvite(null); setActiveUntil(null); setRefresh(value => value + 1); setNotice(tr('Invite revoked.')); })}>{tr('Revoke invite')}</button>}
         </>}
-        {mode === 'join' && (preview ? <form className="friends-form" onSubmit={acceptInvite}>
+        {mode === 'join' && !preview && connectMethods}
+        {mode === 'join' && scanning ? <React.Suspense fallback={<p role="status">{tr('Loading…')}</p>}><FriendQrScanner onScan={scanned} onClose={() => setScanning(false)} /></React.Suspense> : mode === 'join' && (preview ? <form className="friends-form" onSubmit={acceptInvite}>
           <div className="friends-recipient"><Icon name="user" size={20} /><strong dir="auto">{preview.name}</strong></div>
           {preview.connected ? <p className="friends-note">{tr('You are already friends.')}</p> : <>
             {nameField}

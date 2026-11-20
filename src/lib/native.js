@@ -36,11 +36,11 @@ export async function getNativeAuthCallback() {
 
 /* ---------- Non-secret local preferences only. Auth tokens are in native Keychain/Keystore. ---------- */
 // Financial read caches migrate from legacy Preferences to AES-GCM, never mirror back as plaintext.
-const KEEP = /^movo\.(?!lock\.|readCache\.v1:)/;
+const KEEP = /^movo\.(?!lock\.|readCache\.v1:|chatHistory\.v1:)/;
 const LEGACY_FINANCE = /^movo\.(?:local\.accounts\.v1$|local\.transactions\.v1$|offline\.workspace\.v2\.)/;
 // Do not restore legacy plaintext wallet/workspace keys by generic mirroring.
 // financeVault handles them as a verified, encrypted migration before App mounts.
-const RESTORE = /^movo\.(?!lock\.|readCache\.v1:|finance\.sealed\.v1:|finance\.recovery\.v[12]:)/;
+const RESTORE = /^movo\.(?!lock\.|readCache\.v1:|chatHistory\.v1:|finance\.sealed\.v1:|finance\.recovery\.v[12]:)/;
 let mirrored = false;
 
 /** Before the app renders: restore MOVO keys missing from localStorage, then mirror every later write. */

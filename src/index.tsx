@@ -1,4 +1,5 @@
 import React from 'react';
+import { isNativeApp } from './lib/platform';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { restoreNativeStorage, refreshNativeNotifyPermission } from './lib/native';

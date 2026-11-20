@@ -22,23 +22,31 @@ test('security guide exists, is navigable and does not require third-party scrip
   expect(page).toContain('href="/terms"');
   expect(page).not.toMatch(/<script\b/i);
   expect(page).not.toMatch(/(?:linear|radial)-gradient\(/i);
+
+  const document = new DOMParser().parseFromString(page, 'text/html');
+  const home = document.querySelector('header a.home-link');
+  expect(home?.getAttribute('href')).toBe('/');
+  expect(home?.textContent).toContain('Back to Home');
+  const sectionLinks = document.querySelectorAll('nav[aria-label="On this page"] a[href^="#"]');
+  expect(sectionLinks).toHaveLength(5);
+  for (const link of sectionLinks) {
+    expect(document.querySelector(link.getAttribute('href'))).not.toBeNull();
+  }
 });
 
-test('encryption copy matches what ships: selected records, version-dependent, never "everything"', () => {
+test('security disclosures distinguish encrypted caches from unencrypted working copies', () => {
   const page = read('public/security.html');
   const guide = read('docs/security/MOVO_USER_DATA_SECURITY_GUIDE.md');
   const terms = read('public/terms.html');
   const privacy = read('public/privacy.html');
-  expect(page).toContain('Dependent on app version');
-  expect(page).toContain('application-level encryption for selected local financial records');
-  expect(page).toContain('No app can guarantee perfect security.');
-  expect(page).not.toContain('Not yet released');
-  expect(page).not.toMatch(/all (?:of your )?(?:local )?(?:financial )?records are encrypted/i);
-  expect(terms).toContain('Supported updated app versions');
-  expect(privacy).toContain('Older versions');
+  expect(page).toContain('AES-256-GCM');
+  expect(page).toContain('not all encrypted by MOVO');
+  expect(page).toContain('not end-to-end encryption');
+  expect(terms).toContain('not every local financial record');
+  expect(privacy).toContain('not all protected by that encryption');
+  expect(guide).toContain('Remaining unencrypted copies');
   expect(guide).toContain('not a bank');
-  expect(guide).toContain('does **not**');
-  expect(guide).toContain('Not everything.');
+  expect(guide).toContain('not end-to-end encryption');
 });
 
 test('existing privacy, terms and Settings link to the new guide without implying it is a separate policy', () => {

@@ -1,0 +1,19 @@
+.friend-connect-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.friend-connect-methods > button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 10px; border: 0; border-radius: 14px; background: var(--field); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; }
+.friend-connect-methods svg { flex: none; }
+.friend-profile-card { display: grid; justify-items: center; width: min(100%, 340px); box-sizing: border-box; margin: 4px auto; padding: 28px 20px 22px; gap: 10px; border-radius: 26px; background: #fafaf8; color: #151716; text-align: center; box-shadow: 0 2px 8px -5px rgba(0,0,0,.12); }
+.friend-profile-initial { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: #e9eee9; color: #173f2d; font-size: 26px; font-weight: 650; }
+.friend-profile-card h3 { margin: 2px 0 0; max-width: 100%; font-size: 25px; letter-spacing: -.035em; line-height: 1.15; overflow-wrap: anywhere; }
+.friend-profile-card .friend-profile-handle { max-width: 100%; font-size: 13px; color: #5b645f; overflow-wrap: anywhere; }
+.friend-profile-card .friends-qr { width: min(100%, 224px); height: auto; margin: 3px auto 0; padding: 0; background: #fff; border-radius: 14px; }
+.friend-profile-brand { display: inline-flex; align-items: center; gap: 7px; font-size: 16px; font-weight: 700; letter-spacing: .06em; }
+.friend-profile-card .friend-profile-expiry { font-size: 11px; line-height: 1.4; color: #5b645f; }
+.theme-dark .friend-profile-card { box-shadow: none; }
+.friend-scanner { display: grid; gap: 12px; }
+.friend-scanner-frame { position: relative; width: min(100%, 320px); aspect-ratio: 1; justify-self: center; margin-inline: auto; overflow: hidden; border-radius: 22px; background: #121713; }
+.friend-scanner-frame video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.friend-scanner-frame > span { position: absolute; inset: 15%; border: 2px solid #fff; border-radius: 18px; pointer-events: none; }
+.friend-connect-methods button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: no-preference) { .friend-profile-card, .friend-scanner { animation: friend-connect-in 180ms ease-out both; } }
+
+@keyframes friend-connect-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }

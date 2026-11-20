@@ -4,9 +4,16 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import NasrinAIChat from './NasrinAIChat';
 import { supabase } from '../lib/supabaseClient';
+import { CHAT_IDLE_MS } from '../lib/chatHistory';
+import { setAIConsent } from '../lib/aiConsent';
 
 jest.mock('../lib/supabaseClient', () => ({
   supabase: { auth: { getSession: jest.fn() } }
+}));
+jest.mock('../lib/financeCacheCrypto', () => ({
+  CHAT_CACHE_PREFIX: 'movo.chatHistory.v1:',
+  encryptFinancialCache: async (_owner, _name, value) => JSON.stringify(value),
+  decryptFinancialCache: async (_owner, _name, value) => value,
 }));
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -36,7 +43,7 @@ describe('NasrinAI consent and legal links', () => {
       data: { session: { access_token: 'test-access-token' } },
       error: null
     });
-    window.sessionStorage.removeItem('movo.ai.newConversation.user-1');
+    window.sessionStorage.clear();
     window.localStorage.clear();
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -57,7 +64,7 @@ describe('NasrinAI consent and legal links', () => {
     act(() => root.unmount());
     container.remove();
     global.fetch = originalFetch;
-    window.sessionStorage.removeItem('movo.ai.newConversation.user-1');
+    window.sessionStorage.clear();
     jest.clearAllMocks();
   });
 
@@ -223,15 +230,34 @@ describe('NasrinAI consent and legal links', () => {
   });
 
 
+  test('withdrawing consent prevents automatic retransmission after an in-flight chat failure', async () => {
+    let complete;
+    global.fetch.mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
+    act(() => button('I understand').click());
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Review my spending');
+    await act(async () => {
+      container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+    await act(async () => {
+      setAIConsent('user-1', false);
+      complete({ ok: false, json: async () => ({ error: 'nasrinai_timeout' }) });
+      await new Promise(resolve => setTimeout(resolve, 1300));
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('#movo-ai-prompt').value).toBe('Review my spending');
+  });
+
   describe('voice conversation', () => {
-    let contexts; let spoken; let saved;
+    let contexts; let spoken; let saved; let recorders; let track;
     beforeEach(() => {
-      contexts = []; spoken = [];
+      contexts = []; spoken = []; recorders = [];
+      track = { stop: jest.fn(), addEventListener: jest.fn() };
       saved = { AudioContext: window.AudioContext, MediaRecorder: global.MediaRecorder, mediaDevices: navigator.mediaDevices, speechSynthesis: window.speechSynthesis, Utterance: global.SpeechSynthesisUtterance, Audio: window.Audio, raf: window.requestAnimationFrame };
       window.AudioContext = class {
         constructor() { this.state = 'suspended'; this.destination = {}; this.createdBeforeMic = !navigator.mediaDevices.getUserMedia.mock.calls.length; contexts.push(this); }
         resume() { this.state = 'running'; return Promise.resolve(); }
-        close() { return Promise.resolve(); }
+        close = jest.fn(() => Promise.resolve());
         createBuffer() { return {}; }
         createBufferSource() { return { connect() {}, start() {}, stop() {} }; }
         createMediaStreamSource() { return { connect() {} }; }
@@ -241,7 +267,7 @@ describe('NasrinAI consent and legal links', () => {
       };
       global.MediaRecorder = class {
         static isTypeSupported() { return false; }
-        constructor() { this.state = 'inactive'; this.mimeType = 'audio/mp4'; }
+        constructor() { this.state = 'inactive'; this.mimeType = 'audio/mp4'; recorders.push(this); }
         start() { this.state = 'recording'; }
         stop() {
           this.state = 'inactive';
@@ -249,7 +275,7 @@ describe('NasrinAI consent and legal links', () => {
           this.onstop?.();
         }
       };
-      Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: jest.fn().mockResolvedValue({ getTracks: () => [{ stop() {} }] }) } });
+      Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: jest.fn().mockResolvedValue({ getTracks: () => [track] }) } });
       window.speechSynthesis = { speak: jest.fn(u => spoken.push(u.text)), cancel: jest.fn() };
       global.SpeechSynthesisUtterance = function Utterance(text) { this.text = text; };
       window.Audio = function BlockedAudio() { this.play = () => Promise.reject(new Error('NotAllowedError')); this.pause = () => {}; };
@@ -260,6 +286,147 @@ describe('NasrinAI consent and legal links', () => {
       window.AudioContext = saved.AudioContext; global.MediaRecorder = saved.MediaRecorder; window.speechSynthesis = saved.speechSynthesis;
       global.SpeechSynthesisUtterance = saved.Utterance; window.Audio = saved.Audio; window.requestAnimationFrame = saved.raf;
       Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: saved.mediaDevices });
+      jest.restoreAllMocks();
+      jest.useRealTimers();
+    });
+
+    const settleVoice = async () => { await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); }); };
+    const startCapture = async () => {
+      act(() => button('I understand')?.click());
+      await act(async () => { button('Talk with NasrinAI').click(); });
+    };
+
+    test('withdrawing AI consent stops active voice and asks again before a new capture', async () => {
+      await startCapture();
+      await act(async () => setAIConsent('user-1', false));
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(button('Talk with NasrinAI')).toBeTruthy();
+      act(() => button('Talk with NasrinAI').click());
+      expect(container.textContent).toContain('Before you start');
+      expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledTimes(1);
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+    const segment = async (advance) => {
+      const callbacks = [];
+      let now = 10000;
+      jest.spyOn(Date, 'now').mockImplementation(() => now);
+      window.requestAnimationFrame = callback => { callbacks.push(callback); return callbacks.length; };
+      await startCapture();
+      contexts[contexts.length - 1].sampleValue = 140;
+      await act(async () => callbacks.shift()());
+      contexts[contexts.length - 1].sampleValue = 128;
+      now += 1000;
+      await act(async () => callbacks.shift()());
+      if (advance) now += advance;
+    };
+
+    test('an active transcription failure stops capture, keeps the draft and permits a clean retry', async () => {
+      setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Keep my typed words');
+      global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'transcription_unavailable' }) });
+      await segment();
+      await settleVoice();
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(contexts[0].close).toHaveBeenCalledTimes(1);
+      expect(container.querySelector('.live')).toBeNull();
+      expect(container.querySelector('#movo-ai-prompt').placeholder).not.toContain('Listening');
+      expect(container.querySelector('#movo-ai-prompt').value).toBe('Keep my typed words');
+      expect(global.fetch).toHaveBeenCalledTimes(1); // no final upload after failure
+      await startCapture();
+      expect(button('End voice conversation')).toBeTruthy();
+      expect(contexts[1].close).not.toHaveBeenCalled();
+      expect(container.querySelector('[role="alert"]')).toBeNull();
+    });
+
+    test('a stalled upload times out, aborts and releases the microphone', async () => {
+      const schedule = global.setTimeout;
+      let expire;
+      jest.spyOn(global, 'setTimeout').mockImplementation((callback, delay, ...args) => {
+        if (delay === 40000) expire = callback;
+        return schedule(callback, delay, ...args);
+      });
+      global.fetch.mockImplementationOnce(() => new Promise(() => {}));
+      await segment();
+      await settleVoice();
+      const signal = global.fetch.mock.calls[0][1].signal;
+      await act(async () => expire());
+      expect(signal.aborted).toBe(true);
+      expect(container.querySelector('.live')).toBeNull();
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(button('Talk with NasrinAI')).toBeTruthy();
+    });
+
+    test('a late permission result cannot replace the new recording or leak an old microphone stream', async () => {
+      let allowOld;
+      const oldTrack = { stop: jest.fn() };
+      navigator.mediaDevices.getUserMedia.mockImplementationOnce(() => new Promise(resolve => { allowOld = resolve; }));
+      await startCapture();
+      act(() => button('End voice conversation').click());
+      await startCapture();
+      await act(async () => allowOld({ getTracks: () => [oldTrack] }));
+      expect(oldTrack.stop).toHaveBeenCalledTimes(1);
+      expect(track.stop).not.toHaveBeenCalled();
+      expect(recorders).toHaveLength(1);
+      act(() => button('End voice conversation').click());
+      expect(track.stop).toHaveBeenCalledTimes(1);
+    });
+
+    test('old transcription results never enter a restarted voice session', async () => {
+      let finishOld;
+      global.fetch.mockImplementationOnce(() => new Promise(resolve => { finishOld = resolve; }));
+      await segment();
+      await settleVoice();
+      act(() => button('End voice conversation').click());
+      await startCapture();
+      await act(async () => finishOld({ ok: true, json: async () => ({ text: 'Obsolete words' }) }));
+      expect(container.querySelector('#movo-ai-prompt').value).toBe('');
+      expect(button('End voice conversation')).toBeTruthy();
+    });
+
+    test.each(['recorder', 'track', 'pagehide'])('%s interruption stops capture without uploading unfinished audio', async (kind) => {
+      await startCapture();
+      act(() => {
+        if (kind === 'recorder') recorders[0].onerror();
+        if (kind === 'track') track.addEventListener.mock.calls[0][1]();
+        if (kind === 'pagehide') window.dispatchEvent(new Event('pagehide'));
+      });
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(button('Talk with NasrinAI')).toBeTruthy();
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test('backgrounding aborts an upload and ignores its late result', async () => {
+      let finish;
+      global.fetch.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+      await segment();
+      await settleVoice();
+      const signal = global.fetch.mock.calls[0][1].signal;
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      act(() => document.dispatchEvent(new Event('visibilitychange')));
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+      await act(async () => finish({ ok: true, json: async () => ({ text: 'Late words' }) }));
+      expect(signal.aborted).toBe(true);
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(container.querySelector('#movo-ai-prompt').value).toBe('');
+      expect(button('Talk with NasrinAI')).toBeTruthy();
+    });
+
+    test('a recorder start failure releases capture instead of leaving Listening active', async () => {
+      jest.spyOn(MediaRecorder.prototype, 'start').mockImplementation(() => { throw new Error('capture interrupted'); });
+      await startCapture();
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(button('Talk with NasrinAI')).toBeTruthy();
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test('leaving chat aborts transcription and releases the microphone', async () => {
+      global.fetch.mockImplementationOnce(() => new Promise(() => {}));
+      await segment();
+      await settleVoice();
+      const signal = global.fetch.mock.calls[0][1].signal;
+      await act(async () => root.render(<p>Home</p>));
+      expect(signal.aborted).toBe(true);
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(contexts[0].close).toHaveBeenCalledTimes(1);
     });
 
     test('shows recognized speech in the composer without auto-sending it', async () => {
@@ -445,5 +612,115 @@ describe('charts from on-device records', () => {
     act(() => root.unmount());
     container.remove();
     global.fetch = originalFetch;
+  });
+});
+
+describe('chat inactivity and history', () => {
+  let container;
+  let root;
+  let originalFetch;
+  const paidSession = { user: { id: 'chat-owner' }, access_token: 'chat-owner-token' };
+  const reply = (payload) => ({ ok: true, json: async () => payload });
+  const button = (label) => Array.from(document.querySelectorAll('button')).find((item) =>
+    item.getAttribute('aria-label') === label || item.textContent.includes(label));
+  const render = async (props = {}) => act(async () => root.render(<NasrinAIChat {...props} />));
+  const tick = (delay) => act(() => jest.advanceTimersByTime(delay));
+  const submit = async (text) => {
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), text);
+    await act(async () => container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  };
+  const choose = async (label) => act(async () => button(label).click());
+
+  beforeEach(() => {
+    jest.useFakeTimers('modern');
+    jest.setSystemTime(new Date('2026-11-18T08:00:00Z'));
+    localStorage.clear();
+    sessionStorage.clear();
+    originalFetch = global.fetch;
+    global.fetch = jest.fn();
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    global.fetch = originalFetch;
+    jest.useRealTimers();
+  });
+
+  test('typing extends the deadline and a fresh chat preserves the draft and saved local transcript', async () => {
+    await render({ onLocalAnswer: () => 'Saved device answer' });
+    await submit('How much did I spend?');
+    tick(CHAT_IDLE_MS - 1);
+    expect(container.textContent).toContain('Saved device answer');
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Draft for later');
+    tick(CHAT_IDLE_MS - 1);
+    expect(container.textContent).toContain('Saved device answer');
+    tick(1);
+    expect(container.textContent).not.toContain('Saved device answer');
+    expect(container.querySelector('#movo-ai-prompt').value).toBe('Draft for later');
+    await choose('Chat history');
+    await choose('How much did I spend?');
+    expect(container.textContent).toContain('Saved device answer');
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('opens a blank chat after time away while retaining the previous conversation across remounts', async () => {
+    await render({ onLocalAnswer: () => 'Previous device answer' });
+    await submit('Previous device question');
+    await act(async () => root.render(null));
+    tick(CHAT_IDLE_MS);
+    await render();
+    expect(container.textContent).not.toContain('Previous device answer');
+    await choose('Chat history');
+    await choose('Previous device question');
+    expect(container.textContent).toContain('Previous device answer');
+    await render({ session: paidSession, cloudMode: false });
+    await choose('Chat history');
+    expect(document.querySelector('[role="dialog"]').textContent).toContain('No saved chats yet.');
+  });
+
+  test('checks elapsed time on resume if the mobile timer was suspended', async () => {
+    await render({ onLocalAnswer: () => 'Reply before suspension' });
+    await submit('Question before suspension');
+    jest.setSystemTime(Date.now() + CHAT_IDLE_MS);
+    act(() => window.dispatchEvent(new Event('pageshow')));
+    expect(container.textContent).not.toContain('Reply before suspension');
+    await choose('Chat history');
+    await choose('Question before suspension');
+    expect(container.textContent).toContain('Reply before suspension');
+  });
+
+  test('keeps an in-flight cloud reply in its original chat, starts a new server thread after idle and reopens history', async () => {
+    let complete;
+    global.fetch.mockImplementation((url, options) => {
+      if (options.method === 'POST') {
+        if (!complete) return new Promise((resolve) => { complete = resolve; });
+        return Promise.resolve(reply({ conversationId: 'cloud-2', reply: 'New cloud reply' }));
+      }
+      if (url.includes('history=1')) return Promise.resolve(reply({
+        conversations: [{ id: 'cloud-1', title: 'Previous cloud question', updatedAt: '2026-11-18T08:10:00Z' }],
+      }));
+      return Promise.resolve(reply({ conversationId: 'cloud-1', messages: [{ id: 'saved-a', role: 'assistant', content: 'Saved cloud reply' }] }));
+    });
+    localStorage.setItem('movo.ai.ack.v1.chat-owner', '1');
+    await render({ session: paidSession, cloudMode: true });
+    await submit('Previous cloud question');
+    tick(CHAT_IDLE_MS);
+    expect(container.textContent).toContain('Previous cloud question');
+    await act(async () => { complete(reply({ conversationId: 'cloud-1', reply: 'Saved cloud reply' })); });
+    expect(container.textContent).toContain('Saved cloud reply');
+    tick(CHAT_IDLE_MS);
+    expect(container.textContent).not.toContain('Saved cloud reply');
+    await submit('New cloud question');
+    const sent = global.fetch.mock.calls.filter(([, options]) => options.method === 'POST');
+    expect(JSON.parse(sent[1][1].body).conversationId).toBeNull();
+    await choose('Chat history');
+    await choose('Previous cloud question');
+    expect(container.textContent).toContain('Saved cloud reply');
+    expect(container.textContent).not.toContain('New cloud reply');
   });
 });

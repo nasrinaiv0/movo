@@ -13,7 +13,7 @@ test('an account without a fetchable logo becomes a MOVO card in the picked fini
   expect(card.className).toContain('ccx-movo');
   expect(card.className).toContain('movo-platinum');
   expect(card.getAttribute('aria-label')).toBe('Tiny Rural Bank · MOVO');
-  expect(el.querySelector('.ccx-name').textContent).toBe('MOVO');
+  expect(el.querySelector('.ccx-name').textContent).toBe('Tiny Rural Bank');
   expect(el.querySelector('.ccx-sub').textContent).toBe('Financial Tracker');
   expect(el.querySelector('.ccx-type').textContent).toBe('Debit CardPlatinum');
   expect(el.querySelector('.ccx-watermark svg.movo-mark')).not.toBeNull();

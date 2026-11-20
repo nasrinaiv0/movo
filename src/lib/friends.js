@@ -1,6 +1,7 @@
 import { CapacitorHttp } from '@capacitor/core';
 import { apiUrl, appOrigin, isNativeApp } from './platform';
 import { MovoNative } from './native';
+import { downloadFriendCard } from './friendCardImage';
 
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 const PENDING_KEY = 'movo.pendingFriendInvite.v1';
@@ -96,10 +97,19 @@ export async function copyFriendInvite(url) {
   return navigator.clipboard.writeText(url);
 }
 
-export async function shareFriendInvite(url, title) {
+export async function shareFriendInvite(url, title, image) {
+  if (!friendInviteToken(url)) throw new Error('invalid_friend_invite');
+  if (image && (!image.startsWith('data:image/png;base64,') || image.length > 1500000)) throw new Error('invalid_friend_card');
   if (isNativeApp()) {
-    await MovoNative.shareFriendInvite({ url });
+    await MovoNative.shareFriendInvite({ url, ...(image ? { image } : {}) });
     return 'shared';
+  }
+  if (image) {
+    const bytes = Uint8Array.from(atob(image.slice('data:image/png;base64,'.length)), character => character.charCodeAt(0));
+    const blob = new Blob([bytes], { type: 'image/png' });
+    const file = new File([blob], 'MOVO-friend-profile.png', { type: 'image/png' });
+    if (navigator.canShare?.({ files: [file] }) && navigator.share) { await navigator.share({ files: [file], title, text: url }); return 'shared'; }
+    downloadFriendCard(image); return 'downloaded';
   }
   if (typeof navigator.share === 'function' && (!navigator.canShare || navigator.canShare({ url }))) {
     await navigator.share({ url, title });

@@ -275,7 +275,7 @@ test('credit card planning shows institution favicon and calculated spend, inter
   }} />));
   await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Credit cards')).click());
   const cardEl = el.querySelector('.fp-credit-card');
-  expect(cardEl.querySelector('.fp-credit-card-logo').getAttribute('src')).toContain('domain=aub.com.ph');
+  expect(cardEl.querySelector('.fp-credit-card-logo').getAttribute('src')).toContain('/brands/offline/aub.com.ph.png');
   expect(cardEl.textContent).toContain('Amount Spent'); expect(cardEl.textContent).toContain('6,000.00');
   expect(cardEl.textContent).toContain('Amount After Interest'); expect(cardEl.textContent).toContain('8,160.00');
   expect(cardEl.textContent).toContain('12.0%'); expect(cardEl.textContent).toContain('8,000.00');
@@ -395,5 +395,27 @@ test('while cloud records load, the position shows placeholders, never a provisi
   await act(async () => { release(); });
   expect(el.querySelector('.skeleton')).toBeNull();
   expect(el.querySelector('.fp-hero').textContent).toContain('20,000.00');
+  act(() => root.unmount()); el.remove();
+});
+
+test('loan receiving account and repayment card are separate, and a preferred card posts only on Pay', async () => {
+  const card = { id: 'credit', name: 'BPI Credit', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -200, creditLimit: 30000 };
+  obligations.listLoans.mockResolvedValue([{ ...loan, payment_account_id: card.id }]);
+  const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
+  const c = { cloudMode: true, planTab: 'loans', base: 'PHP', show: true, accountsView: [...accounts, card], toBase: value => value, go: jest.fn(), session: { user: { id: 'u' } } };
+  await act(async () => root.render(<FinancialPlanning c={c} />));
+  await act(async () => el.querySelector('.fp-loan-actions .primary-button').click());
+  let picker = document.getElementById('obligation-event-account');
+  expect(picker.value).toBe(card.id);
+  expect(obligations.recordLoanEvent).not.toHaveBeenCalled();
+  const amount = document.querySelector('[role="dialog"] input[type="number"]');
+  act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(amount, '100'); amount.dispatchEvent(new Event('input', { bubbles: true })); });
+  await act(async () => document.querySelector('[role="dialog"] .primary-button').click());
+  expect(obligations.recordLoanEvent).toHaveBeenCalledWith(expect.objectContaining({ loan_id: loan.id, account_id: card.id, amount: 100 }));
+  await act(async () => el.querySelector('.fp-loan-actions .secondary-button').click());
+  expect(document.getElementById('edit-loan-receiving-account').value).toBe('bank');
+  picker = document.getElementById('edit-loan-payment-account');
+  expect(picker.value).toBe(card.id);
+  expect([...document.getElementById('edit-loan-receiving-account').options].some(option => option.value === card.id)).toBe(false);
   act(() => root.unmount()); el.remove();
 });

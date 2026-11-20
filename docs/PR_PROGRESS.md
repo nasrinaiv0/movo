@@ -1,8 +1,57 @@
+## 2026-11-20 — Encryption integration with current privacy controls
+
+- Reconciled #291 with current main while retaining revision-aware consent, owner-bound account deletion, AI withdrawal and the compact security guide. Native mirroring now excludes both chat history and encrypted finance recovery namespaces.
+- Documented selected version-dependent finance encryption in canonical privacy disclosures and refreshed acceptance to November 20 revision 1. No complete-device or end-to-end encryption claim is made.
+- Encryption regressions, final full-suite/build checks and hosted checks are required before merge. No store release or production schema change is included.
+
 ## 2026-11-18 — Safe encryption upgrade and privacy review
 
 - Separate storage for encrypted records, atomic IndexedDB upgrade, protected key-loss recovery, and native migration retries preserve pending data.
 - Account deletion works for signed-in customers across plans. iOS privacy and export metadata now reflect the code and the outstanding App Store Connect classification.
 - [Evidence and release gates](engineering/updates/2026-11-18-encryption-privacy-audit.md).
+## 2026-11-19 — Legal/privacy audit and centered Friends QR
+
+- Confirmed MOVO is a product of NasrinAI. Corrected encryption, cloud stickers, purchase tokens, Archive retention, reset/deletion and AI processor disclosures through shared core policy content and synchronized public pages.
+- Added revision-aware acknowledgement and paired preference merging, adult self-declaration, targeted device AI withdrawal with capture/retry shutdown, and Delete Account for signed-in sync-off owners.
+- Centered the square Friends camera frame, video crop and profile QR. Kept QR parsing and permission behavior intact.
+- Documented remaining encryption, IAP retention, operator/store and territorial release blockers. This is not a certification of legal compliance.
+- Independent final review passed after fixing legacy-client revision compatibility and deletion before agreement. Thirteen browser checks and the final251 suites /1,626 tests with strict production build passed. Exact-head CI/preview is tracked in the PR.
+- [Audit and required operator actions](audits/2026-11-19-legal-privacy-release-audit.md) · [Engineering and validation](engineering/updates/2026-11-19-legal-privacy-and-friends-qr.md).
+
+## 2026-11-19 — Voice transcription recovery and loading-screen branding
+
+- Preview acceptance follow-up, documented before commit: live metadata confirms MOVO_ALLOWED_ORIGINS contains only the two production origins. Allow this exact Vercel deployment origin only in VERCEL_ENV=preview, retaining production rejection of preview/sibling hosts, and add four boundary regressions. Repeated verification passed all 1,612 tests and the strict production build; independent security review passed. Provider credentials remain unchanged; OpenRouter fallback is currently configured only for production, so real fallback acceptance needs separate preview credentials or an approved staged release.
+- Reproduced the source failure behind the screenshot: unsuccessful STT left the microphone, recording controls and Listening placeholder active. Added explicit capture shutdown, request cancellation/deadlines, generation checks, interruption/background cleanup and bounded transient audio queues.
+- Added one server-only OpenRouter transcription fallback using the already configured chat provider. Authentication, Pro entitlement and explicit consent remain mandatory; audio is transient, carries no finance context or user identifiers, and deliberate upstream budget limits block fallback.
+- Changed the loading screen and page metadata to **MOVO / Money Organizer & Visual Outflow**, with responsive subtitle wrapping and retained dark/reduced-motion styles.
+- Initial integrated verification: 249 suites / 1,608 tests passed. Production compile caught an unsupported lint-rule suppression comment; removed it and repeated the strict build. Strict production build and seven browser checks passed; focused final tests passed 64/64. Exact-head CI, hosted preview and physical iPhone/Android voice acceptance are tracked in the engineering record and PR. No production deployment or store release is performed here.
+- [Scope, evidence and acceptance checks](engineering/updates/2026-11-19-voice-transcription-recovery.md).
+
+## 2026-11-19 — Offline appearance, visible plan prices, loans and Friends
+
+- Preserved saved logos, card names, verified local plan features and downloaded artwork offline; generated an isolated offline web shell.
+- Displayed all four paid plan amounts with fresh/cached/reference labels, guarded annual savings and exact checkout quotes.
+- Reduced card/bank elevation, especially dark mode, and preserved explicit Cloud Sync off semantics.
+- Added separate receiving and repayment account choices for loans/debts, including cards, plus an owner/currency-validated nullable metadata migration.
+- Added Friends QR camera/photo scanning, pasted links and a MOVO profile-style QR card with native/web image sharing.
+- Updated privacy disclosures and translation catalogs. Browser, regression and native/SQL CI evidence is linked in the PR. No production or store release is performed here.
+- Final visual review separated plan amounts into a readable two-column grid and compacted the loan consent rows. Integrated local verification passes 248 suites / 1,572 tests; QR PNG export-to-scan and offline reload checks pass. The original isolated finance, sync and purchase integrity checks passed. Final exact-head CI is tracked on PR #323.
+- [Implementation, validation and rollout details](engineering/updates/2026-11-19-offline-appearance-plans-friends-loans.md).
+
+
+## 2026-11-18 — Start a fresh MOVO chat after 10 minutes idle
+
+- Added a 10-minute inactivity deadline, a history picker, and device-only encrypted storage for completed local conversations. Existing signed-in history remains available through its account-scoped endpoint.
+- Added tests for elapsed time, background resume, account isolation, encrypted local storage, and saving a complete cloud turn. [Implementation and verification](engineering/updates/2026-11-18-chat-idle-history.md).
+- Integrated current main `5edd47d` and the pending Security & Privacy guide. Regenerated the shared locale files from both source catalogs. [Integration and validation](engineering/updates/2026-11-18-chat-history-main-integration.md).
+
+## 2026-11-18 — Compact Security & Privacy guide
+
+- The guide linked from Settings has a persistent Back to Home button, quick section links, compact light and dark layouts, and expandable FAQs. It retains the current storage and encryption disclosures.
+- Typecheck, strict production build and all 1,543 local tests passed. [Scope and verification](engineering/updates/2026-11-18-compact-security-privacy.md).
+- The header can wrap at larger browser text sizes. Chromium verified that anchored sections clear the sticky header at 150% and 200% text sizes from 320 to 1440 px.
+- Integrated current main `5edd47d` and retained both release entries. [Integration and validation](engineering/updates/2026-11-18-security-privacy-main-integration.md).
+
 ## 2026-11-17 — "Auto" in While you were away
 
 - An **Auto** filter, right after All, gathers everything a phone automation logged: Siri, Apple Pay, bank notifications, Google Pay and the Android assistant.
