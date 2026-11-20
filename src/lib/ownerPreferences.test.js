@@ -66,3 +66,21 @@ test('legacy artwork is preserved even when the old preference key is absent', (
   readPreferenceScope(defaults, null);
   expect(JSON.parse(localStorage.getItem(PREFERENCE_RECOVERY))[0].stickers).toBe('[{"id":"art"}]');
 });
+
+test('one account legal acknowledgement cannot waive another account setup agreement', () => {
+  savePreferenceScope('a', { theme: 'dark', legalAccepted: '2026-11-20', legalAcceptedRevision: '2026-11-20-r1' }, []);
+  const b = readPreferenceScope({ ...defaults, legalAccepted: '', legalAcceptedRevision: '' }, 'b');
+  expect(b.prefs.legalAccepted).toBe('');
+  expect(b.prefs.legalAcceptedRevision).toBe('');
+  expect(readPreferenceScope(defaults, 'a').prefs.legalAcceptedRevision).toBe('2026-11-20-r1');
+});
+
+// An appearance-only legacy key still cannot establish who owns its artwork.
+test('legacy artwork beside safe settings is retained before any scope exists', () => {
+  localStorage.setItem(LEGACY_PREFERENCES, '{"theme":"dark"}');
+  localStorage.setItem('movo.customStickers.v1', '[{"id":"unassigned-art"}]');
+  expect(readPreferenceScope(defaults, 'b').stickers).toEqual([]);
+  expect(JSON.parse(localStorage.getItem(PREFERENCE_RECOVERY))).toContainEqual({
+    preferences: '{"theme":"dark"}', stickers: '[{"id":"unassigned-art"}]',
+  });
+});

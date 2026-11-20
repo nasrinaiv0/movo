@@ -63,7 +63,7 @@ jest.mock('./lib/usePlanEntitlement', () => ({ usePlanEntitlement: session => ({
   refreshEntitlement: mockRefreshEntitlement, entitlementReady: !!session?.user,
 }) }));
 // eslint-disable-next-line import/first
-import { preferenceScopeKey, readPreferenceScope, savePreferenceScope } from './lib/ownerPreferences';
+import { LEGACY_PREFERENCES, PREFERENCE_RECOVERY, preferenceScopeKey, readPreferenceScope, savePreferenceScope } from './lib/ownerPreferences';
 // eslint-disable-next-line import/first
 import * as platform from './lib/platform';
 // eslint-disable-next-line import/first
@@ -140,11 +140,14 @@ describe('account preference isolation through real App auth transitions', () =>
   test('a corrupt owner snapshot blocks preference merge/upload and never inherits the previous account', async () => {
     await auth(A);
     localStorage.setItem(preferenceScopeKey(B), '{');
+    const survivingArtwork = '[{"id":"recoverable-art","src":"data:image/png;base64,AA=="}]';
+    localStorage.setItem('movo.customStickers.v1', survivingArtwork);
     mockLoadPreferences.mockClear(); mockSavePreferences.mockClear();
     await auth(B);
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 1700)); });
     expect(container.textContent).not.toContain('Alice');
     expect(localStorage.getItem(preferenceScopeKey(B))).toBe('{');
+    expect(localStorage.getItem('movo.customStickers.v1')).toBe(survivingArtwork);
     expect(mockLoadPreferences).not.toHaveBeenCalledWith(B);
     expect(mockSavePreferences.mock.calls.filter(([owner]) => owner === B)).toEqual([]);
   });
@@ -185,6 +188,24 @@ describe('account preference isolation through real App auth transitions', () =>
       expect(mockContext.prefs.autoLogKey).toBe('');
       expect(readPreferenceScope({}, B).prefs.autoLogKey).toBeUndefined();
     } finally { native.mockRestore(); key.mockRestore(); global.fetch = originalFetch; }
+  });
+
+  test('unassigned legacy A financial data is retained for recovery and cannot upload when B signs in', async () => {
+    act(() => root.unmount());
+    localStorage.clear();
+    const legacy = { ...setup, profileName: 'Legacy person', subscriptions: [{ id: 'unassigned-a-private', name: 'Private A' }],
+      archive: [{ id: 'unassigned-a-archive' }], membershipCards: [{ id: 'unassigned-a-member' }] };
+    const raw = JSON.stringify(legacy);
+    localStorage.setItem(LEGACY_PREFERENCES, raw);
+    root = createRoot(container);
+    await act(async () => { root.render(<App />); });
+    expect(container.textContent).toContain('Older device preferences are saved for recovery');
+    await auth(B);
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 1700)); });
+    const writes = mockSavePreferences.mock.calls.filter(([owner]) => owner === B);
+    expect(writes.length).toBeGreaterThan(0);
+    expect(JSON.stringify(writes)).not.toContain('unassigned-a-');
+    expect(JSON.parse(localStorage.getItem(PREFERENCE_RECOVERY))).toContainEqual({ preferences: raw, stickers: null });
   });
 
 });

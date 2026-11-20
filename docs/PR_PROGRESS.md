@@ -1,3 +1,9 @@
+## 2026-11-20 — Preference recovery and current-main validation
+
+- Complete local regression: 253 suites / 1,658 tests pass, plus 20 Android R8 host and 25 iOS orchestration checks. The old main App fails the synthetic cross-account submission regression; the scoped implementation passes it.
+- Legal acceptance cannot cross accounts. Preserve artwork beside safe-only legacy settings and keep its persisted original if the next account snapshot is corrupt. Preference write failures have their own visible retry state; finance saves cannot dismiss that failure. Reset invalidates outstanding preference work.
+- Exact-head hosted checks, current-source compilation and disposable device acceptance are separate gates recorded on the PR; no store-release or physical-device result is implied.
+
 ## 2026-11-20 — Native acceptance fixture with explicit guest provenance
 
 - Updated the disposable R8 fixture to seed the versioned guest preference snapshot before React launches. The compatibility key holds only appearance/setup fields. The card/style data remains a known synthetic guest record; no ownership guard or emulator assertion is bypassed. Fresh native/emulator CI is required.

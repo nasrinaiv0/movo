@@ -4,7 +4,7 @@ The November 20 audit identified a P0: a shared device could merge the previous 
 
 ## Change
 
-`src/lib/ownerPreferences.js` stores versioned snapshots under distinct guest and owner keys, with a matching owner field. Only allowlisted appearance, language and setup acknowledgements can cross scopes. Financial lists, profile details, device keys and custom artwork cannot. The old `movo.preferences.v3` compatibility key contains only those safe fields.
+`src/lib/ownerPreferences.js` stores versioned snapshots under distinct guest and owner keys, with a matching owner field. Only allowlisted appearance, language and onboarding progress can cross scopes. Financial lists, profile details, legal acknowledgements, device keys and custom artwork cannot. Terms acceptance stays with its guest/account scope. The old `movo.preferences.v3` compatibility key contains only those safe fields.
 
 Unassigned legacy preferences and artwork are copied byte-for-byte to recovery storage before the compatibility key is rewritten. Conflicting legacy copies are retained separately. Migration fails closed if recovery cannot be verified. This retains existing plaintext data; it adds ownership boundaries, not new encryption claims. The guest view reports retained records and links to support; recovery is not silently attached to any account or included in another owner's cloud upload.
 
@@ -14,9 +14,9 @@ Native automation credentials remain protected by their existing vault. A cached
 
 ## Validation and limitations
 
-Tests cover guest/A/B/restart separation, recovery preservation, stale legacy writers, quota failure, corrupt snapshots, delayed cloud responses, stale UI setters, native-key verification and delayed artwork decoding. Existing UI/offline fixtures now explicitly seed their owner/guest scope rather than relying on the unsafe legacy key. The native secure-storage contract still verifies sanitization.
+Tests cover guest/A/B/restart separation, legal acknowledgement isolation, recovery preservation (including artwork-only legacy stores), stale legacy writers, quota failure, corrupt snapshots with preserved artwork, delayed cloud responses, stale UI setters, native-key verification and delayed artwork decoding. A regression run against the original main App reproduces B submitting synthetic unassigned A subscription and membership data; the same App-level scenario passes with this fix. Existing UI/offline fixtures now explicitly seed their owner/guest scope rather than relying on the unsafe legacy key. The native secure-storage contract still verifies sanitization.
 
-Initial full validation passed 253 suites / 1,643 tests before the final native-key test. Final exact-head tests, typecheck, serial production build and hosted checks are recorded in the PR. Parallel builds were killed by the execution host (SIGKILL); they are not successful validation. No production database schema, providers or server grants change here. Signed-device, store lifecycle and broader Friends acceptance require separate evidence.
+Final local JavaScript validation passed 253 suites / 1,658 tests after integration with released main `73e293bf`. Twenty Android R8 host tests and 25 iOS orchestration tests pass. Typecheck, serial production build and hosted exact-head checks are recorded in the PR. Parallel builds were killed by the execution host (SIGKILL); they are not successful validation. No production database schema, providers or server grants change here. Signed-device, store lifecycle and broader Friends acceptance require separate evidence.
 
 ## Rollout and rollback
 

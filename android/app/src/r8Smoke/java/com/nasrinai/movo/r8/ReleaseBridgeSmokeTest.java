@@ -252,8 +252,7 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
         JSONObject guestPreferences = new JSONObject().put("version", 1).put("ownerId", JSONObject.NULL)
             .put("prefs", prefs).put("stickers", new JSONArray());
         JSONObject compatibilityPreferences = new JSONObject();
-        for (String key : new String[] { "onboarded", "tutorialSeen", "planWelcomeSeen", "legalAccepted",
-                "legalAcceptedAt", "legalAcceptedRevision", "language", "country", "currency", "theme", "showBalance" }) {
+        for (String key : new String[] { "onboarded", "tutorialSeen", "planWelcomeSeen", "language", "country", "currency", "theme", "showBalance" }) {
             if (prefs.has(key)) compatibilityPreferences.put(key, prefs.get(key));
         }
         String accounts = new JSONArray().put(new JSONObject().put("id", ACCOUNT).put("name", "R8 Synthetic Card")

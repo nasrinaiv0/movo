@@ -10,7 +10,6 @@ const DEVICE_KEYS = new Set([
   'navAccent', 'showBalance', 'showBalanceAfterTransaction', 'compact',
   'fontStyle', 'fontSize', 'categoryColors', 'iconColors', 'language',
   'country', 'currency', 'onboarded', 'tutorialSeen', 'planWelcomeSeen',
-  'legalAccepted', 'legalAcceptedRevision', 'legalAcceptedAt',
 ]);
 const object = value => !!value && typeof value === 'object' && !Array.isArray(value);
 const deviceSettings = value => Object.fromEntries(Object.entries(object(value) ? value : {})
@@ -35,7 +34,8 @@ function preserveUnassigned(storage) {
   if (!raw && (!stickers || stickers === '[]')) return;
   let prefs;
   try { prefs = JSON.parse(raw); } catch { prefs = null; }
-  if (object(prefs) && Object.keys(prefs).every(key => DEVICE_KEYS.has(key))) return;
+  if (object(prefs) && Object.keys(prefs).every(key => DEVICE_KEYS.has(key))
+    && (!stickers || stickers === '[]' || storage.getItem(DEVICE))) return;
   const backup = storage.getItem(PREFERENCE_RECOVERY);
   const entries = backup ? JSON.parse(backup) : [];
   if (!Array.isArray(entries)) throw new Error('preference_recovery_invalid');

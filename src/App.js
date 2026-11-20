@@ -329,6 +329,7 @@ function App() {
   const preferenceErasureRef = useRef(false);
   const preferenceEpochRef = useRef(0);
   const preferenceEpoch = preferenceEpochRef.current;
+  const [preferencePersistenceWarning, setPreferencePersistenceWarning] = useState(() => preferenceBlockedRef.current.has(null));
   const setPrefs = useCallback(update => {
     const owner = preferenceOwner;
     setPrefsState(current => {
@@ -443,7 +444,8 @@ function App() {
       // Preferences mirroring may persist harmless theme/notification settings.
       if (preferenceErasureRef.current || preferenceBlockedRef.current.has(preferenceOwner) || preferenceOwnerRef.current !== preferenceOwner) return;
       savePreferenceScope(preferenceOwner, sanitizeNativePreferenceCache(prefs), getCustomStickers());
-    } catch { setLocalPersistenceWarning(true); }
+      setPreferencePersistenceWarning(false);
+    } catch { setPreferencePersistenceWarning(true); }
   }, [prefs, preferenceOwner]);
   const layout = useLayout();
   const [burst, setBurst] = useState(null);
@@ -558,6 +560,24 @@ function App() {
     setLocalPersistenceWarning(!saved);
   }, [rawTxs,localAccounts,cloudMode,session?.user?.id,offlineOwnerId]);
   const retryLocalPersistence = useCallback(() => {
+    const owner = preferenceOwnerRef.current;
+    try {
+      if (preferenceBlockedRef.current.has(owner)) {
+        const restored = readPreferenceScope(DEFAULTS, owner);
+        if (!replaceCustomStickers(restored.stickers)) throw new Error('sticker_restore_failed');
+        preferenceBlockedRef.current.delete(owner);
+        preferenceRecoveryRef.current.delete(owner);
+        ++preferenceEpochRef.current;
+        prefsRef.current = restored.prefs;
+        setPrefsState(restored.prefs);
+      }
+      savePreferenceScope(owner, sanitizeNativePreferenceCache(prefsRef.current), getCustomStickers());
+      setPreferencePersistenceWarning(false);
+    } catch {
+      setPreferencePersistenceWarning(true);
+      notify('Browser storage is unavailable or full. Export your records and retry.');
+      return;
+    }
     const pending=pendingLocalDataRef.current;
     if(cloudMode&&!pending){setLocalPersistenceWarning(false);return;}
     const ownerId=session?.user?.id;
@@ -1009,7 +1029,7 @@ function App() {
         if (!preferenceErasureRef.current && !preferenceBlockedRef.current.has(previousOwner)) {
           preferenceRecoveryRef.current.set(previousOwner, previous);
           try { savePreferenceScope(previousOwner, sanitizeNativePreferenceCache(previous.prefs), previous.stickers); }
-          catch { setLocalPersistenceWarning(true); }
+          catch { setPreferencePersistenceWarning(true); }
         }
         setSheet(null); setPendingLog(null); setSearch(''); setQuery('');
         setAccountForm({ ...BLANK_ACCOUNT });
@@ -1031,7 +1051,7 @@ function App() {
           // No account's data may remain visible under a different identity.
           setPrefsState({ ...DEFAULTS }); prefsRef.current = { ...DEFAULTS };
           setPreferenceOwner(nextOwner);
-          clearCustomStickers(); resetCustomStickerView(); setLocalPersistenceWarning(true);
+          resetCustomStickerView(); setPreferencePersistenceWarning(true);
         }
       }
   }, []);
@@ -2008,9 +2028,10 @@ function App() {
       invalidateChatHistoryWrites();
       setAIConsent(session?.user?.id, false);
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
+      ++preferenceEpochRef.current; clearTimeout(prefsSync.current.timer); prefsSync.current.ready = false;
       preferenceRecoveryRef.current.clear(); prefsRef.current = { ...DEFAULTS };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
-      setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
+      setPrefsState({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
       await qrCleanup;
       if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
       notify(tr('Records cleared.'));
@@ -2196,8 +2217,8 @@ function App() {
   const [stickerTick, setStickerTick] = useState(0);
   useEffect(() => {
     if (preferenceErasureRef.current || preferenceBlockedRef.current.has(preferenceOwner) || preferenceOwnerRef.current !== preferenceOwner) return;
-    try { savePreferenceScope(preferenceOwner, sanitizeNativePreferenceCache(prefsRef.current), getCustomStickers()); }
-    catch { setLocalPersistenceWarning(true); }
+    try { savePreferenceScope(preferenceOwner, sanitizeNativePreferenceCache(prefsRef.current), getCustomStickers()); setPreferencePersistenceWarning(false); }
+    catch { setPreferencePersistenceWarning(true); }
   }, [stickerTick, preferenceOwner]);
   useEffect(() => subscribeCustomStickers(() => setStickerTick(t => t + 1)), []);
   const userId = session?.user?.id || '';
@@ -2238,11 +2259,12 @@ function App() {
   }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick, stickerTick]);
   useEffect(() => {
     const sync = prefsSync.current;
+    const epoch = preferenceEpochRef.current;
     sync.user = userId; sync.ready = false;
     if (!userId || !cloudMode || preferenceBlockedRef.current.has(userId)) return undefined;
     let live = true;
     loadPreferences(userId).then(row => {
-      if (!live || preferenceOwnerRef.current !== userId || cloudAuthUserRef.current !== userId) return;
+      if (!live || preferenceEpochRef.current !== epoch || preferenceOwnerRef.current !== userId || cloudAuthUserRef.current !== userId) return;
       if (row?.prefs && typeof row.prefs === 'object' && !Array.isArray(row.prefs)) {
         setPrefs(cur => preferenceOwnerRef.current === userId ? mergePreferences(DEFAULTS, cur, cloudSafePreferences(row.prefs)) : cur);
         if (Array.isArray(row.stickers) && row.stickers.length) replaceCustomStickers(unionById(row.stickers, getCustomStickers(), 40));
@@ -2251,7 +2273,7 @@ function App() {
       setStickerTick(t => t + 1); // upload the merged copy (or this device's on a first sign-in)
     }).catch(() => { /* table unavailable: stay device-only */ });
     return () => { live = false; };
-  }, [userId, cloudMode, setPrefs]);
+  }, [userId, cloudMode, preferenceEpoch, setPrefs]);
   useEffect(() => {
     if (!userId || !cloudMode || !can('cloudWrite') || !prefsSync.current.ready || !prefs.accountQrCodes) return;
     const pendingMap = new Map(Object.entries(prefs.accountQrCodes).filter(([id, value]) => isAccountQrDataUrl(value)));
@@ -2295,7 +2317,7 @@ function App() {
     if (preferenceBlockedRef.current.has(userId) || preferenceOwner !== userId || preferenceOwnerRef.current !== userId || !cloudMode || !sync.ready || sync.user !== userId || !userId || !can('cloudWrite') || prefs.cloudSyncEnabled === false) return undefined;
     clearTimeout(sync.timer);
     sync.timer = setTimeout(() => {
-      if (!sync.ready || sync.user !== userId || preferenceOwnerRef.current !== userId || cloudAuthUserRef.current !== userId) return;
+      if (!sync.ready || sync.user !== userId || preferenceEpochRef.current !== preferenceEpoch || preferenceOwnerRef.current !== userId || cloudAuthUserRef.current !== userId) return;
       // Newest stickers first, within the row's size limit; the scenery photo stays on its device.
       let size = 0;
       const stickers = getCustomStickers().filter(st => (size += (st.src || '').length + 200) < 3_800_000);
@@ -2304,7 +2326,7 @@ function App() {
       savePreferences(userId, shared, stickers).catch(() => { /* retried on the next change */ });
     }, 1500);
     return () => clearTimeout(sync.timer);
-  }, [userId, prefs, stickerTick, entitlement, cloudMode, preferenceOwner]);
+  }, [userId, prefs, stickerTick, entitlement, cloudMode, preferenceOwner, preferenceEpoch]);
 
   /* ---------- alerts delivered by the browser (Push Notifications), held during quiet hours ---------- */
   useEffect(() => {
@@ -2920,7 +2942,7 @@ function App() {
         {preferenceOwner === null && hasUnassignedPreferences() && <div className="app-alert" role="status">
           <span>{tr('Older device preferences are saved for recovery and have not been assigned to an account. Contact support for help.')} <a href="mailto:support@nasrinai.com">support@nasrinai.com</a></span>
         </div>}
-        {localPersistenceWarning && <div className="app-alert storage-warning" role="alert">
+        {(localPersistenceWarning || preferencePersistenceWarning || preferenceBlockedRef.current.has(preferenceOwner)) && <div className="app-alert storage-warning" role="alert">
           <span><strong>{cloudMode && pendingLocalDataRef.current ? tr('Local-only records were not saved before cloud sign-in.') : tr('Local changes may not be saved.')}</strong> {cloudMode && pendingLocalDataRef.current ? tr('These records are separate from your cloud account. Retry to preserve a local copy on this device; this does not sync them to the cloud.') : tr('Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.')}</span>
           <button type="button" className="retry-save" onClick={retryLocalPersistence}>{tr('Retry save')}</button>
         </div>}
