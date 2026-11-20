@@ -1,3 +1,9 @@
+## 2026-11-20 — Open PR consolidation
+
+- #328 merged as `45b9e968` after its explicitly approved production migration and green hosted checks. Catalog verification confirms raw transaction writes denied and anonymous reset denied.
+- #327 integrates the complete #326 harness, current main accounting fixes and #329 setup/accessibility changes. Both source PR records are preserved. Final integrated CI must pass before merge.
+- #290 is superseded by #291; encryption and erasure remain separate reviews, with no permission inferred for additional production migrations.
+
 ## 2026-11-20 — PR #327 isolate Pixel Launcher in the disposable AVD
 
 - The native build passed after runner alignment. The emulator reached an enabled Wallet control, but the failure screenshot showed the Android Pixel Launcher ANR dialog covering MOVO Home. Confirmed synthetic account recovery under the dialog.
