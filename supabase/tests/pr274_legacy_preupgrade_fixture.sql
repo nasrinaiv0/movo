@@ -28,27 +28,24 @@ insert into public.movo_iap_ack_jobs(purchase_token_hash,product_id,encrypted_to
   (repeat('1',64),'sandbox.product','pending-old',now()-interval '10 days',null),
   (repeat('2',64),'sandbox.product','',now()-interval '10 days',now()-interval '9 days'),
   (repeat('3',64),'sandbox.product','',now()-interval '10 days',now()-interval '1 day');
-do $$
-begin
-  if not has_table_privilege('authenticated','public.transactions','UPDATE')
-    or not has_table_privilege('authenticated','public.transactions','DELETE')
-    or not exists(select 1 from pg_policies where schemaname='public' and tablename='transactions' and policyname='transactions_update_own')
-  then raise exception 'Old client privilege baseline does not match the expected legacy contract'; end if;
+-- The deployed #328 baseline already blocks raw writes; #274 must preserve that.
+do $$ begin
+  if has_table_privilege('authenticated','public.transactions','UPDATE')
+    or has_table_privilege('authenticated','public.transactions','DELETE')
+  then raise exception 'Pre-upgrade baseline reopened #328 transaction writes'; end if;
 end $$;
--- Actual old raw PostgREST write semantics, immediately rolled back.
 begin;
 select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000011',true);
 select set_config('request.jwt.claims','{"role":"authenticated"}',true);
 set local role authenticated;
-update public.transactions set merchant='Old app edit' where id='30000000-0000-4000-8000-000000000041';
 do $$ begin
-  if not exists(select 1 from public.transactions
-    where id='30000000-0000-4000-8000-000000000041' and merchant='Old app edit')
-  then raise exception 'Legacy raw UPDATE did not change owner-owned row'; end if;
-end $$;
-delete from public.transactions where id='30000000-0000-4000-8000-000000000041';
-do $$ begin
-  if exists(select 1 from public.transactions where id='30000000-0000-4000-8000-000000000041')
-  then raise exception 'Legacy raw DELETE failed'; end if;
+  begin
+    update public.transactions set merchant='Old app edit' where id='30000000-0000-4000-8000-000000000041';
+    raise exception 'Pre-upgrade raw UPDATE bypassed #328';
+  exception when insufficient_privilege then null; end;
+  begin
+    delete from public.transactions where id='30000000-0000-4000-8000-000000000041';
+    raise exception 'Pre-upgrade raw DELETE bypassed #328';
+  exception when insufficient_privilege then null; end;
 end $$;
 rollback;

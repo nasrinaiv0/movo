@@ -1,3 +1,7 @@
+## 2026-11-20 — Preserve released write restrictions in erasure rehearsal
+
+- The old #274 pre-upgrade fixture assumed raw transaction writes were still granted. Updated preflight and snapshot-restore expectations to require the already released #328 restrictions. Both attempted raw UPDATE and DELETE must fail before and after upgrade; no privileges are regranted. Fresh hosted SQL verification is required.
+
 ## 2026-11-20 — Erasure PR integration review
 
 - Reconciled #274 with current main and #328. Retained the current consent UI, legal disclosures, brand rendering and controlled transaction reset, alongside the proposed atomic server erasure, upload freeze, schedule-owner constraints and retention enforcement.

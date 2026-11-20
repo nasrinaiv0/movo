@@ -4,8 +4,8 @@ begin
   if to_regclass('public.movo_account_erasure_requests') is not null
     or to_regprocedure('public.movo_run_data_retention()') is not null
   then raise exception 'Rollback test accidentally restored upgraded schema'; end if;
-  if not has_table_privilege('authenticated','public.transactions','UPDATE')
-    or not has_table_privilege('authenticated','public.transactions','DELETE')
+  if has_table_privilege('authenticated','public.transactions','UPDATE')
+    or has_table_privilege('authenticated','public.transactions','DELETE')
   then raise exception 'Old client grants absent from the restored baseline'; end if;
   if (select count(*) from public.transactions
     where id in ('30000000-0000-4000-8000-000000000041','30000000-0000-4000-8000-000000000042')) <> 2
