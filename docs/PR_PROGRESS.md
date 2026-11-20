@@ -82,6 +82,14 @@
 - Independent Codex review found and fixed two harness defects: refuse physical/ambiguous ADB devices before any root/network/uninstall operation, and reject skipped/assumption-failed instrumentation as failures. Claude is unavailable in this runtime; no Claude review is claimed.
 - Local Python verification: 13 tests passed; diff whitespace check passed. Native SDK/KVM are unavailable in the managed workspace. Vercel Sandbox returned HTTP 402 payment_required and no Vercel CLI is installed; run native measurements on disposable GitHub KVM runner.
 - Engineering evidence and acceptance limits: `docs/engineering/updates/2026-11-20-android-r8-controlled-experiment.md`. Documentation recorded before committing/publishing. Do not merge or promote this experiment without complete native and real-account/store acceptance.
+## 2026-11-19 — Finance integrity audit fixes
+
+- Restricted direct transaction UPDATE/DELETE privileges; sync and reversal RPCs retain ownership, entitlement, CAS and audit checks. Linked payment edits now protect `is_pending`.
+- Goal/plan allocation balances and automatic reconciliation exclude pending income, expenses and transfers, including pending foreign-currency records.
+- Cloud reset uses an owner-verified transaction reversal RPC; transaction-phase failures roll back earlier reversals. The remaining reset/storage steps retain their separate-request behavior.
+- Added SQL regressions to finance isolation CI and client reset failure tests. All 251 JavaScript suites / 1,629 tests, typecheck and strict production compilation passed after the final owner-parameter change. Local PostgreSQL migration, tenant-isolation and integrity checks passed; old behavior failed each of the three targeted regressions. Production deployment and hosted CI/preview remain separate release steps.
+- [Implementation, validation and rollout](engineering/updates/2026-11-19-finance-integrity-audit-fixes.md).
+
 ## 2026-11-19 — Legal/privacy audit and centered Friends QR
 
 - Confirmed MOVO is a product of NasrinAI. Corrected encryption, cloud stickers, purchase tokens, Archive retention, reset/deletion and AI processor disclosures through shared core policy content and synchronized public pages.
