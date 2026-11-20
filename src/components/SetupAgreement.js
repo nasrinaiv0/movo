@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import { MovoMark } from './MovoLogo';
 import { t as tr } from '../lib/i18n';
@@ -17,10 +17,36 @@ export const AGREEMENT_POINTS = [
 
 export default function SetupAgreement({ onAccept, onOpenLegal, onDeleteAccount }) {
   const [agreed, setAgreed] = useState(false);
+  const dialogRef = useRef(null);
+  const titleRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    titleRef.current.focus({ preventScroll: true });
+
+    const keepFocusInDialog = event => {
+      if (event.key !== 'Tab' || event.defaultPrevented) return;
+      const controls = dialog.querySelectorAll('button:not(:disabled), input:not(:disabled)');
+      const active = document.activeElement;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+
+      // Start with the heading so the disclosure is announced before its controls.
+      // Query enabled controls at each Tab so acknowledgement can enable Accept.
+      if (!dialog.contains(active) || active === titleRef.current ||
+          active === (event.shiftKey ? first : last)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first)?.focus();
+      }
+    };
+    document.addEventListener('keydown', keepFocusInDialog);
+    return () => document.removeEventListener('keydown', keepFocusInDialog);
+  }, []);
+
   return <div className="setup-agreement" role="presentation">
-    <section className="setup-agreement-card" role="dialog" aria-modal="true" aria-labelledby="setup-agreement-title" aria-describedby="setup-agreement-text">
+    <section ref={dialogRef} className="setup-agreement-card" role="dialog" aria-modal="true" aria-labelledby="setup-agreement-title" aria-describedby="setup-agreement-text">
       <span className="setup-agreement-mark" aria-hidden="true"><MovoMark size={40} /></span>
-      <h2 id="setup-agreement-title">{tr('Before you start')}</h2>
+      <h2 ref={titleRef} id="setup-agreement-title" tabIndex={-1}>{tr('Before you start')}</h2>
       <p id="setup-agreement-text">{tr('Please read and accept to open MOVO.')}</p>
       <ul className="setup-agreement-points">
         {AGREEMENT_POINTS.map((p, i) => <li key={p.icon} style={{ '--i': i }}><span className="setup-agreement-icon" aria-hidden="true"><Icon name={p.icon} size={17} /></span><span>{tr(p.text)}</span></li>)}

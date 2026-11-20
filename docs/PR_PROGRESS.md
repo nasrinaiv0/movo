@@ -1,3 +1,10 @@
+## 2026-11-20 — Full production audit and accessibility remediation
+
+- Recorded the read-only production audit baseline at `44f3ab4d` with the responsive, financial, sharing, privacy, performance and store evidence. Mapped accounting, sheet/voice and storage work to existing PRs.
+- Added setup agreement keyboard containment and background isolation, corrected sheet reduced-motion timing, and aligned the PWA install name.
+- Local Node 26 strict production build and all 1,627 tests passed. Four Chromium cases verified keyboard, legal navigation and motion at three phone widths.
+- [Full audit and remedy matrix](audits/2026-11-20-full-movo-product-audit.md) · [Implementation and acceptance](engineering/updates/2026-11-20-product-audit-accessibility-remediation.md).
+
 ## 2026-11-19 — Legal/privacy audit and centered Friends QR
 
 - Confirmed MOVO is a product of NasrinAI. Corrected encryption, cloud stickers, purchase tokens, Archive retention, reset/deletion and AI processor disclosures through shared core policy content and synchronized public pages.
