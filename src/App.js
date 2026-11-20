@@ -2909,10 +2909,14 @@ function App() {
     }
   })();
 
+  const showSetupAgreement = setupGateOn && authReady && !locked && prefs.onboarded &&
+    prefs.planWelcomeSeen && !legalAccepted && !SETUP_READING.has(view) && sheet?.name !== 'deleteAccount';
+
   return <PlanProvider entitlement={entitlement} cloudMode={cloudMode} onUpgrade={feature => setSheet({ name: 'planOffer', feature })}><ConfirmProvider value={confirm}><div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
     {scenery && <div className="scenery" aria-hidden="true" style={{ backgroundImage: `url("${scenery}")` }} />}
     <div className="app-shell">
-      <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} data-view={view} key={view}>
+      <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} data-view={view} key={view}
+        inert={showSetupAgreement ? '' : undefined} aria-hidden={showSetupAgreement || undefined}>
         {preferenceOwner === null && hasUnassignedPreferences() && <div className="app-alert" role="status">
           <span>{tr('Older device preferences are saved for recovery and have not been assigned to an account. Contact support for help.')} <a href="mailto:support@nasrinai.com">support@nasrinai.com</a></span>
         </div>}
@@ -3045,7 +3049,7 @@ function App() {
         onClose={() => { setCloudPlanNotice(false); setPref('cloudPlanNoticeDay', todayKey); }} />}
       {/* Last setup step, after the free-month panel above: accept the Terms and Privacy Policy, then the dashboard
           opens. Reading either one returns here. */}
-      {setupGateOn && authReady && !locked && prefs.onboarded && prefs.planWelcomeSeen && !legalAccepted && !SETUP_READING.has(view) && sheet?.name !== 'deleteAccount' && <SetupAgreement onOpenLegal={openLegal}
+      {showSetupAgreement && <SetupAgreement onOpenLegal={openLegal}
         onDeleteAccount={session?.user ? () => setSheet({ name: 'deleteAccount' }) : undefined}
         onAccept={() => { setPrefs(cur => ({ ...cur, legalAccepted: LEGAL_ACCEPTANCE_DATE, legalAcceptedRevision: LEGAL_VERSION, legalAcceptedAt: new Date().toISOString() })); go('Home'); }} />}
       {locked && <LockScreen account={session?.user} onUnlock={unlock} onForgot={() => confirm({

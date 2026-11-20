@@ -87,6 +87,50 @@ describe('device speech fallback', () => {
     } finally { jest.useRealTimers(); }
   });
 
+  test('a synchronous WebKit interruption from watchdog cancel cannot swallow the retry', () => {
+    jest.useFakeTimers();
+    try {
+      const onEnd = jest.fn(); const onError = jest.fn();
+      synth.cancel.mockImplementation(() => synth.speak.mock.calls.at(-1)?.[0].onerror({ error: 'interrupted' }));
+      startDeviceSpeech('Retry these words', { onEnd, onError });
+      jest.advanceTimersByTime(3600);
+      expect(synth.speak).toHaveBeenCalledTimes(2);
+      expect(onEnd).not.toHaveBeenCalled();
+      const retry = synth.speak.mock.calls[1][0];
+      retry.onstart(); retry.onend();
+      expect(onEnd).toHaveBeenCalledTimes(1);
+      expect(onError).not.toHaveBeenCalled();
+    } finally { jest.useRealTimers(); }
+  });
+
+  test('a dropped later chunk is recovered without repeating the already-spoken chunk', () => {
+    jest.useFakeTimers();
+    try {
+      const onStart = jest.fn(); const onError = jest.fn();
+      startDeviceSpeech('word '.repeat(55), { onStart, onError });
+      const first = synth.speak.mock.calls[0][0];
+      first.onstart(); first.onend();
+      const second = synth.speak.mock.calls[1][0];
+      jest.advanceTimersByTime(3600);
+      expect(synth.speak).toHaveBeenCalledTimes(3);
+      expect(synth.speak.mock.calls[2][0].text).toBe(second.text);
+      synth.speak.mock.calls[2][0].onstart();
+      expect(onStart).toHaveBeenCalledTimes(1);
+      expect(onError).not.toHaveBeenCalled();
+    } finally { jest.useRealTimers(); }
+  });
+
+  test('cancelling during retry delay prevents subsequent playback', () => {
+    jest.useFakeTimers();
+    try {
+      const controller = startDeviceSpeech('Hello');
+      jest.advanceTimersByTime(3500);
+      controller.cancel();
+      jest.advanceTimersByTime(1000);
+      expect(synth.speak).toHaveBeenCalledTimes(1);
+    } finally { jest.useRealTimers(); }
+  });
+
   test('a started reply is never retried', () => {
     jest.useFakeTimers();
     try {

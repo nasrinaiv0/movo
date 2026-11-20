@@ -6,6 +6,96 @@
 - #328 is deployed after explicit approval. #327 merged as `73e293bf` after every applicable check passed; its tree matches tested head `305323ed`. #274 production erasure/retention approval and signed store/device acceptance remain separate gates.
 - [Execution handoff](engineering/handovers/2026-11-20-audit-gap-execution.md) · [Implementation](engineering/updates/2026-11-20-owner-preference-isolation.md).
 
+## 2026-11-20 — Open PR consolidation
+
+- #328 merged as `45b9e968` after its explicitly approved production migration and green hosted checks. Catalog verification confirms raw transaction writes denied and anonymous reset denied.
+- #327 integrates the complete #326 harness, current main accounting fixes and #329 setup/accessibility changes. Both source PR records are preserved. Final integrated CI must pass before merge.
+- #290 is superseded by #291; encryption and erasure remain separate reviews, with no permission inferred for additional production migrations.
+
+## 2026-11-20 — PR #327 isolate Pixel Launcher in the disposable AVD
+
+- The native build passed after runner alignment. The emulator reached an enabled Wallet control, but the failure screenshot showed the Android Pixel Launcher ANR dialog covering MOVO Home. Confirmed synthetic account recovery under the dialog.
+- Disable only the installed, exact Pixel Launcher package for user 0 after the disposable AVD has been verified and rooted. Force-stop that background package and verify its disabled state. Keep MOVO enabled and preserve every test assertion and timing limit.
+- Twenty host R8 tests pass. Exact-head compilation and paired device smoke are required again.
+
+## 2026-11-20 — PR #327 Android dependency runner alignment
+
+- Native Android jobs 44630551757 and 44648057066 both selected Ubuntu 26.04 and failed in Gradle classpath resolution before compilation. Pin the independent native build to Ubuntu 24.04, matching the established paired R8 workflow, and reuse the same Gradle dependency caching option.
+- All native build variants, package checks, dependency versions and failures remain intact. Run the native and paired emulator gates on the new head.
+- The preceding touch-input change passed 1,636 local tests and a strict build, 30 responsive browser checks, and hit-tested offline Wallet/Cards touch with the saved BPI logo and silver card. Android emulator acceptance remains separately required.
+
+## 2026-11-20 — PR #327 Android Wallet input recovery
+
+- Run 44630552132 restored the synthetic wallet and passed bridge/Activity recreation. A WebView evaluateJavascript callback stalled during the Wallet click. Use Android touchscreen events on the visible Wallet and Cards controls, while keeping rendered route, selected tab, saved card, bundled logo, frame, screenshot, synthetic callback and vault assertions.
+- Run 44630551757 stopped before compilation while resolving pinned Gradle dependencies. Requested a retry of the existing failed job, with no dependency or repository edits.
+- Local checks passed: 18 R8 and 25 iOS orchestration tests. The changed test APK requires exact-head GitHub compilation and paired emulator acceptance.
+- [Failure evidence and rollback](engineering/updates/2026-11-20-android-r8-controlled-experiment.md#pr-327-touch-input-for-offline-wallet-navigation).
+
+## 2026-11-20 — Solid popups, combined plans/limits and voice lifecycle repair
+
+- Consolidated Menu tools into Financial planning > Plans & limits, preserving local access and both editors. Replaced popup glass override with opaque light/dark surfaces; improved Plan & Usage, 44px close controls, focus/scroll behavior and 320px plan-row wrapping.
+- Fixed WebKit speech retry cancellation and later-chunk watchdogs. Preserve final recorded audio until encoder stop, with bounded 1.5-second release and immediate privacy/navigation cleanup.
+- 251 suites / 1,636 tests, typecheck, safety prebuild checks and strict production build pass; 30 responsive component render checks pass. Independent review corrections applied; Claude unavailable. Physical microphone/speaker acceptance remains required.
+- Vercel Sandbox billing and protected-preview temporary-access review block are documented. Local exact-source rendering used; no production secrets or access controls changed. Separate follow-on PR; only #326 has owner merge authorization.
+- [Implementation, evidence and device acceptance](engineering/updates/2026-11-20-solid-panels-planning-voice.md).
+
+## 2026-11-20 — PR #326 merge preparation and iOS launch recovery
+
+- Owner now authorizes fixing and merging PR #326 after passing CI and preview. Earlier experiment hold is superseded for this PR only; real-account OAuth and store billing acceptance remain separate release gates.
+- Merged current main into the experiment branch, preserving both progress records. Exact prior head f976d385 passed Android native, isolated paired R8/emulator, finance isolation, Phase 1 and Vercel; iOS compiled successfully but both launch calls timed out.
+- Corrected the misleading cold-boot retry: after a launch timeout, require shutdown/boot/bootstatus before one final launch. App crashes, recovery errors and repeated timeout remain hard failures; native URL and screenshot stay mandatory.
+- Independent native review completed (Claude is unavailable). Python orchestration and R8 tests are rerun before commit. The new exact head must pass hosted native CI and preview before merge; no store upload authorized.
+
+## 2026-11-20 — Match the Android Wallet screenshot to the verified Cards view
+
+- Exact run 44601407555 at 46e5d31cde48f5976172c97d61c6ca104aef2f70 passed both minified builds, the diagnostic analyzer and all ten emulator checks. The controlled rule produced identical 1,366,480-byte DEX files. The newest iOS job is separate.
+- Reviewing the emulator images showed that the Wallet assertion could inspect a card in the All view and capture the transition frame. Assert the Cards filter is selected, scope the bank artwork and style assertion to the Cards deck, then wait for the WebView frame before recording the screenshot. The app and optimization rules are unchanged.
+- Fifteen Python tests and the Node 26 browser fixture check pass. The selected-Cards assertion and screenshots must pass on both minified build variants.
+
+## 2026-11-20 — Back off on Maven Central throttling in the R8 experiment
+
+- Attempts 1 and 2 of 44599470076 at 42eb503c50f4b9417febeaaea8da616869724519 hit Maven Central HTTP 429 before the Kotlin/Gradle dependencies resolved. The separate Android native security and test-signing jobs passed.
+- Cache Gradle dependencies in the isolated workflow. If the official Maven Central endpoint explicitly reports 429, preserve the failed log and wait 60 then 120 seconds before retrying the same build. Java/Kotlin failures propagate immediately. The final failure always fails the experiment.
+- Fifteen local Python tests pass, including bounded retries, preserved logs and immediate compiler failures. Browser offline Wallet verification with the synthetic fixture also passed. Re-run the hosted KVM experiment at the new head.
+
+## 2026-11-20 — Verify offline Wallet after a separate process restart
+
+- Run 44590024327 at 4eee1fb3a9880da9541fde89242dde668843d67e passed cold launch, the framework instrumentation test and encrypted bridge storage through Activity recreation. The Wallet test stayed on Home after a click. Its screenshot shows the fixture profile and a -₱125.50 balance on offline Home, confirming that the app read the synthetic wallet.
+- The old test could match Home before the asynchronous WebView reload replaced the document. Seed in a dedicated instrumentation invocation, then force-stop and open a fresh process behind the existing emulator-wide firewall. Require the saved account, offline browser state and enabled Wallet/Cards controls before exercising the actual Wallet and callback UI. Print a small, synthetic-only DOM state summary on assertion timeout.
+- Upload a separate small emulator evidence archive alongside the full R8 build artifacts. This change is restricted to experiment code and its workflow. Thirteen local Python checks pass; the complete paired emulator run must pass at the new head.
+
+## 2026-11-20 — Run the release smoke checks without AndroidX test dependencies
+
+- Experiment 44586272868 on 742ae42937fdcb6d243ff198dd75a8d58147aaa4 built the two minified releases and ran the official analyzer. R8 8.13.6 output was byte-identical for the paired DEX (1,366,480 bytes) and APK/AAB sizes matched. The R8 9.4.34 pair matched at 92.58% optimization, 93.44% obfuscation and 93.25% shrinking, with 1,351,216 DEX bytes each. These are diagnostic scores from a different compiler, and the removed keep rule produced zero gain.
+- The emulator booted and cold launch completed. The crash buffer shows AndroidJUnitRunner preparing the application fell into a missing method in a target-loaded class, followed by missing androidx.tracing.Trace. No bridge assertion had run.
+- Use the framework Instrumentation class for the opt-in release test APK and give it a dedicated source directory. Keep ordinary AndroidX test configuration and application keep rules intact. Verify an explicit case-specific result plus the framework success code and print the bounded crash buffer on failure. Preserve bridge, secure-storage, Activity/process, offline wallet and OAuth error checks.
+- Thirteen Python tests and whitespace verification pass. The controlled build, analyzer and emulator must rerun at the new head.
+
+## 2026-11-20 — Repair R8 instrumentation-only compiler annotation dependency
+
+- Exact head 79fd7f72c6f086d0e7060a4c7ed6ce61d00eb83a failed native experiment run 44585073902 at minifyReleaseAndroidTestWithR8, after the app release APK/AAB tasks succeeded. The test dependency's Error Prone CLASS-retention annotation references absent JDK compiler enum javax.lang.model.element.Modifier.
+- Add only that missing-type diagnostic rule to an opt-in testProguardFiles file. Keep the instrumentation class name stable for explicit am instrument class/method selection. Application proguardFiles and the measured baseline/candidate rules are unchanged.
+- Thirteen Python checks pass. Updated engineering record before committing. Re-run native compilation and emulator checks at the new exact head; no score/size result is claimed from the failed run. Main, production and stores unchanged.
+
+## 2026-11-20 — Publish measured R8 evidence in job logs
+
+- Emit each completed baseline/candidate metrics JSON into the workflow's text log, including real analyzer scores/rule impact, hashes and DEX bytes. Artifact evidence remains unchanged. This allows independent review without downloading the binary artifact ZIP.
+- Thirteen Python checks and whitespace verification pass. The dated engineering note was updated before commit. Exact-head CI must complete; no gain is claimed while builds run. Main/production/store unchanged.
+
+## 2026-11-20 — R8 review follow-up: pin screenshot evidence target
+
+- Follow-up independent review confirmed both safety fixes and 13 passing Python checks; identified the direct binary screencap subprocess as the only remaining ADB invocation without the verified serial. Pin that command as well, so device evidence cannot drift if another ADB target connects. This affects evidence capture only.
+- Updated the dated engineering record before committing. Native CI must rerun on the new exact head; no main, production or store changes.
+
+## 2026-11-20 — Isolated Android R8 measurement and release emulator gate
+
+- Continued the Android optimization handoff from main `a3193b8361e32ea559d8350deaeb6a3e75041759`. No changes to main, production, store uploads or signing secrets.
+- Candidate removes only the redundant class-specific MovoNativePlugin keep; the annotation-based full plugin keep remains. No size/score gain is claimed before matched measurements.
+- Added a read-only-permission PR workflow: identical bundled UI, temporary synthetic signing, default-compiler baseline/candidate APK+AAB and diagnostic R8 9.4.34 baseline/candidate with Google's pinned analyzer. Restores original settings/rules and uploads source hashes, mappings, DEX bytes, reports, logs and screenshots.
+- Opt-in instrumentation targets non-debuggable minified releases. Checks reflected bridge contracts, secure-storage ciphertext/round-trip/removal, activity and separate-process restart, offline bundled bank logo/card style, and a synthetic OAuth provider error callback. Successful live login and Play/Apple billing are separate unverified gates.
+- Independent Codex review found and fixed two harness defects: refuse physical/ambiguous ADB devices before any root/network/uninstall operation, and reject skipped/assumption-failed instrumentation as failures. Claude is unavailable in this runtime; no Claude review is claimed.
+- Local Python verification: 13 tests passed; diff whitespace check passed. Native SDK/KVM are unavailable in the managed workspace. Vercel Sandbox returned HTTP 402 payment_required and no Vercel CLI is installed; run native measurements on disposable GitHub KVM runner.
+- Engineering evidence and acceptance limits: `docs/engineering/updates/2026-11-20-android-r8-controlled-experiment.md`. Documentation recorded before committing/publishing. Do not merge or promote this experiment without complete native and real-account/store acceptance.
 ## 2026-11-19 — Finance integrity audit fixes
 
 - Restricted direct transaction UPDATE/DELETE privileges; sync and reversal RPCs retain ownership, entitlement, CAS and audit checks. Linked payment edits now protect `is_pending`.
@@ -13,6 +103,12 @@
 - Cloud reset uses an owner-verified transaction reversal RPC; transaction-phase failures roll back earlier reversals. The remaining reset/storage steps retain their separate-request behavior.
 - Added SQL regressions to finance isolation CI and client reset failure tests. All 251 JavaScript suites / 1,629 tests, typecheck and strict production compilation passed after the final owner-parameter change. Local PostgreSQL migration, tenant-isolation and integrity checks passed; old behavior failed each of the three targeted regressions. Production deployment and hosted CI/preview remain separate release steps.
 - [Implementation, validation and rollout](engineering/updates/2026-11-19-finance-integrity-audit-fixes.md).
+## 2026-11-20 — Full production audit and accessibility remediation
+
+- Recorded the read-only production audit baseline at `44f3ab4d` with the responsive, financial, sharing, privacy, performance and store evidence. Mapped accounting, sheet/voice and storage work to existing PRs.
+- Added setup agreement keyboard containment and background isolation, corrected sheet reduced-motion timing, and aligned the PWA install name.
+- Local Node 26 strict production build and all 1,627 tests passed. Four Chromium cases verified keyboard, legal navigation and motion at three phone widths.
+- [Full audit and remedy matrix](audits/2026-11-20-full-movo-product-audit.md) · [Implementation and acceptance](engineering/updates/2026-11-20-product-audit-accessibility-remediation.md).
 
 ## 2026-11-19 — Legal/privacy audit and centered Friends QR
 
@@ -1455,3 +1551,17 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ### 2026-11-15 — PR #304 manifest regression test update (documented before commit)
 - Old `androidManifestRelease.test.js` assumed `android:scheme="movo"` was hardcoded twice in source, but new secure build contract uses a placeholder for the auth callback. Retain strict security assertions: placeholder is present, production and authTest build types use **distinct exact values**, quick-log scheme remains `movo`, no wildcard/catchall/secret payload, and backups disabled.
 - Native build's `aapt` manifest verification remains mandatory; this is not a test bypass. Require exact-head full CI rerun and Android real-device acceptance. No production changes.
+
+
+## 2026-11-20 — PR #326 stalled emulator continuation (pre-implementation)
+- Run 44620678294 completed compiler comparisons, but its emulator step remained active for over 30 minutes; the precise command is unconfirmed because live logs are unavailable.
+- Preserve the explicit WebView frame/screenshot assertions, remove the newly added unbounded post-frame idle wait, bound ADB/instrumentation and the workflow step, and retain partial timeout output plus independent diagnostics.
+- Every timeout remains a hard failure. New Python regressions and exact-head native CI are required; no store upload or broader release approval. See the Android R8 engineering update.
+- Local validation after implementation: all 18 R8 Python tests and whitespace checks pass. Native exact-head evidence is pending; no timeout is converted into success.
+
+
+## 2026-11-20 — R8 synthetic fixture startup race (pre-implementation)
+- Completed run 44627570656 shows a first-run tour instead of restored synthetic settings/account after an in-app fixture write.
+- Seed the fresh disposable installation's native Preferences synchronously before its first activity, refuse nonempty preferences, verify restore through the real bridge, and preserve every later acceptance assertion. Application/production storage code is unchanged.
+- After implementation: 18 R8 Python tests and whitespace checks pass; native fixture compilation and paired emulator acceptance remain pending.
+- PR #326 at 56b36b10 passed both emulator variants. This additional fixture repair is for PR #327 only and does not move the verified #326 head.
