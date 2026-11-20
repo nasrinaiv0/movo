@@ -24,6 +24,9 @@ export async function getLocalAttachment(key) {
   }); } finally { db.close(); }
 }
 export async function clearLocalAttachments() {
+  // No IndexedDB means this storage backend cannot contain an accessible file.
+  // An unavailable database API must not prevent clearing local finance data.
+  if (typeof indexedDB === 'undefined') return;
   const db = await open();
   try { await new Promise((resolve, reject) => {
     const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').clear();

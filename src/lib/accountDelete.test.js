@@ -2,31 +2,29 @@ describe('POST /api/account/delete', () => {
   const userId = '123e4567-e89b-42d3-a456-426614174000';
   let calls;
   let storageError;
-  let transactionError;
-  let userError;
+  let requestError;
+  let eraseError;
   let handler;
 
   beforeEach(() => {
     calls = [];
     storageError = null;
-    transactionError = null;
-    userError = null;
+    requestError = null;
+    eraseError = null;
     jest.resetModules();
     jest.doMock('@supabase/supabase-js', () => ({
       createClient: (url, key) => (key === 'service'
         ? {
           from: (table) => ({
-            delete: () => ({
-              eq: async (column, value) => {
-                calls.push(['delete', table, column, value]);
-                return { error: transactionError };
-              },
-            }),
+            upsert: async (row, options) => {
+              calls.push(['upsert', table, row, options]);
+              return { error: requestError };
+            },
           }),
-          auth: { admin: { deleteUser: async (id) => {
-            calls.push(['deleteUser', id]);
-            return { error: userError };
-          } } },
+          rpc: async (name, args) => {
+            calls.push(['rpc', name, args]);
+            return { error: eraseError };
+          },
           storage: { from: (bucket) => ({
             list: async (prefix) => {
               calls.push(['list', bucket, prefix]);
@@ -86,18 +84,33 @@ describe('POST /api/account/delete', () => {
     expect(calls).toContainEqual(['remove', 'movo-account-qrs', userId + '/accounts/qr.png']);
     expect(calls).toContainEqual(['remove', 'movo-receipts', userId + '/transactions/receipt.pdf']);
     const lastStorageRemove = Math.max(...calls.map((call, index) => call[0] === 'remove' ? index : -1));
-    const transactionDelete = calls.findIndex((call) => call[0] === 'delete' && call[1] === 'transactions');
-    const authDelete = calls.findIndex((call) => call[0] === 'deleteUser');
-    expect(lastStorageRemove).toBeLessThan(transactionDelete);
-    expect(transactionDelete).toBeLessThan(authDelete);
+    expect(calls[1]).toEqual(['upsert', 'movo_account_erasure_requests', { user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true }]);
+    expect(calls[lastStorageRemove + 1]).toEqual(['rpc', 'movo_finish_account_erasure', { p_user_id: userId }]);
   });
 
   test('does not delete database or auth data when storage cleanup fails', async () => {
     storageError = { message: 'storage unavailable', statusCode: '500' };
     const result = await invoke();
     expect(result.statusCode).toBe(500);
-    expect(calls.some((call) => call[0] === 'delete')).toBe(false);
-    expect(calls.some((call) => call[0] === 'deleteUser')).toBe(false);
+    expect(calls.some((call) => call[0] === 'rpc')).toBe(false);
+  });
+
+  test('can retry the same verified account after a relational failure', async () => {
+    eraseError = { message: 'database unavailable' };
+    expect((await invoke({ body: { confirm: 'DELETE', userId: 'wrong-account' } })).statusCode).toBe(500);
+    eraseError = null;
+    expect((await invoke()).body).toEqual({ deleted: true });
+    expect(calls.filter(call => call[0] === 'rpc')).toEqual([
+      ['rpc', 'movo_finish_account_erasure', { p_user_id: userId }],
+      ['rpc', 'movo_finish_account_erasure', { p_user_id: userId }],
+    ]);
+  });
+
+  test('clear uses a separate route and preserves the sign-in account', async () => {
+    handler = require('../../api/account/clear');
+    expect((await invoke()).body).toEqual({ cleared: true });
+    expect(calls.some(call => call[0] === 'upsert')).toBe(false);
+    expect(calls.at(-1)).toEqual(['rpc', 'movo_clear_cloud_records', { p_user_id: userId }]);
   });
 
   test('requires explicit confirmation and authenticated ownership', async () => {

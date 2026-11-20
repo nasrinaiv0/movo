@@ -26,6 +26,24 @@ class IosSimulatorSmokeTests(unittest.TestCase):
         import json
         self.assertEqual("warm", smoke.choose_iphone(json.dumps(devices))["udid"])
 
+    def test_recovery_restarts_just_selected_device_without_erasing(self):
+        runner = mock.Mock()
+        smoke.recover_stalled_simulator("device1", runner=runner)
+        self.assertEqual([
+            ["xcrun", "simctl", "shutdown", "device1"],
+            ["xcrun", "simctl", "boot", "device1"],
+            ["xcrun", "simctl", "bootstatus", "device1", "-b"],
+        ], [call.args[0] for call in runner.call_args_list])
+        self.assertEqual([90, 90, 450], [call.kwargs["timeout"] for call in runner.call_args_list])
+
+    def test_failed_recovery_does_not_hide_a_failed_launch(self):
+        runner = mock.Mock(side_effect=smoke.SmokeFailure("launch IPC timeout", timed_out=True))
+        recovery = mock.Mock(side_effect=smoke.SmokeFailure("CoreSimulator reboot failed"))
+        with self.assertRaisesRegex(smoke.SmokeFailure, "reboot failed"):
+            smoke.launch_with_cold_boot_retry("device1", runner=runner, sleeper=mock.Mock(), recovery=recovery)
+        runner.assert_called_once()
+        recovery.assert_called_once_with("device1")
+
     def test_prefers_newest_ios_runtime_over_booted_older_one(self):
         devices = {"devices": {
             "com.apple.CoreSimulator.SimRuntime.iOS-26-2": [

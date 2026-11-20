@@ -157,7 +157,7 @@ describe('MOVO store purchase verification', () => {
     await verifyApple('signed',userId);
     expect(verifiedEnvironments.every(e=>e==='Production')).toBe(true);
   });
-  test.each(['SUBSCRIPTION_STATE_PENDING','SUBSCRIPTION_STATE_PAUSED','SUBSCRIPTION_STATE_ON_HOLD','SUBSCRIPTION_STATE_EXPIRED'])('does not grant access for %s',async state=>{
+  test.each(['SUBSCRIPTION_STATE_PENDING','SUBSCRIPTION_STATE_PENDING_PURCHASE_CANCELED','SUBSCRIPTION_STATE_PAUSED','SUBSCRIPTION_STATE_ON_HOLD','SUBSCRIPTION_STATE_EXPIRED'])('does not grant access for %s',async state=>{
     googleOverrides.subscriptionState=state;
     const result=await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId);
     expect(['active','grace_period']).not.toContain(result.status);
