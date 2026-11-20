@@ -12,6 +12,7 @@ PACKAGE = "com.nasrinai.movo"
 TEST_PACKAGE = PACKAGE + ".test"
 CLASS = PACKAGE + ".r8.ReleaseBridgeSmokeTest"
 RUNNER = TEST_PACKAGE + "/" + CLASS
+PIXEL_LAUNCHER = "com.google.android.apps.nexuslauncher"
 ADB_SERIAL = None
 
 
@@ -63,6 +64,22 @@ def require_disposable_emulator(opt_in):
         ADB_SERIAL = None
         raise RuntimeError("ADB target did not prove it is an emulator")
     return serial
+
+
+def disable_pixel_launcher():
+    """Keep a background launcher ANR from covering the app under test."""
+    if not ADB_SERIAL:
+        raise RuntimeError("Require the verified disposable emulator before changing its launcher")
+    package = "package:" + PIXEL_LAUNCHER
+    installed = adb("shell", "pm", "list", "packages", "--user", "0", PIXEL_LAUNCHER)
+    if package not in installed.splitlines():
+        return
+    adb("shell", "pm", "disable-user", "--user", "0", PIXEL_LAUNCHER)
+    adb("shell", "am", "force-stop", "--user", "0", PIXEL_LAUNCHER)
+    disabled = adb("shell", "pm", "list", "packages", "-d", "--user", "0", PIXEL_LAUNCHER)
+    if package not in disabled.splitlines():
+        raise RuntimeError("Could not isolate the Pixel Launcher on the disposable emulator")
+    print("Disabled the Pixel Launcher on the disposable emulator.", flush=True)
 
 
 def instrument(folder, method, legal, phase=None):
@@ -127,6 +144,7 @@ def main():
     (output / "legal-fixture.json").write_text(json.dumps(legal, indent=2) + "\n")
     adb("root")
     adb("wait-for-device")
+    disable_pixel_launcher()
     # google_apis (not Play Store) images support root. Fail if network isolation
     # cannot be established. ADB uses the emulator transport, not Android OUTPUT.
     adb("shell", "svc", "wifi", "disable")

@@ -1,3 +1,9 @@
+## 2026-11-20 — PR #327 isolate Pixel Launcher in the disposable AVD
+
+- The native build passed after runner alignment. The emulator reached an enabled Wallet control, but the failure screenshot showed the Android Pixel Launcher ANR dialog covering MOVO Home. Confirmed synthetic account recovery under the dialog.
+- Disable only the installed, exact Pixel Launcher package for user 0 after the disposable AVD has been verified and rooted. Force-stop that background package and verify its disabled state. Keep MOVO enabled and preserve every test assertion and timing limit.
+- Twenty host R8 tests pass. Exact-head compilation and paired device smoke are required again.
+
 ## 2026-11-20 — PR #327 Android dependency runner alignment
 
 - Native Android jobs 44630551757 and 44648057066 both selected Ubuntu 26.04 and failed in Gradle classpath resolution before compilation. Pin the independent native build to Ubuntu 24.04, matching the established paired R8 workflow, and reuse the same Gradle dependency caching option.

@@ -40,6 +40,29 @@ class EmulatorSafetyTests(unittest.TestCase):
             smoke.adb('shell', 'true')
             self.assertEqual(run.call_args.args[0], ['adb', '-s', 'emulator-5554', 'shell', 'true'])
 
+    def test_launcher_setup_requires_a_verified_emulator(self):
+        with patch.object(smoke, 'adb') as adb, self.assertRaises(RuntimeError):
+            smoke.disable_pixel_launcher()
+        adb.assert_not_called()
+
+    def test_launcher_setup_only_disables_pixel_launcher_and_verifies_it(self):
+        smoke.ADB_SERIAL = 'emulator-5554'
+        launcher = 'com.google.android.apps.nexuslauncher'
+        package = 'package:' + launcher + '\n'
+        with patch.object(smoke, 'adb', return_value='package:' + launcher + '.other\n') as adb:
+            smoke.disable_pixel_launcher()
+            adb.assert_called_once_with('shell', 'pm', 'list', 'packages', '--user', '0', launcher)
+        with patch.object(smoke, 'adb', side_effect=[package, '', '', package]) as adb:
+            smoke.disable_pixel_launcher()
+            self.assertEqual([c.args for c in adb.call_args_list], [
+                ('shell', 'pm', 'list', 'packages', '--user', '0', launcher),
+                ('shell', 'pm', 'disable-user', '--user', '0', launcher),
+                ('shell', 'am', 'force-stop', '--user', '0', launcher),
+                ('shell', 'pm', 'list', 'packages', '-d', '--user', '0', launcher),
+            ])
+        with patch.object(smoke, 'adb', side_effect=[package, '', '', '']), self.assertRaises(RuntimeError):
+            smoke.disable_pixel_launcher()
+
     def test_only_matching_explicit_framework_success_counts(self):
         legal = {'date': '2026-11-19', 'revision': ''}
         passed = 'INSTRUMENTATION_RESULT: stream=\nMOVO_R8_SMOKE_PASS testMethod\nINSTRUMENTATION_CODE: -1\n'
