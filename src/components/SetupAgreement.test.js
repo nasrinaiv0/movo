@@ -44,3 +44,37 @@ test('a signed-in owner can request deletion without accepting revised terms or 
   expect(accept).not.toHaveBeenCalled();
   act(() => root.unmount()); container.remove();
 });
+
+test('focus starts on the heading and wraps between enabled controls', () => {
+  const background = document.createElement('button');
+  const container = document.createElement('div');
+  document.body.append(background, container);
+  const root = createRoot(container);
+  act(() => root.render(<SetupAgreement onAccept={() => {}} onOpenLegal={() => {}} />));
+  const heading = container.querySelector('h2');
+  const terms = container.querySelector('.setup-agreement-links button');
+  const checkbox = container.querySelector('input');
+  const accept = container.querySelector('.setup-agreement-accept');
+  const tab = (shiftKey = false) =>
+    document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true }));
+
+  expect(document.activeElement).toBe(heading);
+  expect(tab()).toBe(false);
+  expect(document.activeElement).toBe(terms);
+  expect(tab(true)).toBe(false);
+  expect(document.activeElement).toBe(checkbox);
+  expect(tab()).toBe(false);
+  expect(document.activeElement).toBe(terms);
+  act(() => checkbox.click());
+  expect(tab(true)).toBe(false);
+  expect(document.activeElement).toBe(accept);
+  background.focus();
+  expect(tab()).toBe(false);
+  expect(document.activeElement).toBe(terms);
+
+  act(() => root.unmount());
+  background.focus();
+  expect(tab()).toBe(true);
+  container.remove();
+  background.remove();
+});

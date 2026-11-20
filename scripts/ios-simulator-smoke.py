@@ -67,10 +67,13 @@ def choose_iphone(simulator_json):
 
 
 def launch_with_cold_boot_retry(device_id, *, runner=run_command, sleeper=time.sleep):
-    """Retry only a launch TIMEOUT: startup can lag after slow CoreSimulator migrations.
+    """Cold restart the disposable CI simulator after one launch timeout.
 
-    Never retry a nonzero app-launch exit code, which may represent an app crash.
-    A second timeout must still fail CI; no launch step is skipped.
+    A booted simulator can retain stuck launch services after first-boot migration;
+    sleeping and repeating the same launch does not reset those services. Preserve
+    the installed app, require shutdown/boot/bootstatus to succeed, then retry once.
+    Never recover a nonzero launch exit, which may represent an app crash. A second
+    timeout still fails CI; deep-link and screenshot checks remain mandatory.
     """
     launch = ["xcrun", "simctl", "launch", device_id, BUNDLE_ID]
     for attempt in (1, 2):
@@ -81,7 +84,10 @@ def launch_with_cold_boot_retry(device_id, *, runner=run_command, sleeper=time.s
             if not error.timed_out or attempt == 2:
                 raise
             print("::warning::CoreSimulator launch timed out on first attempt; "
-                  "waiting 15 seconds for post-boot services, then retrying once.", flush=True)
+                  "cold restarting the disposable simulator before one final launch.", flush=True)
+            runner(["xcrun", "simctl", "shutdown", device_id], timeout=90)
+            runner(["xcrun", "simctl", "boot", device_id], timeout=90)
+            runner(["xcrun", "simctl", "bootstatus", device_id, "-b"], timeout=450)
             sleeper(15)
     raise SmokeFailure("Simulator launch did not complete")
 

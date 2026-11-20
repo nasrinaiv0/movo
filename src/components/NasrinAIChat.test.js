@@ -518,6 +518,88 @@ describe('NasrinAI consent and legal links', () => {
       }
     });
 
+    test('keeps capture alive until an asynchronous final recorder event and transcribes the complete clip', async () => {
+      let finishRecording;
+      let now = 10000;
+      jest.spyOn(Date, 'now').mockImplementation(() => now);
+      jest.spyOn(MediaRecorder.prototype, 'stop').mockImplementation(function () {
+        this.state = 'inactive';
+        finishRecording = () => {
+          // Safari must still have the capture session when it flushes encoded bytes.
+          expect(track.stop).not.toHaveBeenCalled();
+          expect(contexts[0].close).not.toHaveBeenCalled();
+          this.ondataavailable?.({ data: new Blob(['final clip '.repeat(30)], { type: 'audio/mp4' }) });
+          this.onstop?.();
+        };
+      });
+      global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ text: 'Complete final words' }) });
+      await startCapture();
+      now += 1000;
+      act(() => button('End voice conversation').click());
+      expect(track.stop).not.toHaveBeenCalled();
+      await act(async () => finishRecording());
+      await settleVoice();
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(contexts[0].close).toHaveBeenCalledTimes(1);
+      expect(container.querySelector('#movo-ai-prompt').value).toBe('Complete final words');
+    });
+
+    test.each(['consent withdrawal', 'unmount'])('releases a pending final recording immediately on %s and ignores late encoded data', async kind => {
+      let finishRecording;
+      let now = 10000;
+      jest.spyOn(Date, 'now').mockImplementation(() => now);
+      jest.spyOn(MediaRecorder.prototype, 'stop').mockImplementation(function () {
+        this.state = 'inactive';
+        finishRecording = () => {
+          this.ondataavailable?.({ data: new Blob(['late clip '.repeat(30)], { type: 'audio/mp4' }) });
+          this.onstop?.();
+        };
+      });
+      await startCapture();
+      now += 1000;
+      act(() => button('End voice conversation').click());
+      expect(track.stop).not.toHaveBeenCalled();
+      expect(contexts[0].close).not.toHaveBeenCalled();
+      await act(async () => {
+        if (kind === 'unmount') root.render(<p>Home</p>);
+        else setAIConsent('user-1', false);
+      });
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(contexts[0].close).toHaveBeenCalledTimes(1);
+      await act(async () => finishRecording());
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(contexts[0].close).toHaveBeenCalledTimes(1);
+      if (kind !== 'unmount') expect(container.querySelector('#movo-ai-prompt').value).toBe('');
+    });
+
+    test('releases capture after 1500 ms when the encoder never emits its final stop event', async () => {
+      let now = 10000;
+      jest.spyOn(Date, 'now').mockImplementation(() => now);
+      jest.spyOn(MediaRecorder.prototype, 'stop').mockImplementation(function () { this.state = 'inactive'; });
+      await startCapture();
+      jest.useFakeTimers();
+      try {
+        now += 1000;
+        act(() => button('End voice conversation').click());
+        act(() => jest.advanceTimersByTime(1499));
+        expect(track.stop).not.toHaveBeenCalled();
+        expect(contexts[0].close).not.toHaveBeenCalled();
+        act(() => jest.advanceTimersByTime(1));
+        expect(track.stop).toHaveBeenCalledTimes(1);
+        expect(contexts[0].close).toHaveBeenCalledTimes(1);
+        expect(global.fetch).not.toHaveBeenCalled();
+      } finally { jest.useRealTimers(); }
+    });
+
+    test('works when the recorder exposes no optional MIME capability probe', async () => {
+      MediaRecorder.isTypeSupported = undefined;
+      await startCapture();
+      expect(button('End voice conversation')).toBeTruthy();
+      expect(recorders[0].state).toBe('recording');
+      expect(track.stop).not.toHaveBeenCalled();
+    });
+
     test('shows a transcription error if the final recording cannot be transcribed', async () => {
       const originalNow = Date.now;
       let now = 10000;
