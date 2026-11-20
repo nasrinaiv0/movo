@@ -332,7 +332,10 @@ export async function deleteAllCloudData(userId) {
   const client = requireClient();
   // Remove private QR objects before account rows are cleared; RLS restricts this to the current owner.
   await removeAllAccountQr(userId);
-  for (const table of ['transactions', 'budgets', 'financial_accounts', 'movo_ai_conversations']) {
+  // Direct transaction deletes are denied: reverse linked financial effects first.
+  // Fail closed when the migration is unavailable; never fall back to raw deletes.
+  unwrap(await client.rpc('delete_all_transactions_with_reversals', { p_expected_user_id: userId }));
+  for (const table of ['budgets', 'financial_accounts', 'movo_ai_conversations']) {
     unwrap(await client.from(table).delete().eq('user_id', userId));
   }
   // Synced preferences live in an optional table: if its migration is not applied yet there is nothing to delete.
