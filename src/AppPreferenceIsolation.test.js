@@ -20,6 +20,8 @@ jest.mock('./screens/Home', () => {
 jest.mock('./lib/offlineSyncCloudAdapter', () => ({ ...jest.requireActual('./lib/offlineSyncCloudAdapter'), fetchOfflineSyncCloud: async () => ({ financial_accounts: [], transactions: [] }) }));
 const mockLoadPreferences = jest.fn();
 const mockSavePreferences = jest.fn();
+const mockClearCloud = jest.fn();
+const mockDeleteAccount = jest.fn();
 const mockRefreshEntitlement = jest.fn();
 const mockGetEntitlements = jest.fn();
 jest.mock('./lib/nativePurchases', () => ({
@@ -42,6 +44,8 @@ jest.mock('./lib/financeRepository', () => ({
   listAccounts: async () => [], listTransactions: async () => [],
   listBudgets: async () => [], listAutomationInbox: async () => [],
   loadPreferences: (...args) => mockLoadPreferences(...args), savePreferences: (...args) => mockSavePreferences(...args),
+  deleteAllCloudData: (...args) => mockClearCloud(...args),
+  deleteMyAccount: (...args) => mockDeleteAccount(...args),
   purgeArchivedAutomations: async () => null, listArchivedAutomations: async () => [],
 }));
 jest.mock('./lib/obligationsRepository', () => ({
@@ -101,6 +105,8 @@ describe('account preference isolation through real App auth transitions', () =>
     savePreferenceScope(B, { ...setup, profileName: 'Bob', subscriptions: [{ id: 'b', name: 'Owner B private' }] }, []);
     mockLoadPreferences.mockReset().mockResolvedValue(null);
     mockSavePreferences.mockReset().mockResolvedValue(null);
+    mockClearCloud.mockReset().mockResolvedValue(null);
+    mockDeleteAccount.mockReset().mockResolvedValue(true);
     recoverHybridWorkspace.mockReset().mockResolvedValue(null);
     container = document.createElement('div'); document.body.appendChild(container);
     root = createRoot(container);
@@ -150,6 +156,78 @@ describe('account preference isolation through real App auth transitions', () =>
     expect(localStorage.getItem('movo.customStickers.v1')).toBe(survivingArtwork);
     expect(mockLoadPreferences).not.toHaveBeenCalledWith(B);
     expect(mockSavePreferences.mock.calls.filter(([owner]) => owner === B)).toEqual([]);
+  });
+
+  const submitClear = async (name = 'clear') => {
+    await act(async () => { mockContext.setSheet({ name }); });
+    const input = container.querySelector('input[aria-label="Type DELETE to confirm"]');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'DELETE');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      container.querySelector('[role="dialog"] form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+  };
+
+  test('clearing B preserves A, guest and unassigned preference recovery copies', async () => {
+    await auth(B);
+    const a = localStorage.getItem(preferenceScopeKey(A));
+    const guest = localStorage.getItem(preferenceScopeKey(null));
+    const recovery = '[{"preferences":"synthetic-unassigned","stickers":null}]';
+    localStorage.setItem(PREFERENCE_RECOVERY, recovery);
+    localStorage.setItem('movo.preferences.recovery.pending.v1', 'true');
+    await submitClear();
+    expect(mockClearCloud).toHaveBeenCalledWith(B);
+    expect(localStorage.getItem(preferenceScopeKey(A))).toBe(a);
+    expect(localStorage.getItem(preferenceScopeKey(null))).toBe(guest);
+    expect(localStorage.getItem(PREFERENCE_RECOVERY)).toBe(recovery);
+    expect(localStorage.getItem('movo.preferences.recovery.pending.v1')).toBe('true');
+    expect(readPreferenceScope({}, B).prefs.subscriptions).toEqual([]);
+  });
+
+  test('a clear request started by A cannot reset B after an account switch', async () => {
+    let releaseClear;
+    mockClearCloud.mockImplementation(() => new Promise(resolve => { releaseClear = resolve; }));
+    await auth(A);
+    await submitClear();
+    expect(releaseClear).toEqual(expect.any(Function));
+    await auth(B);
+    const b = localStorage.getItem(preferenceScopeKey(B));
+    await act(async () => { releaseClear(); await new Promise(resolve => setTimeout(resolve, 100)); });
+    expect(localStorage.getItem(preferenceScopeKey(B))).toBe(b);
+    expect(container.textContent).toContain('Bob');
+  });
+
+  test('an account deletion response for A cannot erase B device preferences', async () => {
+    let releaseDeletion;
+    mockDeleteAccount.mockImplementation(() => new Promise(resolve => { releaseDeletion = resolve; }));
+    await auth(A);
+    await submitClear('deleteAccount');
+    expect(mockDeleteAccount).toHaveBeenCalledWith(A);
+    await auth(B);
+    const b = localStorage.getItem(preferenceScopeKey(B));
+    await act(async () => { releaseDeletion(true); await new Promise(resolve => setTimeout(resolve, 100)); });
+    expect(localStorage.getItem(preferenceScopeKey(B))).toBe(b);
+    expect(container.textContent).toContain('Bob');
+  });
+
+  test('a switch during A device cleanup leaves B preferences usable', async () => {
+    await auth(A);
+    let releaseCleanup;
+    const cleanup = jest.spyOn(require('./lib/hybridLocalStore'), 'clearHybridOwner')
+      .mockImplementation(() => new Promise(resolve => { releaseCleanup = resolve; }));
+    try {
+      await submitClear('deleteAccount');
+      expect(cleanup).toHaveBeenCalledWith(A);
+      expect(releaseCleanup).toEqual(expect.any(Function));
+      await auth(B);
+      await act(async () => { releaseCleanup(); await new Promise(resolve => setTimeout(resolve, 100)); });
+      await act(async () => { mockContext.setPref('profileName', 'Bob active'); });
+      expect(readPreferenceScope({}, B).prefs.profileName).toBe('Bob active');
+      expect(readPreferenceScope({}, B).prefs.subscriptions.map(item => item.id)).toEqual(['b']);
+    } finally { cleanup.mockRestore(); }
   });
 
   test('callbacks captured in A cannot change B preferences after the session switch', async () => {

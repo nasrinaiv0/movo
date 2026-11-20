@@ -28,6 +28,11 @@ function writeVerified(storage, key, value) {
 export function hasUnassignedPreferences(storage = localStorage) {
   try { return storage.getItem(RECOVERY_PENDING) === 'true'; } catch { return false; }
 }
+// A reset is not permission to erase another scope or unassigned recovery data.
+export function preservePreferenceCopy(key, ownerId) {
+  if (key === PREFERENCE_RECOVERY || key === RECOVERY_PENDING) return true;
+  return key.startsWith('movo.preferences.scope.v1.') && key !== preferenceScopeKey(ownerId);
+}
 function preserveUnassigned(storage) {
   const raw = storage.getItem(LEGACY_PREFERENCES);
   const stickers = storage.getItem(STICKERS);

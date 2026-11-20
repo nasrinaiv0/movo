@@ -1,5 +1,9 @@
 # MOVO Master Change Ledger
 
+## 2026-11-20 — Audit handover and account preference preservation
+
+Historical handoffs now lead to the current audit execution matrix. Preserve the existing architecture, financial models, APIs and screens. Reset/deletion results are bound to the confirmed owner; other guest/account preference envelopes and unassigned recovery are retained. No production erasure/retention migration is applied. See [preservation review](updates/2026-11-20-handover-preservation-review.md) and [execution handover](handovers/2026-11-20-audit-gap-execution.md).
+
 ## 2026-11-09 — Vercel Sandbox access restored; PR #247 verification
 
 820 tests / 146 suites, typecheck, optimized build without source maps, isolated plan/RLS SQL including 150 first-time Pro grants, 36 component + 6 app + 30 header cases, and exact-cent Free local save/reload passed. Header 0.5px padding and 34 build/test dependency advisories remain. Production plan RPC/trigger migration and cross-user cloud/offline release blockers remain unresolved; no production changes or signed-device certification. See the dated access/finance/UI audit for scope and failure/retry evidence.

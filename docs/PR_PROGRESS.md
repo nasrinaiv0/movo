@@ -1,3 +1,10 @@
+## 2026-11-20 — Handover review preserves MOVO structures and recovery copies
+
+- Reconciled historical Claude handoffs with the November 20 audit and current execution matrix. Corrected shared-cache, password-auth and already deployed finance-rollout guidance; retained all historical evidence and superseded-plan context.
+- Reproduced two destructive preference-reset failures with synthetic data. Clearing one scope now retains other guest/account preference copies and unassigned recovery. Delayed clear/deletion results check their captured account before affecting the active device view. Reused #291's confirmed-owner deletion request guard without changing its HTTP payload.
+- No schema, accounting model, dependency, native production code, screen or navigation restructure. [Preservation review and validation boundaries](engineering/updates/2026-11-20-handover-preservation-review.md).
+- #274 and #291 hosted checks now pass at their published heads; production erasure/retention approval and device/store acceptance remain separate. #330's prior emulator attempt lost its ADB device and was rerun, not counted as a pass. Final follow-up checks are recorded on the updated PR head.
+
 ## 2026-11-20 — Preference recovery and current-main validation
 
 - Complete local regression: 253 suites / 1,658 tests pass, plus 20 Android R8 host and 25 iOS orchestration checks. The old main App fails the synthetic cross-account submission regression; the scoped implementation passes it.

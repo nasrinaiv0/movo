@@ -1,5 +1,7 @@
 # MOVO Implementation Status and Claude Handoff
 
+> **2026-11-20 continuation:** The snapshots below are historical. Use the [current audit execution handover](../engineering/handovers/2026-11-20-audit-gap-execution.md), [November 20 product audit](../audits/2026-11-20-full-movo-product-audit.md) and live PR heads before acting. Preserve MOVO's architecture, financial record structures and product flows. Existing code addresses many earlier task lists; do not rebuild it or reinstate superseded commercial/authentication policies. Current source, automated checks, device acceptance and production rollout are separate evidence states.
+
 > **Financial Planning & Bills (2026-11-01):** continue from [FINANCIAL_PLANNING_HANDOFF.md](FINANCIAL_PLANNING_HANDOFF.md) and the spec in [docs/specs/FINANCIAL_PLANNING_AND_BILLS_SPEC.md](../specs/FINANCIAL_PLANNING_AND_BILLS_SPEC.md).
 
 ## Status update — 2026-11-02 10:10 UTC (newer than the snapshots below)

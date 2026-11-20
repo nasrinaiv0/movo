@@ -123,7 +123,7 @@ import { IMPORT_MAX_BYTES, parseImportFile, planImport } from './lib/dataImport'
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
 import { ACCENTS } from './screens/Settings';
 import { buildCsv } from './lib/csvExport';
-import { hasUnassignedPreferences, readPreferenceScope, savePreferenceScope } from './lib/ownerPreferences';
+import { hasUnassignedPreferences, preservePreferenceCopy, readPreferenceScope, savePreferenceScope } from './lib/ownerPreferences';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, resetCustomStickerView, subscribeCustomStickers } from './lib/stickers';
 import { apiUrl, isNativeApp, nativePlatform } from './lib/platform';
 import { noteActiveDay, readReviewState, requestStoreReview, shouldAskForReview, writeReviewState } from './lib/reviewPrompt';
@@ -1031,6 +1031,7 @@ function App() {
           try { savePreferenceScope(previousOwner, sanitizeNativePreferenceCache(previous.prefs), previous.stickers); }
           catch { setPreferencePersistenceWarning(true); }
         }
+        preferenceErasureRef.current = false;
         setSheet(null); setPendingLog(null); setSearch(''); setQuery('');
         setAccountForm({ ...BLANK_ACCOUNT });
         setForm({ merchant: '', amount: '', transaction_type: 'expense', category: 'food:groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), time: '', note: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null });
@@ -2021,15 +2022,20 @@ function App() {
   const [clearText, setClearText] = useState('');
   const clearAll = async () => {
     if (clearText.trim().toUpperCase() !== 'DELETE') return;
+    const ownerId = preferenceOwner;
+    const epoch = preferenceEpoch;
+    if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) return;
     setBusy(true); setError('');
     try {
-      if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]); }
+      if (cloudMode && session?.user) await deleteAllCloudData(ownerId);
+      if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
+      if (cloudMode && session?.user) { setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]); }
       const qrCleanup = Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
       invalidateChatHistoryWrites();
       setAIConsent(session?.user?.id, false);
-      const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
+      const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') && !preservePreferenceCopy(k, ownerId)).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       ++preferenceEpochRef.current; clearTimeout(prefsSync.current.timer); prefsSync.current.ready = false;
-      preferenceRecoveryRef.current.clear(); prefsRef.current = { ...DEFAULTS };
+      preferenceRecoveryRef.current.delete(ownerId); preferenceBlockedRef.current.delete(ownerId); prefsRef.current = { ...DEFAULTS };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
       setPrefsState({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
       await qrCleanup;
@@ -2042,17 +2048,23 @@ function App() {
      device is cleared and signed out. */
   const deleteAccount = async () => {
     if (clearText.trim().toUpperCase() !== 'DELETE') return;
+    const ownerId = preferenceOwner;
+    const epoch = preferenceEpoch;
+    if (!ownerId || preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) return;
     setBusy(true); setError('');
     try {
-      await deleteMyAccount();
-      preferenceErasureRef.current = true;
-      preferenceRecoveryRef.current.clear();
-      prefsRef.current = { ...DEFAULTS };
+      await deleteMyAccount(ownerId);
+      if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
       if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
+      if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
       await Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
+      if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
+      preferenceErasureRef.current = true;
+      preferenceRecoveryRef.current.delete(ownerId);
+      prefsRef.current = { ...DEFAULTS };
       invalidateChatHistoryWrites();
       setAIConsent(session?.user?.id, false);
-      const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') || k.startsWith('sb-')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
+      const wipe = (store) => { try { Object.keys(store).filter(k => (k.startsWith('movo.') || k.startsWith('sb-')) && !preservePreferenceCopy(k, ownerId)).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers();
       setSheet(null); setClearText('');
       notify(tr('Your MOVO account was deleted.'));
