@@ -59,11 +59,16 @@ class IosSimulatorSmokeTests(unittest.TestCase):
             smoke.choose_iphone("not json")
 
     def test_retries_only_transient_launch_timeout(self):
-        runner = mock.Mock(side_effect=[smoke.SmokeFailure("slow", timed_out=True), None])
+        runner = mock.Mock(side_effect=[smoke.SmokeFailure("slow", timed_out=True), "", "", "", ""])
         sleeper = mock.Mock()
         smoke.launch_with_cold_boot_retry("device1", runner=runner, sleeper=sleeper)
-        self.assertEqual(2, runner.call_count)
-        self.assertEqual(180, runner.call_args.kwargs["timeout"])
+        self.assertEqual([
+            mock.call(["xcrun", "simctl", "launch", "device1", smoke.BUNDLE_ID], timeout=180),
+            mock.call(["xcrun", "simctl", "shutdown", "device1"], timeout=90),
+            mock.call(["xcrun", "simctl", "boot", "device1"], timeout=90),
+            mock.call(["xcrun", "simctl", "bootstatus", "device1", "-b"], timeout=450),
+            mock.call(["xcrun", "simctl", "launch", "device1", smoke.BUNDLE_ID], timeout=180),
+        ], runner.call_args_list)
         sleeper.assert_called_once_with(15)
 
     def test_real_launch_error_fails_immediately(self):
@@ -73,10 +78,46 @@ class IosSimulatorSmokeTests(unittest.TestCase):
         runner.assert_called_once()
 
     def test_second_timeout_remains_failure(self):
-        runner = mock.Mock(side_effect=smoke.SmokeFailure("slow", timed_out=True))
-        with self.assertRaisesRegex(smoke.SmokeFailure, "slow"):
+        runner = mock.Mock(side_effect=[
+            smoke.SmokeFailure("slow", timed_out=True), "", "", "",
+            smoke.SmokeFailure("still slow", timed_out=True),
+        ])
+        with self.assertRaisesRegex(smoke.SmokeFailure, "still slow"):
             smoke.launch_with_cold_boot_retry("device1", runner=runner, sleeper=mock.Mock())
-        self.assertEqual(2, runner.call_count)
+        self.assertEqual(5, runner.call_count)
+
+    def test_launch_success_does_not_restart_simulator(self):
+        runner = mock.Mock(return_value="")
+        sleeper = mock.Mock()
+        smoke.launch_with_cold_boot_retry("device1", runner=runner, sleeper=sleeper)
+        runner.assert_called_once_with(
+            ["xcrun", "simctl", "launch", "device1", smoke.BUNDLE_ID], timeout=180)
+        sleeper.assert_not_called()
+
+    def test_launch_recovery_failure_never_retries_launch(self):
+        for failed_step in ("shutdown", "boot", "bootstatus"):
+            with self.subTest(failed_step=failed_step):
+                commands = []
+                def runner(args, timeout):
+                    commands.append(args)
+                    if args[1:3] == ["simctl", "launch"]:
+                        raise smoke.SmokeFailure("launch stuck", timed_out=True)
+                    if args[1:3] == ["simctl", failed_step]:
+                        raise smoke.SmokeFailure("recovery failed")
+                    return ""
+                with self.assertRaisesRegex(smoke.SmokeFailure, "recovery failed"):
+                    smoke.launch_with_cold_boot_retry(
+                        "device1", runner=runner, sleeper=lambda _: None)
+                self.assertEqual(1, sum(cmd[1:3] == ["simctl", "launch"] for cmd in commands))
+
+    def test_launch_recovery_app_error_fails_without_another_reboot(self):
+        runner = mock.Mock(side_effect=[
+            smoke.SmokeFailure("slow", timed_out=True), "", "", "",
+            smoke.SmokeFailure("app rejected launch"),
+        ])
+        with self.assertRaisesRegex(smoke.SmokeFailure, "app rejected"):
+            smoke.launch_with_cold_boot_retry("device1", runner=runner, sleeper=mock.Mock())
+        self.assertEqual(5, runner.call_count)
 
     def test_screenshot_timeout_retries_once(self):
         runner = mock.Mock(side_effect=[smoke.SmokeFailure("slow screenshot", timed_out=True), None])

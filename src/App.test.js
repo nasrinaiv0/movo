@@ -980,11 +980,11 @@ describe('MOVO finance frontend', () => {
     expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent.includes('Save records') && button.disabled)).toBe(true);
   });
 
-  test('Menu opens Profile, Subscriptions, Plans and Limits, and a subscription can be added', () => {
+  test('Menu groups plans and limits under financial planning, and a subscription can be added', () => {
     nav(container, 'Menu');
     expect(container.querySelector('h1').textContent).toBe('Menu');
     const tiles = Array.from(container.querySelectorAll('.menu-tile strong')).map(n => n.textContent);
-    expect(tiles).toEqual(['Friends', 'Subscriptions', 'Plans', 'Cashback', 'Scheduled', 'Financial planning', 'Exchange rates', 'Crypto market', 'Stocks market', 'Archive', 'Limits']);
+    expect(tiles).toEqual(['Friends', 'Subscriptions', 'Cashback', 'Scheduled', 'Financial planning', 'Exchange rates', 'Crypto market', 'Stocks market', 'Archive']);
     expect(tiles).not.toContain('Profile');
     act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.querySelector('strong')?.textContent === 'Friends').click());
     expect(container.querySelector('h1').textContent).toBe('Friends');
@@ -1008,8 +1008,11 @@ describe('MOVO finance frontend', () => {
     expect(saved[0]).toMatchObject({ name: 'Netflix', amount: 549, cycle: 'monthly', status: 'active' });
     expect(container.querySelector('[aria-label="Subscription summary"]').textContent).toContain('549');
     clickButton(container, 'Back');
-    act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.textContent.includes('Limits')).click());
+    act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.querySelector('strong')?.textContent === 'Financial planning').click());
+    clickButton(container, 'Plans & limits');
     expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+    clickButton(container, 'Limits');
+    expect(container.querySelector('[role="dialog"]').textContent).toContain('Account & merchant limits');
   });
 
   test('NasrinAI briefing lives in Notifications, not Home, and opens on tap', () => {

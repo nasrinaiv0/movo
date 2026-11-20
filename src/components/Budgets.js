@@ -67,8 +67,8 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
       setDraft(null);
     } catch (cause) { setErr(tr(cause.message || 'Could not save. Please try again.')); }
   };
-  return <Sheet title={tr('Budgets & Plans')} subtitle={tab === 'budgets' ? (cloudMode ? tr('Monthly limits per category, synced to your account.') : tr('Monthly limits per category, saved on this device.')) : tr('Savings goals with a target and optional date, saved on this device.')} onClose={onClose} size="wide" label={tr('Budgets and plans')} center>
-    <div className="seg-control two" role="group" aria-label={tr('Section')}>{[['budgets', 'Budgets'], ['plans', 'Plans']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'selected' : ''} aria-pressed={tab === k} onClick={() => { setTab(k); setDraft(null); setErr(''); }}>{tr(l)}</button>)}</div>
+  return <Sheet className="planning-limits-sheet" title={tr('Plans & limits')} subtitle={tab === 'budgets' ? (cloudMode ? tr('Monthly limits per category, synced to your account.') : tr('Monthly limits per category, saved on this device.')) : tr('Savings goals with a target and optional date, saved on this device.')} onClose={onClose} size="wide" label={tr('Budgets and plans')} center>
+    <div className="seg-control two" role="group" aria-label={tr('Section')}>{[['plans', 'Plans'], ['budgets', 'Limits']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'selected' : ''} aria-pressed={tab === k} onClick={() => { setTab(k); setDraft(null); setErr(''); }}>{tr(l)}</button>)}</div>
     {tab === 'budgets' && onOpenLimits && <button type="button" className="link-button" onClick={onOpenLimits}><Icon name="limits" size={16} /> {tr('Account & merchant limits')}</button>}
     {!draft && <div className="sheet-list">
       {tab === 'budgets' && progress.map(b => { const [, name, icon, tone] = iconFor(b.category); return <button type="button" key={b.id} className={`sheet-card budget-item ${b.level}`} onClick={() => setDraft({ id: b.id, category: b.category, limit: String(b.monthly_limit) })}>

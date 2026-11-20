@@ -114,9 +114,16 @@ export default function FinancialPlanning({ c }) {
     </div>
   </section>;
 
+  const plansAndLimits = <button type="button" className="card fp-plans-limits" aria-label={tr('Plans & limits')} onClick={() => c.openBudgets?.('plans')}>
+    <span className="stat-icon tone-green"><Icon name="planning" size={22} /></span>
+    <span><strong>{tr('Plans & limits')}</strong><small>{tr('Savings goals and spending limits')}</small></span>
+    <Icon name="chevron" size={18} />
+  </button>;
+
   if (!p.cloud) return <>
     {header}
     {hero}
+    {plansAndLimits}
     <button type="button" className="budget-empty" onClick={() => c.go('Sign in')}><Icon name="lock" size={20} /><span><strong>{tr('Sign in to manage your financial records')}</strong><small>{tr('Bills, loans, debts, receivables and goal allocations use secure cloud records so balances stay consistent across your devices.')}</small></span></button>
   </>;
 
@@ -138,12 +145,14 @@ export default function FinancialPlanning({ c }) {
   // Until the cloud records arrive, show their shape rather than a ₱0.00 net worth.
   if (!p.loaded && !p.error) return <>
     {header}
+    {plansAndLimits}
     <section className="card sub-hero fp-hero"><Skeleton figure lines={2} /></section>
     <section className="card pad"><Skeleton lines={4} /></section>
   </>;
   return <>
     {header}
     {hero}
+    {plansAndLimits}
     <Chips items={TABS.map(([k, l]) => ({ key: k, label: tr(l), dot: k === 'bills' && bills.overdueCount > 0 }))} value={tab} onChange={pick} label={tr('Financial planning sections')} />
     {p.offline && <p className="form-hint fp-offline" role="status">{tr('You’re offline. These are your records as last synced; changes are available again when you’re back online.')}</p>}
     {(error || p.error) && <div className="app-alert" role="alert"><span>{error || tr(p.error)}</span>{p.error && <button type="button" className="link-button" aria-label="↻" onClick={() => p.reload()}>↻</button>}</div>}
