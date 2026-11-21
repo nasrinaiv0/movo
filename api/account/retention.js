@@ -9,6 +9,9 @@ module.exports = async function handler(req, res) {
     return billing.json(res, 405, { error: 'method_not_allowed' });
   }
 
+  // A source merge or an existing cron secret does not approve age-based deletion.
+  if (process.env.MOVO_DATA_RETENTION_ENABLED !== 'true') return billing.json(res, 503, { error: 'retention_unavailable' });
+
   const secret = process.env.CRON_SECRET;
   if (!secret || secret.length < 32) return billing.json(res, 503, { error: 'retention_unavailable' });
   const actual = Buffer.from(req.headers.authorization || '');

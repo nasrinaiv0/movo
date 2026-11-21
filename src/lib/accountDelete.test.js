@@ -54,6 +54,7 @@ describe('POST /api/account/delete', () => {
     process.env.SUPABASE_URL = 'https://example.supabase.co';
     process.env.SUPABASE_ANON_KEY = 'anon';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service';
+    process.env.MOVO_ACCOUNT_ERASURE_ENABLED = 'true';
     handler = require('../../api/account/delete');
   });
 
@@ -63,6 +64,7 @@ describe('POST /api/account/delete', () => {
     delete process.env.SUPABASE_URL;
     delete process.env.SUPABASE_ANON_KEY;
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.MOVO_ACCOUNT_ERASURE_ENABLED;
   });
 
   const invoke = async ({ method = 'POST', body = { confirm: 'DELETE' }, token = 'valid-jwt' } = {}) => {
@@ -117,5 +119,15 @@ describe('POST /api/account/delete', () => {
     const result = await invoke({ body: { confirm: 'no' } });
     expect(result.statusCode).toBe(400);
     expect(calls.some((call) => call[0] === 'remove')).toBe(false);
+  });
+
+  test.each([undefined, 'false', 'TRUE', '1'])('disabled erasure rollout (%s) cannot touch users, files or records', async value => {
+    if (value === undefined) delete process.env.MOVO_ACCOUNT_ERASURE_ENABLED;
+    else process.env.MOVO_ACCOUNT_ERASURE_ENABLED = value;
+    for (const route of ['delete', 'clear']) {
+      handler = require('../../api/account/' + route);
+      expect((await invoke()).statusCode).toBe(503);
+      expect(calls).toEqual([]);
+    }
   });
 });

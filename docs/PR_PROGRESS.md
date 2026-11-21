@@ -1,3 +1,7 @@
+## 2026-11-21 — Inert erasure/retention source rollout (#274)
+
+The owner requests merging all draft source. Added default-disabled server-only erasure and retention switches so that a source merge or an existing cron secret cannot delete files/records or freeze accounts before separate production approval. Fourteen focused activation/authorization/retry tests pass; full current-main/encryption integration and hosted checks remain required. No production setting or migration was changed. [Engineering](engineering/updates/2026-11-21-inert-erasure-retention-rollout.md).
+
 ## 2026-11-20 — Erasure integration with released accessibility and native gates
 
 - Integrated main `73e293bf`, preserving setup focus/reduced-motion and voice/planning fixes alongside distinct erasure/retention APIs and SQL. Retained both simulator recovery regression sets (27 passing host checks); the earlier twice-timed-out iOS launch remains a failure until fresh native CI succeeds.

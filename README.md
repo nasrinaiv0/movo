@@ -1,5 +1,7 @@
 # MOVO
 
+The owner-directed draft source merge keeps #274's erasure and retention endpoints disabled by default. Their separately approved database rollout and explicit server activation remain necessary; merging source does not activate destructive production behavior or establish store acceptance. See [rollout safeguards](docs/engineering/updates/2026-11-21-inert-erasure-retention-rollout.md).
+
 MOVO is a financial-tracking web app prototype with a calm, iOS-inspired interface.
 
 ## UI redesign (mockup match)

@@ -1,5 +1,9 @@
 # MOVO Master Change Ledger
 
+## 2026-11-21 — Source merge without destructive activation
+
+#274 now requires exact server-only activation for erasure and retention. Defaults return 503 before private storage, user freeze or database work, including with a valid cron secret. Fourteen focused regressions pass; retain production migration approval and validate the combined encryption/owner tree before merge. [Engineering](updates/2026-11-21-inert-erasure-retention-rollout.md). No production data, schema, settings or store action.
+
 ## 2026-11-09 — Vercel Sandbox access restored; PR #247 verification
 
 820 tests / 146 suites, typecheck, optimized build without source maps, isolated plan/RLS SQL including 150 first-time Pro grants, 36 component + 6 app + 30 header cases, and exact-cent Free local save/reload passed. Header 0.5px padding and 34 build/test dependency advisories remain. Production plan RPC/trigger migration and cross-user cloud/offline release blockers remain unresolved; no production changes or signed-device certification. See the dated access/finance/UI audit for scope and failure/retry evidence.

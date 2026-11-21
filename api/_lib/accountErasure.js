@@ -77,6 +77,9 @@ module.exports = action => async function handler(req, res) {
   const match = /^Bearer\s+(.+)$/i.exec(req.headers.authorization || '');
   const token = match ? match[1].trim() : '';
   if (!token) return json(res, 401, { error: 'sign_in_required' });
+  // Source may merge before the separately approved production migrations.
+  // Never remove files or freeze an account until rollout is explicitly enabled.
+  if (process.env.MOVO_ACCOUNT_ERASURE_ENABLED !== 'true') return json(res, 503, { error: 'account_erasure_unavailable' });
   const api = clients();
   if (!api) return json(res, 503, { error: 'service_unavailable' });
 
