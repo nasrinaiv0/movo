@@ -1,6 +1,13 @@
+## 2026-11-21 — #291 final current-main source validation
+
+Integrated released #330/#331 main `cfb83c51`, preserving encrypted stores, owner/generation-bound import and confirmation, selective cleanup and partial-deletion reporting. Fresh locked install, 265 suites / 1,746 tests, typecheck and 24 Node checks pass. Synthetic browser migration, encrypted save/reload and non-destructive key-loss gating pass. Final clean-graph bundle and exact-head hosted/native checks are required before the owner-directed source merge; production activation remains separate. [Engineering](engineering/updates/2026-11-21-encryption-owner-integration.md).
+
 ## 2026-11-21 — #291 integrates released owner/restore safeguards
 
 The owner requested source merges of all drafts. #330 merged as `c3e37d7c`, and #331 as `cfb83c51`, after their applicable checks passed. #291 retains encryption while integrating owner/generation guards, selective cleanup, partial-deletion failure notices, updated UI/hosting/asset protections and explicit recovery preservation. Initial combined validation: 264 suites / 1,741 tests, an additional stale-confirmation regression, typecheck, 24 Node checks and strict bundle/notice audit pass. Fresh browser migration/write/reload/key-loss acceptance passes with synthetic data. Integrate latest main and revalidate before merge; production migration, host and signed-device/store activation remain separate. [Engineering](engineering/updates/2026-11-21-encryption-owner-integration.md).
+## 2026-11-21 — Owner-directed source merges; #331 current-main integration
+
+#330 merged as `c3e37d7c` after all eight exact-head code/native/SQL/container checks passed. The owner now explicitly asks to merge all drafts. #331 integrates that released source while retaining its development-only overrides. Fresh clean-install combined validation: 259 suites / 1,708 tests, typecheck, 24 Node checks and strict iOS-profile build/packaging pass. New-head hosted validation is required before #331 merges. #291/#274 still need combined owner/encryption/cleanup validation. Production migration approval/activation, Vercel account resolution and signed store/device evidence remain separate from these source merges. [Engineering record](engineering/updates/2026-11-21-merge-build-tool-hardening.md).
 
 ## 2026-11-21 — Full audit and confirmed-defect remediation (#330)
 
@@ -77,6 +84,13 @@ Release held: Vercel account blocked and public MOVO HTTP 402 DEPLOYMENT_DISABLE
 - Account deletion works for signed-in customers across plans. iOS privacy and export metadata now reflect the code and the outstanding App Store Connect classification.
 - [Evidence and release gates](engineering/updates/2026-11-18-encryption-privacy-audit.md).
 ## 2026-11-20 — Open PR consolidation
+
+## 2026-11-20 — Build-tool security advisory remediation
+
+Pinned patched development-only transitive packages without replacing Create React App or changing application/native code: serialize-javascript 7.1.4, underscore 1.13.8 and SockJS UUID 11.1.1. The clean-install production dependency graph is unchanged. npm audit falls from 31 findings (16 high) to 19 (9 high); production audit remains zero. The remaining development-tool advisories require a separate compatibility-reviewed toolchain upgrade.
+
+Node 26.13.1: clean install, full build (including offline-worker, localization and email checks), type checking and 252 suites / 1,644 tests pass. New compatibility regressions exercise actual serializer, UUID undersized buffers, SockJS and JSONPath contracts. Hosted checks remain pending; Vercel reports the account blocked. See [engineering record](engineering/updates/2026-11-20-build-tool-security.md).
+
 
 - #328 merged as `45b9e968` after its explicitly approved production migration and green hosted checks. Catalog verification confirms raw transaction writes denied and anonymous reset denied.
 - #327 integrates the complete #326 harness, current main accounting fixes and #329 setup/accessibility changes. Both source PR records are preserved. Final integrated CI must pass before merge.

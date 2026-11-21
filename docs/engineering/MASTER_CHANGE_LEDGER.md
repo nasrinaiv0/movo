@@ -1,8 +1,15 @@
 # MOVO Master Change Ledger
 
+## 2026-11-21 — #291 validates released build-tool/audit main
+
+Final integration includes main `cfb83c51`: fresh locked install, 265 suites / 1,746 tests, typecheck and 24 Node checks pass. Existing strict source-profile bundle and fresh browser encryption/migration/reload/key-loss checks pass; final clean-graph/hosted/native checks remain pending at this record. The owner-directed source merge leaves production host/migration/store activation separate. [Engineering](updates/2026-11-21-encryption-owner-integration.md).
+
 ## 2026-11-21 — Owner-safe encryption integration and source merge sequence
 
 #330 merged as `c3e37d7c`; #331 merged as `cfb83c51`. #291 combines owner/generation-bound restoration and preferences with encrypted wallet/workspace/outbox/QR stores. Selective reset/deletion preserves foreign/guest ciphertext, vault metadata and unassigned recovery, retains partial server-deletion/device-cleanup reporting and rejects stale A→B→A confirmations. Initial full regression: 264 suites / 1,741 tests, plus the new stale-confirmation case; typecheck, 24 Node checks and strict packaging pass. Synthetic browser migration, exact-cent save/reload and non-destructive missing-key handling pass. Revalidate latest-main integration and hosted/native head before merging; production migrations and signed-device/store/host activation remain held. [Engineering](updates/2026-11-21-encryption-owner-integration.md).
+## 2026-11-21 — Owner-directed draft merge sequence
+
+#330 merged as `c3e37d7c` after eight exact-head hosted workflows passed. #331 now integrates released audit source with its development overrides: clean install, 259 suites / 1,708 tests, typecheck, 24 Node checks and strict original-only bundle pass. Preserve both documentation histories. Revalidate this head before merging; integrate current owner/selective-cleanup guards into encryption and erasure branches next. Production migrations, hosting/provider changes and signed store/device release remain held independently. [Engineering](updates/2026-11-21-merge-build-tool-hardening.md).
 
 ## 2026-11-21 — Fresh full audit and boundary fixes (#330)
 
@@ -41,6 +48,13 @@ Release held: Vercel account blocked and public MOVO HTTP 402 DEPLOYMENT_DISABLE
 ## 2026-11-20 — Audit handover and account preference preservation
 
 Historical handoffs now lead to the current audit execution matrix. Preserve the existing architecture, financial models, APIs and screens. Reset/deletion results are bound to the confirmed owner; other guest/account preference envelopes and unassigned recovery are retained. No production erasure/retention migration is applied. See [preservation review](updates/2026-11-20-handover-preservation-review.md) and [execution handover](handovers/2026-11-20-audit-gap-execution.md).
+
+## 2026-11-20 — Build-tool security advisory remediation
+
+Pinned patched development-only transitive packages without replacing Create React App or changing application/native code: serialize-javascript 7.1.4, underscore 1.13.8 and SockJS UUID 11.1.1. The clean-install production dependency graph is unchanged. npm audit falls from 31 findings (16 high) to 19 (9 high); production audit remains zero. The remaining development-tool advisories require a separate compatibility-reviewed toolchain upgrade.
+
+Node 26.13.1: clean install, full build (including offline-worker, localization and email checks), type checking and 252 suites / 1,644 tests pass. New compatibility regressions exercise actual serializer, UUID undersized buffers, SockJS and JSONPath contracts. Hosted checks remain pending; Vercel reports the account blocked. See [engineering record](updates/2026-11-20-build-tool-security.md).
+
 
 ## 2026-11-09 — Vercel Sandbox access restored; PR #247 verification
 
