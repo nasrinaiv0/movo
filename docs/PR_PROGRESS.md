@@ -1,3 +1,11 @@
+## 2026-11-21 — App Store copyright and duplication preparation (#330)
+
+Added an enforced original-only iOS profile, generic artwork/labels, quarantined franchise title, bundled license notices and evidence gates before store upload/submission. All 630 saved wallpaper IDs, private uploads, financial structures and the canonical bundle ID remain. No public rebrand, store upload, production write or migration occurred.
+
+Regular web and iOS-profile strict builds pass. Local regression: 258 suites / 1,689 tests; typecheck and nine artifact/offline/source checks pass. Synthetic mobile Wallet/credits evidence is recorded in the [engineering update](engineering/updates/2026-11-21-app-store-rights-preparation.md) and [visual review](audits/2026-11-21-app-store-rights-review.md). [Submission packet](app-store/APP_REVIEW_PACKET.md) keeps real name/rights, one store record, metadata/screenshots and signed-device/backend evidence pending. Apple already lists a Finance app named MOVO; this work does not establish name clearance or Apple approval.
+
+Fresh exact-head CI remains required. The previous R8 retry built both compiler comparisons but lost the emulator during offline instrumentation. Vercel production remains independently blocked by its account restriction.
+
 ## 2026-11-20 — Handover review preserves MOVO structures and recovery copies
 
 ## 2026-11-20 — iOS system-adaptive controls and panels (#330)

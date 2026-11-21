@@ -1,5 +1,7 @@
 # MOVO
 
+App Store preparation now has an original-only iOS artwork profile, bundled software credits and an evidence-based upload gate. See [the submission packet](docs/app-store/APP_REVIEW_PACKET.md). This does not establish Apple approval or name/trademark clearance; the current MOVO public identity remains pending review.
+
 The iOS candidate now connects Dynamic Type, semantic system surfaces and accessibility settings to shared controls and panels, while retaining custom appearance choices and the existing hybrid architecture. See [the iOS interface review](docs/audits/2026-11-20-ios-interface-review.md) for measured coverage and native acceptance limits.
 
 The [PR #329 follow-up audit](docs/audits/2026-11-20-pr329-remediation-review.md) records owner-safe cleanup, financial-entry and localized-navigation fixes in #330, plus dependency hardening in #331. Current production returns HTTP 402 DEPLOYMENT_DISABLED; hosted acceptance and release remain blocked. Existing architecture and financial formats are preserved.

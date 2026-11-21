@@ -4,9 +4,11 @@ const path = require('node:path');
 const root = path.join(__dirname, '..', 'build');
 const manifest = fs.readFileSync(path.join(root, 'asset-manifest.json'), 'utf8');
 const logos = fs.readdirSync(path.join(root, 'brands', 'offline')).map(name => '/brands/offline/' + name);
-const assets = ['/index.html', '/favicon.svg', '/icon-192.png', '/icon-512.png', ...logos,
+const notices = fs.existsSync(path.join(root, 'third-party-notices.txt')) ? ['/third-party-notices.txt'] : [];
+const assets = [...notices, '/index.html', '/favicon.svg', '/icon-192.png', '/icon-512.png', ...logos,
   ...Object.values(JSON.parse(manifest).files).filter(file => /^\/static\/.+\.(?:js|css|woff2?|ttf|png|svg|webp)$/.test(file))];
 const digest = crypto.createHash('sha256').update(manifest);
+for (const name of notices) digest.update(fs.readFileSync(path.join(root, name)));
 for (const name of logos) digest.update(fs.readFileSync(path.join(root, name)));
 const revision = digest.digest('hex').slice(0, 16);
 function listFiles(folder) {

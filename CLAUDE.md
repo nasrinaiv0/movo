@@ -51,6 +51,8 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 
 ## UI conventions (owner-approved)
 
+- App Store artwork (2026-11-21): all installed-iOS and `build:app-store` rendering obeys `assetRights.js`. Do not restore unverified decorative logos, wallpaper packs or old tutorial media merely because they are in public/. Original asset files and saved IDs are retained; generated fallbacks preserve records. iOS workflows must use `npm run build:app-store` and its bundle audit. Historical owner logo approval does not clear third-party rights. Read [App Review packet](docs/app-store/APP_REVIEW_PACKET.md); never mark pending name/ownership evidence as reviewed without supporting documents.
+
 - iOS adaptation (2026-11-20): keep the hybrid screens and shared components. `iosInterface.js` consumes ephemeral UIKit text/accessibility and semantic-color settings; do not persist them in account preferences. Default installed-iOS fonts follow the system; custom choices remain overrides. Native chrome uses safe-area/flexible constraints and mirrors disabled state. Panels follow the visual viewport; avoid per-screen fixed iPhone geometry. See [interface review](docs/audits/2026-11-20-ios-interface-review.md).
 - Match the approved mockups: iOS-style layout, Liquid Glass theme with a user clarity slider, light/dark/tinted themes, accent colours.
 - One icon set in `Icon.js`: smooth, rounded, round caps/joins; filled variant for the active tab. Bottom dock is icon-only with a sliding capsule highlight.

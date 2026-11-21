@@ -1,5 +1,11 @@
 # MOVO Master Change Ledger
 
+## 2026-11-21 — App Store copyright and duplication preparation (#330)
+
+Enforce original-only artwork for every installed iOS user and its build profile; preserve all 630 wallpaper IDs and user data while excluding unverified public media packs. Add bundled third-party notices to Terms, collected upstream/font licenses and explicit unresolved provenance, plus evidence gates before signed upload/public submission. Keep React/Capacitor, financial structures, canonical app ID and current public name. Name/rights clearance, store record/metadata and signed-device/backend evidence remain pending; no Apple approval, upload or production mutation is claimed.
+
+[Engineering and verification](updates/2026-11-21-app-store-rights-preparation.md) · [Inspected synthetic mobile evidence](../audits/2026-11-21-app-store-rights-review.md) · [Submission packet](../app-store/APP_REVIEW_PACKET.md). The prior R8 retry lost its emulator after seed acceptance; fresh exact-head native checks remain required. Vercel production is still independently restricted.
+
 ## 2026-11-20 — iOS system-adaptive controls and panels (#330)
 
 Native UIKit navigation now follows system text/appearance/accessibility settings, uses minimum 44pt actions and flexible dock constraints, preserves disabled state and retains a web fallback if native activation fails. The shared web panels use keyboard viewport/safe-area bounds, semantic surface tokens and growing rows; Wallet actions reflow with text size. iOS system text scale multiplies app preferences without persisting device settings or changing financial structures.

@@ -2,6 +2,12 @@
 
 Execute against live repository and deployment state. The screenshot and original November 20 audit are historical evidence, not current PR or schema status. Preserve the original audit at `docs/audits/2026-11-20-full-movo-product-audit.md`.
 
+## November 21 continuation: first App Store submission
+
+The owner confirmed preparation for submission, with no existing rejection. #330 adds original-only iOS packaging, generic artwork with preserved saved IDs, bundled software notices and real-evidence gates; see [App Review packet](../../app-store/APP_REVIEW_PACKET.md) and [dated implementation record](../updates/2026-11-21-app-store-rights-preparation.md). Do not interpret passing code checks as copyright ownership, trademark clearance or Apple approval. Another Finance app already uses MOVO; the public name is unchanged pending a real decision. Do not create another app record or bundle ID. Identity/rights/single-record/metadata evidence is required before signed upload; signed-device/live-backend evidence is additionally required for public submission. No evidence has been fabricated or store publishing performed.
+
+The prior #330 R8 retry at `68e44af9` built both compiler comparisons successfully, then lost emulator-5554 during offline instrumentation after seed acceptance; it did not pass paired acceptance. Fresh checks must run on the new source. Vercel's stable team ID is unchanged; its scope slug is now `nasrinai-inc`, replacing `nasrin-ai1`. Do not rewrite valid historical deployment URLs or mistake a stale-scope 403 for loss of membership. The independent overdue-team deployment restriction remains.
+
 This is the current continuation point for the historical [implementation handoff](../../claude/MOVO_IMPLEMENTATION_STATUS_AND_CLAUDE_HANDOFF.md), [Financial Planning handoff](../../claude/FINANCIAL_PLANNING_HANDOFF.md) and [November 9 engineering handover](2026-11-09-claude-post-commit-handover.md). Their older task lists, PR numbers and commercial proposals are not current requirements. A handover in another ChatGPT chat must be identified by its actual file or link before treating any additional instructions as reviewed.
 
 ## Preserve MOVO's structure

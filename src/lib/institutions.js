@@ -1,3 +1,4 @@
+import { thirdPartyArtworkAllowed } from './assetRights';
 import { getInstitutionFaviconEntry, getInstitutionFaviconUrl } from './institutionFavicons';
 
 export const INSTITUTION_COUNTRIES = ['PH', 'US', 'GB', 'CA', 'AU', 'SG', 'IN', 'MY', 'NZ'];
@@ -157,6 +158,7 @@ function findInstitutionForLogo(name) {
 
 /** Ordered, curated logo sources: Google favicon first, official favicon second. Unknown names never become domains. */
 export function institutionLogoCandidates(name, options = {}) {
+  if (!thirdPartyArtworkAllowed()) return [];
   const text = String(name || '').trim();
   if (!text) return [];
   const institution = findInstitutionForLogo(text);
@@ -185,6 +187,7 @@ const CARD_NETWORK_DOMAINS = {
 
 /** Network-brand fallback for cards whose issuer logo is unavailable. */
 export function cardNetworkLogoUrl(network, size = 64) {
+  if (!thirdPartyArtworkAllowed()) return '';
   const key = normalizeInstitutionLabel(network);
   const domain = CARD_NETWORK_DOMAINS[key];
   if (!domain) return '';

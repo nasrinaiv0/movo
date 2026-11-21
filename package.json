@@ -37,10 +37,12 @@
     "audit:production": "npm audit --omit=dev",
     "i18n": "node scripts/i18n-build.js",
     "brands": "node scripts/fetch-brand-logos.mjs",
-    "ios:sync": "npm run build && cap sync ios",
+    "ios:sync": "npm run build:app-store && cap sync ios",
     "prestart": "npm run i18n",
     "pretest": "npm run i18n",
-    "postbuild": "node scripts/build-offline-worker.cjs"
+    "postbuild": "node scripts/build-offline-worker.cjs",
+    "build:app-store": "node scripts/build-app-store.cjs",
+    "ios:submission-check": "node scripts/check-app-store-rights.cjs --submission"
   },
   "browserslist": {
     "production": [

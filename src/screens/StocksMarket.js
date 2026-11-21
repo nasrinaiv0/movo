@@ -1,3 +1,4 @@
+import { thirdPartyArtworkAllowed } from '../lib/assetRights';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import { SubHeader } from '../components/ui';
@@ -21,7 +22,7 @@ export function StockLogo({ symbol }) {
   const domain = logoDomain(symbol);
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [domain]);
-  return domain && !failed ? (
+  return thirdPartyArtworkAllowed() && domain && !failed ? (
     <img
       className="stock-logo"
       src={'https://www.google.com/s2/favicons?domain=' + domain + '&sz=128'}

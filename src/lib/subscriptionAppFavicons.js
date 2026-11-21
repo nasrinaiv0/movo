@@ -1,3 +1,4 @@
+import { thirdPartyArtworkAllowed } from './assetRights';
 /**
  * Subscription app favicon registry.
  *
@@ -119,6 +120,7 @@ const FAVICON_ENDPOINT = 'https://www.google.com/s2/favicons';
  * @returns {string|null}
  */
 export function getSubscriptionFaviconUrl(appName, { size = 128 } = {}) {
+  if (!thirdPartyArtworkAllowed()) return null;
   if (!appName || typeof appName !== 'string') return null;
   const entry = SUBSCRIPTION_APP_FAVICONS[appName.trim()];
   if (!entry) return null;

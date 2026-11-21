@@ -1,5 +1,7 @@
 # Third-Party Brand Icons, Dynamic Favicons, and Subscription Catalog
 
+**2026-11-21 App Store update:** Installed iOS and the signed iOS build profile now exclude decorative third-party artwork without recorded clearance, use generated local fallbacks, and omit the old bundled media packs. Historical owner approval below is not rights-holder permission. Web/Android behavior remains subject to this unresolved register. See [App Review packet](../app-store/APP_REVIEW_PACKET.md).
+
 **Status:** Proposed legal/product disclosure for review. This file is not proof that the live Terms of Service or Privacy Policy has been updated. Confirm the canonical published policy locations and verify deployment before treating the wording as effective.
 
 ## Third-party names, marks, and icons

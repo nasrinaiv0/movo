@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { WALLPAPERS } from './wallpapers';
+import { originalOnlyAssets, originalArtwork } from './assetRights';
 import { t as tr } from './i18n';
 
 /*
@@ -191,8 +192,8 @@ export const WALLPAPER_THEMES = WALLPAPERS.map(([key, genre, ink, title]) => {
   const live = key.startsWith('l'); const dir = live ? 'live' : 'img';
   counts[genre] = (counts[genre] || 0) + 1;
   return {
-    id: `wp-${key}`, name: title || `${genre} ${String(counts[genre]).padStart(2, '0')}`, genre: live ? 'Live' : genre, ink, wallpaper: true,
-    src: `/wallpapers/${dir}/${key}.webp`, thumb: `/wallpapers/${dir}/${key}-t.webp`, video: live ? `/wallpapers/${dir}/${key}.mp4` : undefined,
+    id: `wp-${key}`, name: (!originalOnlyAssets() && title) || `${genre} ${String(counts[genre]).padStart(2, '0')}`, genre: live ? 'Live' : genre, ink, wallpaper: true,
+    src: originalOnlyAssets() ? originalArtwork(key, ink) : `/wallpapers/${dir}/${key}.webp`, thumb: originalOnlyAssets() ? originalArtwork(key, ink) : `/wallpapers/${dir}/${key}-t.webp`, video: live && !originalOnlyAssets() ? `/wallpapers/${dir}/${key}.mp4` : undefined,
   };
 });
 export const WALLPAPER_GENRES = [...new Set(WALLPAPER_THEMES.map(t => t.genre))].sort((a, b) => (a === 'Live' ? -1 : b === 'Live' ? 1 : 0));

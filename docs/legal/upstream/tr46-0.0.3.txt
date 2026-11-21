@@ -1,0 +1,35 @@
+tr46@0.0.3 — unresolved upstream notice evidence
+
+The published archive declares the MIT license but contains no standalone license or copyright notice file. This entry preserves its exact package metadata; it is provenance, not a newly granted license or legal clearance. The owner must resolve this notice gap in the originalAssetsAndLicenses submission evidence.
+
+{
+  "name": "tr46",
+  "version": "0.0.3",
+  "description": "An implementation of the Unicode TR46 spec",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha",
+    "pretest": "node scripts/getLatestUnicodeTests.js",
+    "prepublish": "node scripts/generateMappingTable.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sebmaster/tr46.js.git"
+  },
+  "keywords": [
+    "unicode",
+    "tr46",
+    "url",
+    "whatwg"
+  ],
+  "author": "Sebastian Mayr <npm@smayr.name>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Sebmaster/tr46.js/issues"
+  },
+  "homepage": "https://github.com/Sebmaster/tr46.js#readme",
+  "devDependencies": {
+    "mocha": "^2.2.5",
+    "request": "^2.57.0"
+  }
+}
