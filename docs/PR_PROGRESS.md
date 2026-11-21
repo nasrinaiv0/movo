@@ -1,3 +1,7 @@
+## 2026-11-21 — Combined candidate retains pre-failure emulator evidence
+
+Paired acceptance at `16abd407` remains failed after emulator disappearance. Add the same serial-pinned continuous logcat and host/crash diagnostics as #291; all 25 host harness tests pass. No assertions, timeouts or application behavior change. Keep #274 unmerged until paired acceptance and actual #291 main integration pass. [Engineering](engineering/updates/2026-11-21-combined-erasure-owner-encryption.md).
+
 ## 2026-11-21 — Final source consolidation for owner-directed draft merges
 
 Hosted checks at `2596b59d` pass web, the five explicit server tests, SQL, security, container and Android compilation; R8 loses its emulator during Wallet acceptance and is failed. The same-source compiler comparisons and encrypted seed/vault checks passed. Apply the same bounded resource/renderer setup as #291 (daemon release, memory/disk/RSS evidence, software OpenGL without Vulkan) and require full current-head paired acceptance; no failed or canceled check is relabeled.

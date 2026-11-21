@@ -1,5 +1,7 @@
 # MOVO
 
+The remaining encryption/erasure source merges are waiting for complete paired Android emulator acceptance. Emulator disappearance remains a failed check with continuous pre-failure diagnostic capture. No production activation is inferred.
+
 MOVO combines the audited owner/import/iOS safeguards, development-tool patches and selected wallet/workspace/outbox/QR encryption, while preserving account IDs, financial fields/math and the React/Supabase/Capacitor structure. Server erasure and retention default to disabled pending separately approved migrations and activation. [Source consolidation and validation](docs/engineering/updates/2026-11-21-combined-erasure-owner-encryption.md) records the owner-directed merge sequence; production hosting and signed-device/store evidence remain separate release gates.
 #330's audited owner/import/iOS/hosting-preparation fixes are merged into main (`c3e37d7c`). The owner-directed draft merge sequence is integrating the remaining development-tool, encryption and erasure branches with fresh combined checks. Production hosting, unapplied migrations and signed-device/store activation remain separately gated; merging source does not establish a live deployment.
 
