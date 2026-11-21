@@ -1,5 +1,7 @@
 ## 2026-11-21 — #291 final current-main source validation
 
+The final clean-graph original-only build/notice audit passes. The paired R8 fixture now explicitly distinguishes legacy baseline storage from mandatory candidate encryption, retaining balance/card identity/style, native bridge, process restart, isolation and hard-failure assertions. Twenty-four host harness tests pass; fresh paired emulator/native checks are required for this final source head.
+
 Integrated released #330/#331 main `cfb83c51`, preserving encrypted stores, owner/generation-bound import and confirmation, selective cleanup and partial-deletion reporting. Fresh locked install, 265 suites / 1,746 tests, typecheck and 24 Node checks pass. Synthetic browser migration, encrypted save/reload and non-destructive key-loss gating pass. Final clean-graph bundle and exact-head hosted/native checks are required before the owner-directed source merge; production activation remains separate. [Engineering](engineering/updates/2026-11-21-encryption-owner-integration.md).
 
 ## 2026-11-21 — #291 integrates released owner/restore safeguards

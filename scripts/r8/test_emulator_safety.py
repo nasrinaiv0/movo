@@ -116,6 +116,16 @@ class EmulatorSafetyTests(unittest.TestCase):
                 with patch.object(smoke, 'adb', side_effect=[output, '']), self.assertRaises(RuntimeError):
                     smoke.instrument(Path(folder), 'testMethod', legal)
 
+    def test_each_instrumentation_explicitly_requires_the_selected_finance_format(self):
+        passed = 'MOVO_R8_SMOKE_PASS testMethod\nINSTRUMENTATION_CODE: -1\n'
+        for encrypted in [True, False]:
+            with self.subTest(encrypted=encrypted), tempfile.TemporaryDirectory() as folder:
+                with patch.object(smoke, 'adb', return_value=passed) as adb:
+                    smoke.instrument(Path(folder), 'testMethod', {'date': '2026-11-20', 'revision': '', 'encryptedFinance': encrypted})
+                    args = adb.call_args.args
+                    position = args.index('movoExpectEncryptedFinance')
+                    self.assertEqual(args[position + 1], 'true' if encrypted else 'false')
+
     def test_adb_deadline_is_a_hard_failure_even_for_best_effort_command(self):
         with patch.object(smoke.subprocess, 'run', side_effect=subprocess.TimeoutExpired(['adb'], 90)) as run:
             with self.assertRaises(subprocess.TimeoutExpired):

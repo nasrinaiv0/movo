@@ -110,6 +110,7 @@ def instrument(folder, method, legal, phase=None):
     label = phase or method
     args = ["shell", "am", "instrument", "-w", "-r", "-e", "movoR8Smoke", "true", "-e", "movoTest", method]
     args.extend(["-e", "movoLegalDate", legal["date"]])
+    args.extend(["-e", "movoExpectEncryptedFinance", "true" if legal.get("encryptedFinance") else "false"])
     if legal["revision"]:
         args.extend(["-e", "movoLegalRevision", legal["revision"]])
     if phase:
@@ -177,6 +178,8 @@ def main():
         adb("shell", tool, "-I", "OUTPUT", "1", "-j", "DROP")
         adb("shell", tool, "-C", "OUTPUT", "-j", "DROP")
     for label in ("baseline", "candidate"):
+        fixture = {**legal, "encryptedFinance": label == "candidate" and
+                   (Path(__file__).resolve().parents[2] / "src/lib/financeVault.js").is_file()}
         print("Starting minified release acceptance: " + label, flush=True)
         built = output / "default" / label
         folder = built / "device"
@@ -190,7 +193,7 @@ def main():
             # Seed native Preferences before any WebView/React state can write
             # defaults over an out-of-band fixture. The first real startup must
             # restore it through the production Preferences bridge.
-            instrument(folder, "seedOfflineWallet", legal)
+            instrument(folder, "seedOfflineWallet", fixture)
             adb("shell", "am", "force-stop", PACKAGE)
             cold = adb("shell", "am", "start", "-S", "-W", "-n", PACKAGE + "/.MainActivity")
             (folder / "cold-launch.txt").write_text(cold)
@@ -199,12 +202,12 @@ def main():
             for method in ("bridgeVaultPersistsAcrossActivityRecreation",
                            "offlineWalletLogoStyleAndSyntheticOAuthCallback"):
                 adb("shell", "am", "force-stop", PACKAGE)
-                instrument(folder, method, legal)
+                instrument(folder, method, fixture)
             adb("shell", "am", "force-stop", PACKAGE)
-            instrument(folder, "processPersistencePhase", legal, "seed")
+            instrument(folder, "processPersistencePhase", fixture, "seed")
             adb("shell", "am", "force-stop", PACKAGE)
             # Do not clear/uninstall between these phases: same Keystore+storage.
-            instrument(folder, "processPersistencePhase", legal, "verify")
+            instrument(folder, "processPersistencePhase", fixture, "verify")
             (folder / "passed.txt").write_text("Synthetic bridge/offline/native callback and separate-process vault checks passed.\nReal Google/email sign-in and signed store purchases were NOT tested.\n")
         finally:
             capture(folder)
