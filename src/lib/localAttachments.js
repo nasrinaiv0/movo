@@ -33,3 +33,15 @@ export async function clearLocalAttachments() {
     tx.oncomplete = resolve; tx.onerror = tx.onabort = () => reject(tx.error);
   }); } finally { db.close(); }
 }
+
+/** Delete only attachments referenced by the confirmed account's records. */
+export async function removeLocalAttachments(keys) {
+  if (!Array.isArray(keys) || keys.some(key => typeof key !== 'string' || !key.startsWith('localreceipt:') || key.length > 512)) throw new Error('invalid_attachment_cleanup');
+  if (!keys.length) return;
+  const db = await open();
+  try { await new Promise((resolve, reject) => {
+    const tx = db.transaction('files', 'readwrite');
+    for (const key of new Set(keys)) tx.objectStore('files').delete(key);
+    tx.oncomplete = resolve; tx.onerror = tx.onabort = () => reject(tx.error || new Error('attachment_cleanup_failed'));
+  }); } finally { db.close(); }
+}

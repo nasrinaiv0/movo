@@ -1,0 +1,277 @@
+{
+  "candidate": {
+    "counts": {
+      "info": 0,
+      "low": 9,
+      "moderate": 4,
+      "high": 16,
+      "critical": 0,
+      "total": 29
+    },
+    "advisories": [
+      {
+        "package": "@jest/core",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "@svgr/plugin-svgo",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "@svgr/webpack",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "@tootallnate/once",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "bfj",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "css-minimizer-webpack-plugin",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "css-select",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "http-proxy-agent",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jest",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jest-cli",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jest-config",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jest-environment-jsdom",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jest-runner",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jsdom",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jsonpath",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "nth-check",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "postcss",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "react-scripts",
+        "severity": "high",
+        "direct": true
+      },
+      {
+        "package": "resolve-url-loader",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "rollup-plugin-terser",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "serialize-javascript",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "sockjs",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "svgo",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "underscore",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "uuid",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "webpack-dev-middleware",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "webpack-dev-server",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "workbox-build",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "workbox-webpack-plugin",
+        "severity": "high",
+        "direct": false
+      }
+    ]
+  },
+  "production": {
+    "counts": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "advisories": []
+  },
+  "pr331": {
+    "counts": {
+      "info": 0,
+      "low": 9,
+      "moderate": 1,
+      "high": 9,
+      "critical": 0,
+      "total": 19
+    },
+    "advisories": [
+      {
+        "package": "@jest/core",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "@svgr/plugin-svgo",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "@svgr/webpack",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "@tootallnate/once",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "css-select",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "http-proxy-agent",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jest",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jest-cli",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jest-config",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jest-environment-jsdom",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jest-runner",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "jsdom",
+        "severity": "low",
+        "direct": false
+      },
+      {
+        "package": "nth-check",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "postcss",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "react-scripts",
+        "severity": "high",
+        "direct": true
+      },
+      {
+        "package": "resolve-url-loader",
+        "severity": "moderate",
+        "direct": false
+      },
+      {
+        "package": "svgo",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "webpack-dev-middleware",
+        "severity": "high",
+        "direct": false
+      },
+      {
+        "package": "webpack-dev-server",
+        "severity": "high",
+        "direct": false
+      }
+    ]
+  }
+}

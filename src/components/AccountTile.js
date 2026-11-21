@@ -1,3 +1,4 @@
+import { thirdPartyArtworkAllowed } from '../lib/assetRights';
 import React from 'react';
 import Icon from './Icon';
 import { money, shown } from '../lib/format';
@@ -39,7 +40,7 @@ export default function AccountTile({ a, show = true, style, size = 'tile', onCl
   const network = /mastercard/i.test(String(a.brand || '') + ' ' + String(a.name || '')) ? 'mastercard.com' : /visa/i.test(String(a.brand || '') + ' ' + String(a.name || '')) ? 'visa.com' : null;
   const body = <>
     <span className="at-top">
-      <span className="at-icon" aria-hidden="true">{institutionSite ? <img className="at-institution-logo" src={'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(institutionSite) + '&sz=128'} alt="" width={size === 'grid' ? 24 : 32} height={size === 'grid' ? 24 : 32} loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <Icon name={s.icon} size={size === 'grid' ? 16 : 20} strokeWidth={2} />}</span>
+      <span className="at-icon" aria-hidden="true">{thirdPartyArtworkAllowed() && institutionSite ? <img className="at-institution-logo" src={'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(institutionSite) + '&sz=128'} alt="" width={size === 'grid' ? 24 : 32} height={size === 'grid' ? 24 : 32} loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <Icon name={s.icon} size={size === 'grid' ? 16 : 20} strokeWidth={2} />}</span>
       <span className="at-name">{/* One title: the institution (chosen or typed), else the account name. Never both. */ String(a.institution_name || '').trim() || a.name || tr('Account preview')}{a.mask && <small className="at-mask">•••• {a.mask}</small>}</span>
       {size !== 'grid' && <span className="at-type">{a.account_type === 'card' && a.cardKind ? (a.cardKind === 'credit' ? tr('Credit') : tr('Debit')) : tr(typeMeta(a.account_type).label)}</span>}
     </span>

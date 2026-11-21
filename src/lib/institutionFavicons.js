@@ -1,3 +1,4 @@
+import { thirdPartyArtworkAllowed } from './assetRights';
 /**
  * Institution favicon registry.
  *
@@ -351,6 +352,7 @@ export const APPROVED_STATUSES = [OWNER_APPROVAL, 'APPROVED_POLICY_REVIEW', 'APP
 const byLowerName = new Map(Object.keys(INSTITUTION_FAVICONS).map(k => [k.toLowerCase(), k]));
 
 export function getInstitutionFaviconUrl(institutionName, { size = 128, countryCode } = {}) {
+  if (!thirdPartyArtworkAllowed()) return null;
   if (!institutionName || typeof institutionName !== 'string') return null;
 
   const key = byLowerName.get(institutionName.trim().toLowerCase());

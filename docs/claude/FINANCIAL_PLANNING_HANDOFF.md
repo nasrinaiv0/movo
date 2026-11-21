@@ -1,5 +1,7 @@
 # Handoff — Financial Planning & Bills (continue in the MOVO project)
 
+> **2026-11-20 continuation:** This is a November 1–2 historical snapshot, including superseded plan/pricing proposals. Reconcile with the [current audit execution handover](../engineering/handovers/2026-11-20-audit-gap-execution.md) and live source before implementing anything below. Keep the existing financial data model, screens and accounting contracts; no product redesign or production migration is authorized by this old task list.
+
 Date: 2026-11-01 (status refreshed 2026-11-02). Handed over from a NasrinAI-repo session; all work below is in `nasrinaiv0/movo`.
 Spec: [`docs/specs/FINANCIAL_PLANNING_AND_BILLS_SPEC.md`](../specs/FINANCIAL_PLANNING_AND_BILLS_SPEC.md). Read it and `CLAUDE.md` first.
 

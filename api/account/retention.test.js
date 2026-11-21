@@ -1,7 +1,7 @@
-import handler from '../../api/account/retention';
-import * as billing from '../../api/lib/iapSecurity';
+import handler from './retention';
+import * as billing from '../lib/iapSecurity';
 
-jest.mock('../../api/lib/iapSecurity', () => ({
+jest.mock('../lib/iapSecurity', () => ({
   json: jest.fn((res, status, body) => { res.statusCode = status; res.body = body; return res; }),
   adminClient: jest.fn(() => ({})), rpc: jest.fn(async () => ({})),
 }));

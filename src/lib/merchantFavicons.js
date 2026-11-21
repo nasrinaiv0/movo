@@ -1,3 +1,4 @@
+import { thirdPartyArtworkAllowed } from './assetRights';
 /**
  * Merchant logo registry for transaction rows.
  *
@@ -53,6 +54,7 @@ const approved = (entry) => APPROVED_STATUSES.includes(entry.reviewStatus || OWN
 
 /** Logo URL for a transaction's merchant (curated merchants, subscriptions, then banks/e-wallets), or ''. */
 export function merchantLogoUrl(merchant, { size = 128 } = {}) {
+  if (!thirdPartyArtworkAllowed()) return null;
   const m = match(merchant, KEYS);
   if (m && approved(MERCHANT_FAVICONS[m])) return url(MERCHANT_FAVICONS[m].domain, size);
   const s = match(merchant, SUBS);

@@ -45,6 +45,42 @@ class EmulatorSafetyTests(unittest.TestCase):
             smoke.disable_pixel_launcher()
         adb.assert_not_called()
 
+    def test_root_requires_a_verified_emulator_and_actual_root_uid(self):
+        with patch.object(smoke, 'adb') as adb, self.assertRaises(RuntimeError):
+            smoke.establish_emulator_root()
+        adb.assert_not_called()
+        smoke.ADB_SERIAL = 'emulator-5554'
+        with patch.object(smoke, 'adb', side_effect=['1', '', '', '1', '2000']) as adb:
+            with self.assertRaisesRegex(RuntimeError, 'root was not established'):
+                smoke.establish_emulator_root()
+            self.assertEqual(adb.call_count, 5)
+
+    def test_root_recovers_only_a_bounded_transport_disconnect_on_the_pinned_target(self):
+        smoke.ADB_SERIAL = 'emulator-5554'
+        closed = subprocess.CalledProcessError(1, ['adb', 'root'], stderr='adb: unable to connect for root: closed')
+        with patch.object(smoke, 'adb', side_effect=['1', closed, '', '1', '', '', '1', '0']) as adb:
+            smoke.establish_emulator_root()
+            self.assertEqual(smoke.ADB_SERIAL, 'emulator-5554')
+            self.assertEqual(sum(call.args == ('root',) for call in adb.call_args_list), 2)
+        with patch.object(smoke, 'adb', side_effect=['1', closed, '', '1', closed, '', '1', closed]) as adb:
+            with self.assertRaises(subprocess.CalledProcessError):
+                smoke.establish_emulator_root()
+            self.assertEqual(sum(call.args == ('root',) for call in adb.call_args_list), 3)
+
+    def test_root_refuses_changed_identity_unknown_failures_and_timeouts(self):
+        smoke.ADB_SERIAL = 'emulator-5554'
+        failures = [
+            (['0'], RuntimeError),
+            (['1', '', '', '0'], RuntimeError),
+            (['1', subprocess.CalledProcessError(1, ['adb', 'root'], stderr='permission denied')], subprocess.CalledProcessError),
+            (['1', subprocess.TimeoutExpired(['adb', 'root'], 90)], subprocess.TimeoutExpired),
+        ]
+        for responses, error in failures:
+            with self.subTest(responses=responses), patch.object(smoke, 'adb', side_effect=responses) as adb:
+                with self.assertRaises(error):
+                    smoke.establish_emulator_root()
+                self.assertEqual(adb.call_count, len(responses))
+
     def test_launcher_setup_only_disables_pixel_launcher_and_verifies_it(self):
         smoke.ADB_SERIAL = 'emulator-5554'
         launcher = 'com.google.android.apps.nexuslauncher'
@@ -79,6 +115,16 @@ class EmulatorSafetyTests(unittest.TestCase):
             with self.subTest(output=output), tempfile.TemporaryDirectory() as folder:
                 with patch.object(smoke, 'adb', side_effect=[output, '']), self.assertRaises(RuntimeError):
                     smoke.instrument(Path(folder), 'testMethod', legal)
+
+    def test_each_instrumentation_explicitly_requires_the_selected_finance_format(self):
+        passed = 'MOVO_R8_SMOKE_PASS testMethod\nINSTRUMENTATION_CODE: -1\n'
+        for encrypted in [True, False]:
+            with self.subTest(encrypted=encrypted), tempfile.TemporaryDirectory() as folder:
+                with patch.object(smoke, 'adb', return_value=passed) as adb:
+                    smoke.instrument(Path(folder), 'testMethod', {'date': '2026-11-20', 'revision': '', 'encryptedFinance': encrypted})
+                    args = adb.call_args.args
+                    position = args.index('movoExpectEncryptedFinance')
+                    self.assertEqual(args[position + 1], 'true' if encrypted else 'false')
 
     def test_adb_deadline_is_a_hard_failure_even_for_best_effort_command(self):
         with patch.object(smoke.subprocess, 'run', side_effect=subprocess.TimeoutExpired(['adb'], 90)) as run:

@@ -1,3 +1,4 @@
+import { seedPreferenceFixture } from './testPreferenceFixtures';
 import 'fake-indexeddb/auto';
 import { webcrypto } from 'crypto';
 import { clearHybridOwner } from './lib/hybridLocalStore';
@@ -28,11 +29,14 @@ jest.mock('./lib/supabaseClient', () => ({
   },
 }));
 jest.mock('./lib/financeRepository', () => ({
-  getCurrentSession: async () => null,
+  getCurrentSession: jest.fn(), deleteMyAccount: jest.fn(), signOut: jest.fn(),
   listAccounts: async () => [], listTransactions: async () => [],
   listBudgets: async () => [], listAutomationInbox: async () => [],
   loadPreferences: async () => null, savePreferences: async () => null,
   purgeArchivedAutomations: async () => null, listArchivedAutomations: async () => [],
+}));
+jest.mock('./lib/localAttachments', () => ({
+  ...jest.requireActual('./lib/localAttachments'), removeLocalAttachments: jest.fn(),
 }));
 jest.mock('./lib/obligationsRepository', () => ({
   listAccountingPostings: async () => [],
@@ -47,6 +51,10 @@ import App from './App';
 import { saveOfflineWorkspace } from './lib/offlineWorkspaceStore';
 // eslint-disable-next-line import/first
 import { recoverHybridWorkspace } from './lib/hybridWorkspaceRecovery';
+// eslint-disable-next-line import/first
+import { deleteMyAccount, getCurrentSession, signOut } from './lib/financeRepository';
+// eslint-disable-next-line import/first
+import { removeLocalAttachments } from './lib/localAttachments';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 window.scrollTo = jest.fn();
@@ -65,9 +73,10 @@ describe('sign-in session handoff', () => {
   beforeEach(async () => {
     await clearHybridOwner(OWNER);
     localStorage.clear();
-    localStorage.setItem('movo.preferences.v3', JSON.stringify({ planWelcomeSeen: true, onboarded: true, tutorialSeen: true }));
+    seedPreferenceFixture(OWNER, JSON.stringify({ planWelcomeSeen: true, onboarded: true, tutorialSeen: true }));
     mockGetEntitlements.mockReset();
     mockGetEntitlements.mockImplementation(() => new Promise(() => {}));
+    getCurrentSession.mockResolvedValue(null);
     recoverHybridWorkspace.mockReset();
     recoverHybridWorkspace.mockImplementation(() => new Promise(resolve => { mockReleaseRecovery = resolve; }));
     container = document.createElement('div'); document.body.appendChild(container);
@@ -139,5 +148,39 @@ describe('sign-in session handoff', () => {
     await act(async () => { mockReleaseRecovery(); });
     expect(container.textContent).toContain('Preparing your secure MOVO space');
     expect(container.textContent).not.toContain('Private bank');
+  });
+
+  test('confirms cloud account deletion even if device cleanup fails, then attempts sign-out', async () => {
+    act(() => root.unmount());
+    seedPreferenceFixture(OWNER, JSON.stringify({ planWelcomeSeen: true, onboarded: true, tutorialSeen: true, cloudSyncEnabled: false }));
+    root = createRoot(container);
+    await act(async () => { root.render(<App />); });
+    await act(async () => { mockAuthCallback('SIGNED_IN', session); await new Promise(resolve => setTimeout(resolve, 10)); });
+    await act(async () => { mockReleaseRecovery(); });
+    await click(container, 'Settings');
+    await click(container, 'Delete Account');
+
+    localStorage.setItem('sb-other-project-auth-token', 'keep');
+    deleteMyAccount.mockResolvedValue(true);
+    getCurrentSession.mockResolvedValue(session);
+    signOut.mockResolvedValue({ localOnly: true });
+    removeLocalAttachments.mockRejectedValue(new Error('device_storage_unavailable'));
+    const input = container.querySelector('input[aria-label="Type DELETE to confirm"]');
+    act(() => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, 'DELETE');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await click(container, 'Delete my account');
+    await act(async () => {
+      for (let i = 0; i < 100 && !signOut.mock.calls.length; i += 1) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+    });
+
+    expect(deleteMyAccount).toHaveBeenCalledWith(OWNER);
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('[role="dialog"]').textContent).toContain('Your MOVO account was deleted.');
+    expect(container.querySelector('[role="alert"]').textContent).toContain('Some data may remain on this device.');
+    expect(localStorage.getItem('sb-other-project-auth-token')).toBe('keep');
   });
 });

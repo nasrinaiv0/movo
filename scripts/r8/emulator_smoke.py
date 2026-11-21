@@ -43,7 +43,7 @@ def adb(*args, check=True, timeout=90):
     result = subprocess.run([*prefix, *args], text=True, capture_output=True, timeout=timeout)
     if check and result.returncode:
         print(result.stdout + result.stderr, file=sys.stderr)
-        raise subprocess.CalledProcessError(result.returncode, result.args)
+        raise subprocess.CalledProcessError(result.returncode, result.args, output=result.stdout, stderr=result.stderr)
     return result.stdout
 
 
@@ -66,6 +66,30 @@ def require_disposable_emulator(opt_in):
     return serial
 
 
+def establish_emulator_root():
+    """Recover bounded ADB restart disconnects without accepting an unverified target."""
+    if not ADB_SERIAL or not re.fullmatch(r"emulator-\d+", ADB_SERIAL):
+        raise RuntimeError("Require the verified disposable emulator before requesting root")
+    for attempt in range(3):
+        try:
+            if adb("shell", "getprop", "ro.kernel.qemu").strip() != "1":
+                raise RuntimeError("Reconnected ADB target did not prove it is an emulator")
+            adb("root")
+            adb("wait-for-device", timeout=30)
+            if adb("shell", "getprop", "ro.kernel.qemu").strip() != "1":
+                raise RuntimeError("Rooted ADB target did not prove it is an emulator")
+            if adb("shell", "id", "-u").strip() != "0":
+                raise RuntimeError("Emulator root was not established; refuse firewall or package changes")
+            return
+        except subprocess.CalledProcessError as error:
+            diagnostic = (error.output or "") + (error.stderr or "")
+            if attempt == 2 or not re.search(r"(?:unable to connect for root: closed|device offline|error: closed)", diagnostic):
+                raise
+            print("ADB transport restarted; reconnecting the same verified emulator.", flush=True)
+            adb("wait-for-device", timeout=30)
+    raise RuntimeError("Emulator root was not established")
+
+
 def disable_pixel_launcher():
     """Keep a background launcher ANR from covering the app under test."""
     if not ADB_SERIAL:
@@ -86,6 +110,7 @@ def instrument(folder, method, legal, phase=None):
     label = phase or method
     args = ["shell", "am", "instrument", "-w", "-r", "-e", "movoR8Smoke", "true", "-e", "movoTest", method]
     args.extend(["-e", "movoLegalDate", legal["date"]])
+    args.extend(["-e", "movoExpectEncryptedFinance", "true" if legal.get("encryptedFinance") else "false"])
     if legal["revision"]:
         args.extend(["-e", "movoLegalRevision", legal["revision"]])
     if phase:
@@ -142,8 +167,7 @@ def main():
     output = args.output.resolve()
     legal = legal_fixture((Path(__file__).resolve().parents[2] / "src/lib/legalVersion.js").read_text())
     (output / "legal-fixture.json").write_text(json.dumps(legal, indent=2) + "\n")
-    adb("root")
-    adb("wait-for-device")
+    establish_emulator_root()
     disable_pixel_launcher()
     # google_apis (not Play Store) images support root. Fail if network isolation
     # cannot be established. ADB uses the emulator transport, not Android OUTPUT.
@@ -153,6 +177,10 @@ def main():
     for tool in ("iptables", "ip6tables"):
         adb("shell", tool, "-I", "OUTPUT", "1", "-j", "DROP")
         adb("shell", tool, "-C", "OUTPUT", "-j", "DROP")
+    # Both variants compile this same app source; only their R8 rules differ.
+    # Require the same financial storage representation in both compiler outputs.
+    fixture = {**legal, "encryptedFinance":
+               (Path(__file__).resolve().parents[2] / "src/lib/financeVault.js").is_file()}
     for label in ("baseline", "candidate"):
         print("Starting minified release acceptance: " + label, flush=True)
         built = output / "default" / label
@@ -167,7 +195,7 @@ def main():
             # Seed native Preferences before any WebView/React state can write
             # defaults over an out-of-band fixture. The first real startup must
             # restore it through the production Preferences bridge.
-            instrument(folder, "seedOfflineWallet", legal)
+            instrument(folder, "seedOfflineWallet", fixture)
             adb("shell", "am", "force-stop", PACKAGE)
             cold = adb("shell", "am", "start", "-S", "-W", "-n", PACKAGE + "/.MainActivity")
             (folder / "cold-launch.txt").write_text(cold)
@@ -176,12 +204,12 @@ def main():
             for method in ("bridgeVaultPersistsAcrossActivityRecreation",
                            "offlineWalletLogoStyleAndSyntheticOAuthCallback"):
                 adb("shell", "am", "force-stop", PACKAGE)
-                instrument(folder, method, legal)
+                instrument(folder, method, fixture)
             adb("shell", "am", "force-stop", PACKAGE)
-            instrument(folder, "processPersistencePhase", legal, "seed")
+            instrument(folder, "processPersistencePhase", fixture, "seed")
             adb("shell", "am", "force-stop", PACKAGE)
             # Do not clear/uninstall between these phases: same Keystore+storage.
-            instrument(folder, "processPersistencePhase", legal, "verify")
+            instrument(folder, "processPersistencePhase", fixture, "verify")
             (folder / "passed.txt").write_text("Synthetic bridge/offline/native callback and separate-process vault checks passed.\nReal Google/email sign-in and signed store purchases were NOT tested.\n")
         finally:
             capture(folder)

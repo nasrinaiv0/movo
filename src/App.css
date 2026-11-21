@@ -9424,3 +9424,69 @@ html:not(.native-chrome) .movo-app.movo-app.movo-app.movo-app:not(.layout-tablet
   font-style: normal; font-size: 10.5px; font-weight: 700; letter-spacing: .02em; line-height: 1.5;
   color: var(--accent-ink, var(--accent)); background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
+
+/* ===== iOS system-adaptive controls and panels (2026-11-20) =====
+   UIKit supplies accessibility settings and live bar metrics. Existing app appearance choices
+   remain overrides; there are no phone-model dimensions or persisted device accessibility values. */
+.ios-interface .movo-app {
+  --pop-bg: var(--ios-panel-bg, var(--card-solid));
+  --pop-field: var(--ios-field-bg, var(--field));
+  --pop-rim: var(--ios-separator, var(--line));
+  --control-target: 44px;
+  --control-height: max(48px, calc(40px * var(--font-scale, 1)));
+}
+.ios-interface.native-chrome main.screen {
+  padding-top: calc(env(safe-area-inset-top) + var(--native-top-height, 62px));
+  padding-inline-start: max(18px, env(safe-area-inset-left));
+  padding-inline-end: max(18px, env(safe-area-inset-right));
+}
+html.ios-interface.native-chrome .movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block) {
+  --hero-pull: calc(env(safe-area-inset-top) + var(--native-top-height, 62px));
+}
+.ios-interface .movo-app button:not(.toggle) {
+  min-height: var(--control-target);
+}
+.ios-interface .movo-app :is(.wide-button, .sheet-actions > button, .confirm-actions > button, .settings-row, .menu-row) {
+  height: auto; min-height: var(--control-height); white-space: normal; overflow-wrap: anywhere;
+}
+/* Keep the familiar switch track while providing a 44pt interaction area. */
+.ios-interface .movo-app .toggle::before {
+  content: ''; position: absolute; width: 100%; min-width: var(--control-target);
+  height: var(--control-target); left: 50%; top: 50%; transform: translate(-50%, -50%);
+}
+.ios-interface .movo-app.movo-app.movo-app .sheet-backdrop {
+  top: var(--ios-viewport-top, 0px); bottom: auto;
+  height: var(--ios-viewport-height, 100dvh); box-sizing: border-box;
+  padding-top: max(8px, env(safe-area-inset-top));
+  padding-left: max(8px, env(safe-area-inset-left));
+  padding-right: max(8px, env(safe-area-inset-right));
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+.ios-interface .movo-app.movo-app.movo-app.movo-app .sheet.sheet.sheet {
+  max-height: calc(var(--ios-viewport-height, 100dvh) - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+  min-width: 0; overscroll-behavior: contain;
+}
+.ios-interface .movo-app .sheet :is(.sheet-title, .sheet-sub, .field-label, .settings-row-main) {
+  min-width: 0; overflow-wrap: anywhere;
+}
+.ios-interface.ios-bold-text .movo-app { font-weight: 600; }
+.ios-interface.ios-increase-contrast .movo-app { --pop-rim: var(--muted); }
+.ios-interface.ios-reduce-transparency .movo-app :is(.sheet-backdrop, .confirm-layer) {
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+.ios-interface.ios-reduce-transparency .movo-app :is(.card, .bottom-nav, .screen-header) {
+  background-color: var(--card-solid); -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+.ios-interface.ios-reduce-motion .movo-app *,
+.ios-interface.ios-reduce-motion .movo-app *::before,
+.ios-interface.ios-reduce-motion .movo-app *::after {
+  animation-duration: 0.01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important; scroll-behavior: auto !important;
+}
+/* Let available width and text size choose the number of action columns. */
+.ios-interface .movo-app .qa-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.5em), 1fr));
+}
+.ios-interface .movo-app .qa-button { overflow-wrap: anywhere; }
+.ios-interface .movo-app .menu-row:has(> .toggle) { flex-wrap: wrap; }
+.ios-interface .movo-app .menu-row:has(> .toggle) > .menu-main { flex: 1 1 10em; }

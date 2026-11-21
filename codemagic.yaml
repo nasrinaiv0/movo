@@ -21,7 +21,7 @@ workflows:
         BUNDLE_ID: com.nasrinai.movo
         XCODE_PROJECT: ios/App/App.xcodeproj
         XCODE_SCHEME: App
-      node: 22
+      node: 26
       xcode: latest
       ios_signing:
         distribution_type: app_store
@@ -46,7 +46,7 @@ workflows:
           fi
       - name: Validate iOS source release gates
         script: |
-          node --test scripts/check-ios-release-readiness.test.cjs
+          node --test scripts/check-ios-release-readiness.test.cjs scripts/check-app-store-rights.test.cjs
           node scripts/check-ios-release-readiness.cjs
       - name: Tests and typecheck
         script: |
@@ -56,7 +56,7 @@ workflows:
         script: |
           # The public cloud connection comes from .env.production (the movo_web group, when set, takes precedence).
           # Tests already passed above; avoid a second prebuild test suite on signed CI.
-          CI=true npx react-scripts build
+          npm run build:app-store
           node scripts/check-bundled-cloud-config.cjs build
       - name: Copy the web app into the iOS project
         script: npx cap sync ios
@@ -66,6 +66,8 @@ workflows:
         script: |
           sed -i '' -E "s/CURRENT_PROJECT_VERSION = [0-9]+;/CURRENT_PROJECT_VERSION = ${BUILD_NUMBER};/" "$XCODE_PROJECT/project.pbxproj"
           grep -m1 "CURRENT_PROJECT_VERSION" "$XCODE_PROJECT/project.pbxproj"
+      - name: Check ownership and store identity before upload
+        script: node scripts/check-app-store-rights.cjs --upload
       - name: Build the signed app
         script: xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"
     artifacts:
