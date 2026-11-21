@@ -1,5 +1,9 @@
 # MOVO Master Change Ledger
 
+## 2026-11-21 — Owner-directed draft merge sequence
+
+#330 merged as `c3e37d7c` after eight exact-head hosted workflows passed. #331 now integrates released audit source with its development overrides: clean install, 259 suites / 1,708 tests, typecheck, 24 Node checks and strict original-only bundle pass. Preserve both documentation histories. Revalidate this head before merging; integrate current owner/selective-cleanup guards into encryption and erasure branches next. Production migrations, hosting/provider changes and signed store/device release remain held independently. [Engineering](updates/2026-11-21-merge-build-tool-hardening.md).
+
 ## 2026-11-21 — Fresh full audit and boundary fixes (#330)
 
 [Audit and acceptance limits](../audits/2026-11-21-full-movo-audit.md) · [Engineering record](updates/2026-11-21-full-audit-remediation.md). Bind asynchronous backup restoration to the original owner/generation; reject ambiguous financial routing, unsafe/invalid imported money and impossible calendar days; propagate invalid aggregates; reflow text-sized settings choices, stabilize accessible side-nav names and recover bounded verified-emulator ADB restarts. Preserve all financial structures/history, existing architecture and API contracts. 1,704 tests, typecheck, 24 Node / 23 Python checks, strict builds, responsive/keyboard flows and real-worker outage acceptance pass locally. New-head hosted/native acceptance remains required. Production 402, remaining migration approval, encryption/erasure integration and signed-device/store evidence still block release. No production write or merge.
@@ -37,6 +41,13 @@ Release held: Vercel account blocked and public MOVO HTTP 402 DEPLOYMENT_DISABLE
 ## 2026-11-20 — Audit handover and account preference preservation
 
 Historical handoffs now lead to the current audit execution matrix. Preserve the existing architecture, financial models, APIs and screens. Reset/deletion results are bound to the confirmed owner; other guest/account preference envelopes and unassigned recovery are retained. No production erasure/retention migration is applied. See [preservation review](updates/2026-11-20-handover-preservation-review.md) and [execution handover](handovers/2026-11-20-audit-gap-execution.md).
+
+## 2026-11-20 — Build-tool security advisory remediation
+
+Pinned patched development-only transitive packages without replacing Create React App or changing application/native code: serialize-javascript 7.1.4, underscore 1.13.8 and SockJS UUID 11.1.1. The clean-install production dependency graph is unchanged. npm audit falls from 31 findings (16 high) to 19 (9 high); production audit remains zero. The remaining development-tool advisories require a separate compatibility-reviewed toolchain upgrade.
+
+Node 26.13.1: clean install, full build (including offline-worker, localization and email checks), type checking and 252 suites / 1,644 tests pass. New compatibility regressions exercise actual serializer, UUID undersized buffers, SockJS and JSONPath contracts. Hosted checks remain pending; Vercel reports the account blocked. See [engineering record](updates/2026-11-20-build-tool-security.md).
+
 
 ## 2026-11-09 — Vercel Sandbox access restored; PR #247 verification
 

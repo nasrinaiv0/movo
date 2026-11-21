@@ -1,3 +1,7 @@
+## 2026-11-21 — Owner-directed source merges; #331 current-main integration
+
+#330 merged as `c3e37d7c` after all eight exact-head code/native/SQL/container checks passed. The owner now explicitly asks to merge all drafts. #331 integrates that released source while retaining its development-only overrides. Fresh clean-install combined validation: 259 suites / 1,708 tests, typecheck, 24 Node checks and strict iOS-profile build/packaging pass. New-head hosted validation is required before #331 merges. #291/#274 still need combined owner/encryption/cleanup validation. Production migration approval/activation, Vercel account resolution and signed store/device evidence remain separate from these source merges. [Engineering record](engineering/updates/2026-11-21-merge-build-tool-hardening.md).
+
 ## 2026-11-21 — Full audit and confirmed-defect remediation (#330)
 
 [Current audit and fresh UI/database/outage evidence](audits/2026-11-21-full-movo-audit.md) · [Engineering update](engineering/updates/2026-11-21-full-audit-remediation.md). Reproduced and fixed account-switch backup restoration, ambiguous import routing, cent/calendar validation, invalid aggregates, adaptive font/icon grids, stable side-nav names and bounded ADB restart recovery. Preserve architecture, financial fields/history, account IDs and API contracts. Local: 258 suites / 1,704 tests, typecheck, 24 Node and 23 Python checks, strict builds and 27 browser observations pass. Seven hosted workflows passed at predecessor `f2aa4587`; paired R8 failed before instrumentation. New-head CI is required. Production remains 402; #274 approval, #291/#274 integration, physical/signed-device and store rights evidence remain open. All four distinct PRs remain drafts; no production action or merge.
@@ -62,6 +66,13 @@ Release held: Vercel account blocked and public MOVO HTTP 402 DEPLOYMENT_DISABLE
 - [Execution handoff](engineering/handovers/2026-11-20-audit-gap-execution.md) · [Implementation](engineering/updates/2026-11-20-owner-preference-isolation.md).
 
 ## 2026-11-20 — Open PR consolidation
+
+## 2026-11-20 — Build-tool security advisory remediation
+
+Pinned patched development-only transitive packages without replacing Create React App or changing application/native code: serialize-javascript 7.1.4, underscore 1.13.8 and SockJS UUID 11.1.1. The clean-install production dependency graph is unchanged. npm audit falls from 31 findings (16 high) to 19 (9 high); production audit remains zero. The remaining development-tool advisories require a separate compatibility-reviewed toolchain upgrade.
+
+Node 26.13.1: clean install, full build (including offline-worker, localization and email checks), type checking and 252 suites / 1,644 tests pass. New compatibility regressions exercise actual serializer, UUID undersized buffers, SockJS and JSONPath contracts. Hosted checks remain pending; Vercel reports the account blocked. See [engineering record](engineering/updates/2026-11-20-build-tool-security.md).
+
 
 - #328 merged as `45b9e968` after its explicitly approved production migration and green hosted checks. Catalog verification confirms raw transaction writes denied and anonymous reset denied.
 - #327 integrates the complete #326 harness, current main accounting fixes and #329 setup/accessibility changes. Both source PR records are preserved. Final integrated CI must pass before merge.

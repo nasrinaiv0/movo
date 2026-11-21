@@ -1,5 +1,7 @@
 # MOVO
 
+#330's audited owner/import/iOS/hosting-preparation fixes are merged into main (`c3e37d7c`). The owner-directed draft merge sequence is integrating the remaining development-tool, encryption and erasure branches with fresh combined checks. Production hosting, unapplied migrations and signed-device/store activation remain separately gated; merging source does not establish a live deployment.
+
 The [November 21 full audit](docs/audits/2026-11-21-full-movo-audit.md) reproduces and fixes account-switch backup restoration, import routing/cents/calendar errors, unsafe totals and adaptive control issues in #330. Local verification passes 1,704 tests; production hosting, remaining migrations, signed-device and store evidence still gate release. Existing architecture and financial structures are preserved.
 
 [Hosting resilience](docs/MOVO_HOSTING_RESILIENCE.md): the candidate can open its previously installed browser shell on host HTTP 402/429/5xx, and its existing APIs can run through an optional independent Node host. Full online independence still requires a deployed, tested backend and domain routing; no hosting or DNS was changed.
@@ -11,6 +13,7 @@ App Store preparation now has an original-only iOS artwork profile, bundled soft
 The iOS candidate now connects Dynamic Type, semantic system surfaces and accessibility settings to shared controls and panels, while retaining custom appearance choices and the existing hybrid architecture. See [the iOS interface review](docs/audits/2026-11-20-ios-interface-review.md) for measured coverage and native acceptance limits.
 
 The [PR #329 follow-up audit](docs/audits/2026-11-20-pr329-remediation-review.md) records owner-safe cleanup, financial-entry and localized-navigation fixes in #330, plus dependency hardening in #331. Current production returns HTTP 402 DEPLOYMENT_DISABLED; hosted acceptance and release remain blocked. Existing architecture and financial formats are preserved.
+Build-tool security remediation and its remaining release gates are recorded in [the November 20 engineering update](docs/engineering/updates/2026-11-20-build-tool-security.md). This candidate does not change application structures or production dependencies.
 
 MOVO is a financial-tracking web app prototype with a calm, iOS-inspired interface.
 
