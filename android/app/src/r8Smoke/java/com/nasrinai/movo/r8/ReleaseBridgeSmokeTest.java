@@ -158,8 +158,9 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
     }
 
     private String savedWalletCondition() {
-        // Baseline retains the exact plaintext fixture-ID check. The encrypted
-        // candidate must have no plaintext copy and render the fixture balance;
+        // Unencrypted app versions retain the exact plaintext fixture-ID check.
+        // Both compiler variants of encrypted app source require no plaintext
+        // copy and must render the fixture balance;
         // the subsequent card/finish checks verify its ACCOUNT-keyed style too.
         if (!"true".equals(arguments.getString("movoExpectEncryptedFinance", "false"))) {
             return "JSON.parse(localStorage.getItem('movo.local.accounts.v1'))?.[0]?.id===" + quote(ACCOUNT);

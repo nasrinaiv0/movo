@@ -177,9 +177,11 @@ def main():
     for tool in ("iptables", "ip6tables"):
         adb("shell", tool, "-I", "OUTPUT", "1", "-j", "DROP")
         adb("shell", tool, "-C", "OUTPUT", "-j", "DROP")
+    # Both variants compile this same app source; only their R8 rules differ.
+    # Require the same financial storage representation in both compiler outputs.
+    fixture = {**legal, "encryptedFinance":
+               (Path(__file__).resolve().parents[2] / "src/lib/financeVault.js").is_file()}
     for label in ("baseline", "candidate"):
-        fixture = {**legal, "encryptedFinance": label == "candidate" and
-                   (Path(__file__).resolve().parents[2] / "src/lib/financeVault.js").is_file()}
         print("Starting minified release acceptance: " + label, flush=True)
         built = output / "default" / label
         folder = built / "device"
