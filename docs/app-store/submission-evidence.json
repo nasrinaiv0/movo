@@ -1,0 +1,11 @@
+{
+  "bundleId": "com.nasrinai.movo",
+  "appleApproval": "not-submitted",
+  "reviews": {
+    "nameAndTrademark": { "status": "pending", "evidence": null },
+    "originalAssetsAndLicenses": { "status": "pending", "evidence": null },
+    "singleAppStoreRecord": { "status": "pending", "evidence": null },
+    "storeMetadataAndScreenshots": { "status": "pending", "evidence": null },
+    "signedDeviceAndLiveBackend": { "status": "pending", "evidence": null }
+  }
+}

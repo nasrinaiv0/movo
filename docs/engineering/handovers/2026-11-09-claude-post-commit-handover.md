@@ -1,5 +1,7 @@
 # MOVO — Claude Engineering Handover After Follow-on Commits
 
+> **2026-11-20 continuation:** Preserve this historical evidence, then use the [current audit execution handover](2026-11-20-audit-gap-execution.md) for the newer audit, PRs and explicitly scoped production approvals. Do not replay the historical PR sequence below or change MOVO's architecture/data model to satisfy superseded tasks.
+
 **Snapshot taken:** 2026-11-09 (Philippine time)
 **Repository:** https://github.com/nasrinaiv0/movo
 **Main HEAD observed:** b3c21b75d4a388a2b20611ebff1a991c829d85ad

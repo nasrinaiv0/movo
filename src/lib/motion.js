@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 /** Motion is skipped in tests and for people who ask their device to reduce it. */
 export function canAnimate() {
   if (typeof window === 'undefined' || process.env.NODE_ENV === 'test') return false;
+  if (typeof document !== 'undefined' && document.documentElement.classList.contains('ios-reduce-motion')) return false;
   try { return !window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return true; }
 }
 

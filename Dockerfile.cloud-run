@@ -1,0 +1,28 @@
+# Official Node image resolved 2026-11-21. Update the version/digest together after validation.
+FROM node:26.13.1-bookworm-slim@sha256:5df79989ed685e09f0a98019db4cebfb22fb9df1a53c0161664a011f7ff6b0f1 AS web-build
+WORKDIR /app
+# The Dockerfile-specific context is deny-by-default. Copy it before installing to avoid
+# repeated full node_modules snapshots on VFS/rootless builders.
+COPY . ./
+# Optional enterprise-proxy CA is mounted for this step only; TLS verification stays enabled.
+RUN --mount=type=secret,id=npm_ca,required=false \
+    if [ -f /run/secrets/npm_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/npm_ca; fi && \
+    npx --yes npm@11.19.1 ci --no-audit --fund=false && \
+    npm run build:app-store && \
+    mkdir -p /runtime/scripts && \
+    cp package.json package-lock.json vercel.json /runtime/ && \
+    cp -a api build /runtime/ && \
+    cp scripts/serve-movo.cjs /runtime/scripts/ && \
+    rm -rf /app/node_modules /root/.npm
+
+FROM node:26.13.1-bookworm-slim@sha256:5df79989ed685e09f0a98019db4cebfb22fb9df1a53c0161664a011f7ff6b0f1 AS runtime
+ENV NODE_ENV=production MOVO_BIND_HOST=0.0.0.0 PORT=8080
+WORKDIR /app
+COPY --from=web-build /runtime/ ./
+RUN --mount=type=secret,id=npm_ca,required=false \
+    if [ -f /run/secrets/npm_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/npm_ca; fi && \
+    npx --yes npm@11.19.1 ci --omit=dev --no-audit --fund=false && \
+    npm cache clean --force && chmod -R a+rX /app
+USER node
+EXPOSE 8080
+CMD ["node", "scripts/serve-movo.cjs"]

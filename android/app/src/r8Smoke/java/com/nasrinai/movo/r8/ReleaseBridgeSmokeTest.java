@@ -249,13 +249,22 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
             .put("accountStyles", new JSONObject().put(ACCOUNT, style))
             .put("cardStyles", new JSONObject().put(ACCOUNT, "finish:silver"));
         if (!legalRevision.isEmpty()) prefs.put("legalAcceptedRevision", legalRevision);
+        JSONObject guestPreferences = new JSONObject().put("version", 1).put("ownerId", JSONObject.NULL)
+            .put("prefs", prefs).put("stickers", new JSONArray());
+        JSONObject compatibilityPreferences = new JSONObject();
+        for (String key : new String[] { "onboarded", "tutorialSeen", "planWelcomeSeen", "language", "country", "currency", "theme", "showBalance" }) {
+            if (prefs.has(key)) compatibilityPreferences.put(key, prefs.get(key));
+        }
         String accounts = new JSONArray().put(new JSONObject().put("id", ACCOUNT).put("name", "R8 Synthetic Card")
             .put("institution_name", "BPI").put("account_type", "card").put("cardKind", "credit")
             .put("currency", "PHP").put("opening_balance", -125.5).put("mask", "7788").put("source", "Manual")).toString();
         assertTrue("Synthetic fixture must reach disk before starting React", store.edit()
-            .putString("movo.preferences.v3", prefs.toString()).putString("movo.local.accounts.v1", accounts)
+            .putString("movo.preferences.v3", compatibilityPreferences.toString())
+            .putString("movo.preferences.scope.v1.guest", guestPreferences.toString())
+            .putString("movo.local.accounts.v1", accounts)
             .putString("movo.local.transactions.v1", "[]").commit());
-        assertEquals(prefs.toString(), store.getString("movo.preferences.v3", null));
+        assertEquals(compatibilityPreferences.toString(), store.getString("movo.preferences.v3", null));
+        assertEquals(guestPreferences.toString(), store.getString("movo.preferences.scope.v1.guest", null));
         assertEquals(accounts, store.getString("movo.local.accounts.v1", null));
         assertEquals("[]", store.getString("movo.local.transactions.v1", null));
     }

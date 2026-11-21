@@ -17,6 +17,7 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "biometricStatus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "authenticate", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setChrome", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getInterfacePreferences", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "secureSet", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "secureGet", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "secureRemove", returnType: CAPPluginReturnPromise),
@@ -26,6 +27,58 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "shareFriendInvite", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "copyFriendInvite", returnType: CAPPluginReturnPromise)
     ]
+    public override func load() {
+        super.load()
+        for name in [UIContentSizeCategory.didChangeNotification,
+                     UIAccessibility.reduceMotionStatusDidChangeNotification,
+                     UIAccessibility.reduceTransparencyStatusDidChangeNotification,
+                     UIAccessibility.boldTextStatusDidChangeNotification,
+                     UIAccessibility.darkerSystemColorsStatusDidChangeNotification] {
+            NotificationCenter.default.addObserver(self, selector: #selector(interfacePreferencesChanged), name: name, object: nil)
+        }
+    }
+
+    deinit { NotificationCenter.default.removeObserver(self) }
+
+    private func interfacePreferences() -> JSObject {
+        let headline = UIFont.preferredFont(forTextStyle: .headline)
+        let traits = bridge?.viewController?.view.window?.traitCollection ?? UITraitCollection.current
+        func cssColor(_ color: UIColor) -> String {
+            var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+            color.resolvedColor(with: traits).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+            return "rgba(\(Int((red * 255).rounded())), \(Int((green * 255).rounded())), \(Int((blue * 255).rounded())), \(alpha))"
+        }
+        let colors: JSObject = [
+            "panel": cssColor(.secondarySystemGroupedBackground),
+            "field": cssColor(.tertiarySystemFill),
+            "separator": cssColor(.separator)
+        ]
+        return [
+            "supportsSystemAppearance": true,
+            "colors": colors,
+            "textScale": Double(UIFont.preferredFont(forTextStyle: .body).pointSize / 17),
+            "topBarHeight": Double(max(56, headline.lineHeight + 16) + 6),
+            "reduceMotion": UIAccessibility.isReduceMotionEnabled,
+            "reduceTransparency": UIAccessibility.isReduceTransparencyEnabled,
+            "boldText": UIAccessibility.isBoldTextEnabled,
+            "increaseContrast": UIAccessibility.isDarkerSystemColorsEnabled
+        ]
+    }
+
+    @objc private func interfacePreferencesChanged() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.notifyListeners("interfacePreferencesChanged", data: self.interfacePreferences())
+        }
+    }
+
+    @objc func getInterfacePreferences(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { call.reject("interface_unavailable"); return }
+            call.resolve(self.interfacePreferences())
+        }
+    }
+
     private func friendInviteURL(_ call: CAPPluginCall) -> URL? {
         guard let value = call.getString("url"),
               value.range(of: #"\Ahttps://movo\.nasrinai\.com/friend#invite=[A-Za-z0-9_-]{43}\z"#,
@@ -253,7 +306,7 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
                 }
             }
             self.chrome?.apply(theme: theme, accent: accent, top: top, dock: dock)
-            call.resolve()
+            call.resolve(self.interfacePreferences())
         }
     }
 }

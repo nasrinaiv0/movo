@@ -1,3 +1,4 @@
+import { readPreferenceFixture, seedPreferenceFixture } from './testPreferenceFixtures';
 import 'fake-indexeddb/auto';
 import { webcrypto } from 'crypto';
 import { clearHybridOwner } from './lib/hybridLocalStore';
@@ -65,7 +66,7 @@ describe('sign-in session handoff', () => {
   beforeEach(async () => {
     await clearHybridOwner(OWNER);
     localStorage.clear();
-    localStorage.setItem('movo.preferences.v3', JSON.stringify({ planWelcomeSeen: true, onboarded: true, tutorialSeen: true }));
+    seedPreferenceFixture(OWNER, JSON.stringify({ planWelcomeSeen: true, onboarded: true, tutorialSeen: true }));
     mockGetEntitlements.mockReset();
     mockGetEntitlements.mockImplementation(() => new Promise(() => {}));
     recoverHybridWorkspace.mockReset();
