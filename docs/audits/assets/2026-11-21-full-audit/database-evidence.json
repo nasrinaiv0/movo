@@ -1,0 +1,206 @@
+{
+  "date": "2026-11-21",
+  "project": {
+    "id": "cjsjmorqvuvvwbfyztiz",
+    "name": "Movo",
+    "region": "ap-northeast-1",
+    "postgres": "17.11.0.003"
+  },
+  "scope": "read-only schema catalog/advisors; no customer rows or production writes",
+  "catalog": {
+    "definers": [
+      {
+        "name": "ensure_bill_occurrences",
+        "body_md5": "b506685921378f4e5724dde1e4c69b6a",
+        "identity": "ensure_bill_occurrences(date)",
+        "settings": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "release_goal_allocation",
+        "body_md5": "2923e436f9f41a9b324d124adffb216c",
+        "identity": "release_goal_allocation(uuid)",
+        "settings": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "update_bill_occurrence",
+        "body_md5": "03bc55031ebcfba41c410702af1c3435",
+        "identity": "update_bill_occurrence(uuid,numeric,numeric,boolean)",
+        "settings": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "record_bill_payment",
+        "body_md5": "d56fd719ffa289dd114c4103d48a604e",
+        "identity": "record_bill_payment(uuid,numeric,text,text,uuid,uuid,timestamp with time zone,text)",
+        "settings": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "release_plan_funding_allocation",
+        "body_md5": "c2cffcded87004e45a885f09498ffa61",
+        "identity": "release_plan_funding_allocation(uuid)",
+        "settings": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "allocate_goal_funds",
+        "body_md5": "b14114cde2bbe2b7e56e553b11fc77ed",
+        "identity": "allocate_goal_funds(uuid,numeric,text,uuid,uuid,text)",
+        "settings": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "allocate_plan_funds",
+        "body_md5": "215b39fc589a30fb7b681f5a0690801f",
+        "identity": "allocate_plan_funds(text,text,numeric,text,uuid,text)",
+        "settings": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "reverse_allocation_event",
+        "body_md5": "ead2cf3594cd297f1f1b4fd0522052ec",
+        "identity": "reverse_allocation_event(uuid)",
+        "settings": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "delete_transaction_with_reversals",
+        "body_md5": "7f7342cc4a759edc3cb9d565bb36244f",
+        "identity": "delete_transaction_with_reversals(uuid)",
+        "settings": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "restore_transaction_links",
+        "body_md5": "cc3bfcef1f357903f20a9e55df55e82d",
+        "identity": "restore_transaction_links(uuid,uuid)",
+        "settings": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "record_loan_event",
+        "body_md5": "8647a4048305c7c7d1159998b3e238dd",
+        "identity": "record_loan_event(uuid,text,numeric,text,uuid,uuid,timestamp with time zone,text)",
+        "settings": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "apply_movo_sync_operation",
+        "body_md5": "29a0d902fe687f6c31b26362e73104a0",
+        "identity": "apply_movo_sync_operation(uuid,text,text,uuid,jsonb,timestamp with time zone,bigint)",
+        "settings": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "record_receivable_event",
+        "body_md5": "6068ee627b812d1425300e40a1837344",
+        "identity": "record_receivable_event(uuid,text,numeric,text,uuid,uuid,timestamp with time zone,text)",
+        "settings": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "claim_movo_trial",
+        "body_md5": "31676995f0e2fbfbc155fea4ab9eb7ca",
+        "identity": "claim_movo_trial(text)",
+        "settings": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      },
+      {
+        "name": "movo_plan_status",
+        "body_md5": "5aa652cba569734157aee8a7dbe1787a",
+        "identity": "movo_plan_status(uuid)",
+        "settings": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "authenticated_execute": true
+      }
+    ],
+    "rls_disabled": [],
+    "public_tables": 53,
+    "transaction_writes": {
+      "anon_insert": false,
+      "authenticated_delete": false,
+      "authenticated_insert": true,
+      "authenticated_update": false
+    },
+    "public_schema_create": {
+      "anon": false,
+      "authenticated": false
+    }
+  },
+  "security": [
+    {
+      "name": "rls_enabled_no_policy",
+      "level": "INFO",
+      "count": 24,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "level": "WARN",
+      "count": 15,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable"
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+    }
+  ],
+  "performance": [
+    {
+      "name": "unused_index",
+      "level": "INFO",
+      "count": 37,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index"
+    }
+  ],
+  "latestDeployedMigration": "20261120025027 harden_transaction_mutations_and_posted_allocations",
+  "scheduleOwnerCompositeConstraintPresent": false
+}

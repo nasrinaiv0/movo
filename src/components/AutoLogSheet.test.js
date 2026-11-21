@@ -42,3 +42,23 @@ test('opens on bank notifications, shows a masked key, copies the real one, and 
   expect(text).toContain('Under Skip: no actions');
   act(() => root.unmount());
 });
+
+test('independent API recipes use the reviewed backend while review links keep the public app origin', async () => {
+  const saved = process.env.REACT_APP_API_ORIGIN;
+  const copied = [];
+  process.env.REACT_APP_API_ORIGIN = 'https://api.movo.example';
+  Object.assign(navigator, { clipboard: { writeText: text => { copied.push(text); return Promise.resolve(); } } });
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  try {
+    act(() => root.render(<AutoLogSheet prefs={{ autoLog: true, autoLogKey: KEY }} setPref={() => {}} status="ready" accounts={[]} cloudMode notify={() => {}} onResetKey={() => {}} onClose={() => {}} />));
+    expect(el.textContent).toContain('https://api.movo.example/api/log');
+    expect(el.textContent).not.toContain(KEY);
+    const copy = async label => { await act(async () => [...el.querySelectorAll('button')].find(button => button.textContent.includes(label)).click()); return copied[copied.length - 1]; };
+    expect(await copy('Copy prompt')).toContain(`https://api.movo.example/api/log`);
+    expect(await copy('Copy review link')).toContain(`${window.location.origin}/#log?`);
+  } finally {
+    act(() => root.unmount()); el.remove();
+    if (saved === undefined) delete process.env.REACT_APP_API_ORIGIN; else process.env.REACT_APP_API_ORIGIN = saved;
+  }
+});

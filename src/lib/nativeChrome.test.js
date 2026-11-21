@@ -1,5 +1,8 @@
 import { Capacitor } from '@capacitor/core';
 import { readChrome, startNativeChrome } from './nativeChrome';
+import { MovoNative } from './native';
+
+jest.mock('./native', () => ({ MovoNative: { setChrome: jest.fn(), addListener: jest.fn() } }));
 
 const page = (html) => { document.body.innerHTML = html; return document; };
 
@@ -57,4 +60,70 @@ test('the Plus action is marked primary so the native top bar draws it filled; o
     <div class="header-actions"><div class="header-utility-group"><button class="round-button" aria-label="Edit"><svg></svg></button><button class="round-button" aria-label="Notifications"><svg></svg></button></div>
     <button class="round-button accent header-add-action" aria-label="New account"><svg></svg></button></div></header></main>`);
   expect(readChrome(doc).top.actions.map(a => [a.label, a.primary])).toEqual([['Edit', false], ['Notifications', false], ['New account', true]]);
+});
+
+
+test('native chrome mirrors system appearance and disabled states rather than assuming interactive buttons', () => {
+  const s = readChrome(page(`<div class="movo-app" data-appearance="system"><main class="screen"><header class="screen-header"><button class="back-button" disabled>Back</button><h1>Wallet</h1><div class="header-actions"><button class="round-button" aria-label="Save" aria-disabled="true"></button></div></header></main><nav class="bottom-nav"><button class="nav-item" disabled>Home</button></nav></div>`));
+  expect(s.appearance).toBe('system');
+  expect(s.top.backDisabled).toBe(true);
+  expect(s.top.actions[0].disabled).toBe(true);
+  expect(s.dock.tabs[0].disabled).toBe(true);
+});
+
+describe('native bridge startup and fallback', () => {
+  let platform, native, canvas, stop, tap;
+  const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
+  beforeEach(() => {
+    platform = jest.spyOn(Capacitor, 'getPlatform').mockReturnValue('ios');
+    native = jest.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true);
+    canvas = jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    document.documentElement.classList.add('ios-system-appearance');
+    MovoNative.setChrome.mockResolvedValue({});
+    MovoNative.addListener.mockImplementation((name, fn) => { tap = fn; return Promise.resolve({ remove: jest.fn() }); });
+    page('<div class="movo-app theme-dark" data-appearance="system"><main class="screen"><header class="screen-header"><h1>Wallet</h1><div class="header-actions"><button class="round-button" aria-label="Save"></button></div></header></main><nav class="bottom-nav"><button class="nav-item" aria-label="Home"></button></nav></div>');
+  });
+  afterEach(() => { stop?.(); stop = null; document.documentElement.classList.remove('ios-system-appearance'); platform.mockRestore(); native.mockRestore(); canvas.mockRestore(); jest.clearAllMocks(); });
+
+  test('web navigation stays available until native bars actually succeed, and System remains unspecified', async () => {
+    let resolve;
+    MovoNative.setChrome.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    stop = startNativeChrome(); await flush();
+    expect(document.documentElement.classList.contains('native-chrome')).toBe(false);
+    expect(MovoNative.setChrome.mock.calls[0][0].theme).toBe('system');
+    resolve({}); await flush();
+    expect(document.documentElement.classList.contains('native-chrome')).toBe(true);
+  });
+
+  test('a rejected or late native activation cannot leave the web controls hidden', async () => {
+    MovoNative.setChrome.mockRejectedValueOnce(new Error('bridge not ready'));
+    stop = startNativeChrome(); await flush();
+    expect(document.documentElement.classList.contains('native-chrome')).toBe(false);
+    let resolve;
+    stop();
+    MovoNative.setChrome.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    stop = startNativeChrome(); await flush();
+    stop(); stop = null;
+    resolve({}); await flush();
+    expect(document.documentElement.classList.contains('native-chrome')).toBe(false);
+  });
+
+  test('a system light/dark change refreshes UIKit semantic colors even when the mirrored buttons do not change', async () => {
+    stop = startNativeChrome(); await flush();
+    document.querySelector('.movo-app').classList.replace('theme-dark', 'theme-light');
+    await new Promise(resolve => setTimeout(resolve, 80)); await flush();
+    expect(MovoNative.setChrome.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(MovoNative.setChrome.mock.calls.at(-1)[0].theme).toBe('system');
+  });
+
+  test('stale native taps cannot activate disabled or modal-covered web actions', async () => {
+    stop = startNativeChrome(); await flush();
+    const button = document.querySelector('.round-button'); const click = jest.fn(); button.onclick = click;
+    tap({ kind: 'action', index: 0 }); expect(click).toHaveBeenCalledTimes(1);
+    button.setAttribute('aria-disabled', 'true');
+    tap({ kind: 'action', index: 0 }); expect(click).toHaveBeenCalledTimes(1);
+    button.removeAttribute('aria-disabled');
+    const overlay = document.createElement('section'); overlay.setAttribute('aria-modal', 'true'); document.body.append(overlay);
+    tap({ kind: 'action', index: 0 }); expect(click).toHaveBeenCalledTimes(1);
+  });
 });

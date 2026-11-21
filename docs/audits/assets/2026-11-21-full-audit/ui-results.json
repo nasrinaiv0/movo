@@ -1,0 +1,229 @@
+{
+  "results": [
+    {
+      "step": "01-home",
+      "view": "Home",
+      "width": 390,
+      "bodyWidth": 390,
+      "dialogs": []
+    },
+    {
+      "step": "02-wallet",
+      "view": "Wallet",
+      "width": 390,
+      "bodyWidth": 390,
+      "dialogs": []
+    },
+    {
+      "step": "03-transaction",
+      "view": "Wallet",
+      "width": 390,
+      "bodyWidth": 390,
+      "dialogs": [
+        {
+          "x": 8,
+          "y": 29,
+          "width": 374,
+          "height": 807,
+          "scrollWidth": 372,
+          "clientWidth": 372
+        }
+      ]
+    },
+    {
+      "step": "04-transactions",
+      "view": "Transactions",
+      "width": 390,
+      "bodyWidth": 390,
+      "dialogs": []
+    },
+    {
+      "step": "05-menu",
+      "view": "Menu",
+      "width": 390,
+      "bodyWidth": 390,
+      "dialogs": []
+    },
+    {
+      "step": "06-settings",
+      "view": "Settings",
+      "width": 390,
+      "bodyWidth": 390,
+      "dialogs": []
+    },
+    {
+      "step": "07-appearance",
+      "view": "Appearance",
+      "width": 390,
+      "bodyWidth": 390,
+      "dialogs": []
+    },
+    {
+      "step": "08-large-text",
+      "view": "Appearance",
+      "width": 390,
+      "bodyWidth": 390,
+      "dialogs": []
+    },
+    {
+      "step": "09-appearance-320",
+      "view": "Appearance",
+      "width": 320,
+      "bodyWidth": 320,
+      "dialogs": []
+    },
+    {
+      "step": "10-home-320",
+      "view": "Home",
+      "width": 320,
+      "bodyWidth": 320,
+      "dialogs": []
+    },
+    {
+      "step": "10-wallet-320",
+      "view": "Wallet",
+      "width": 320,
+      "bodyWidth": 320,
+      "dialogs": []
+    },
+    {
+      "step": "10-transactions-320",
+      "view": "Transactions",
+      "width": 320,
+      "bodyWidth": 320,
+      "dialogs": []
+    },
+    {
+      "step": "10-menu-320",
+      "view": "Menu",
+      "width": 320,
+      "bodyWidth": 320,
+      "dialogs": []
+    },
+    {
+      "step": "09-appearance-844",
+      "view": "Appearance",
+      "width": 844,
+      "bodyWidth": 844,
+      "dialogs": []
+    },
+    {
+      "step": "10-home-844",
+      "view": "Home",
+      "width": 844,
+      "bodyWidth": 844,
+      "dialogs": []
+    },
+    {
+      "step": "10-wallet-844",
+      "view": "Wallet",
+      "width": 844,
+      "bodyWidth": 844,
+      "dialogs": []
+    },
+    {
+      "step": "10-transactions-844",
+      "view": "Transactions",
+      "width": 844,
+      "bodyWidth": 844,
+      "dialogs": []
+    },
+    {
+      "step": "10-menu-844",
+      "view": "Menu",
+      "width": 844,
+      "bodyWidth": 844,
+      "dialogs": []
+    },
+    {
+      "step": "09-appearance-1280",
+      "view": "Appearance",
+      "width": 1280,
+      "bodyWidth": 1280,
+      "dialogs": []
+    },
+    {
+      "step": "10-home-1280",
+      "view": "Home",
+      "width": 1280,
+      "bodyWidth": 1280,
+      "dialogs": []
+    },
+    {
+      "step": "10-wallet-1280",
+      "view": "Wallet",
+      "width": 1280,
+      "bodyWidth": 1280,
+      "dialogs": []
+    },
+    {
+      "step": "10-transactions-1280",
+      "view": "Transactions",
+      "width": 1280,
+      "bodyWidth": 1280,
+      "dialogs": []
+    },
+    {
+      "step": "10-menu-1280",
+      "view": "Menu",
+      "width": 1280,
+      "bodyWidth": 1280,
+      "dialogs": []
+    },
+    {
+      "step": "11-dark-appearance",
+      "view": "Appearance",
+      "width": 390,
+      "bodyWidth": 390,
+      "dialogs": []
+    },
+    {
+      "step": "12-backup-panel",
+      "view": "Settings",
+      "width": 390,
+      "bodyWidth": 390,
+      "dialogs": [
+        {
+          "x": 8,
+          "y": 836,
+          "width": 374,
+          "height": 493.625,
+          "scrollWidth": 372,
+          "clientWidth": 372
+        }
+      ]
+    },
+    {
+      "step": "13-notices",
+      "view": "TermsOfService",
+      "width": 390,
+      "bodyWidth": 390,
+      "dialogs": [
+        {
+          "x": 8,
+          "y": 8,
+          "width": 374,
+          "height": 828,
+          "scrollWidth": 372,
+          "clientWidth": 372
+        }
+      ]
+    },
+    {
+      "step": "14-sharing-guest",
+      "view": "Friends",
+      "width": 390,
+      "bodyWidth": 390,
+      "dialogs": []
+    }
+  ],
+  "errors": [],
+  "focusStayedInDialog": true,
+  "escapeClosesDialogs": true,
+  "localLedger": {
+    "amount": 12.34,
+    "count": 1,
+    "balance": 87.91
+  },
+  "browser": "isolated Chromium; external requests blocked"
+}

@@ -1,5 +1,7 @@
 # MOVO guide (the screenshot tour)
 
+**iOS policy, 2026-11-21:** the original-only production profile excludes this legacy screenshot/audio pack. It uses generated illustrations and captions instead. The instructions below reproduce the historical web/Android media; a disclaimer does not establish rights to embedded logos or narration. Do not copy this pack back into an iOS binary without the documented rights review. See [App Review packet](../../docs/app-store/APP_REVIEW_PACKET.md).
+
 The first-run guide (`src/components/FeatureTour.js`, replay from Settings → MOVO guide or Help Center) walks through
 every part of MOVO on screenshots of the real app. Each step keeps one feature sharp inside a ring, blurs the rest of
 the screen white (dark theme: dark), shows a caption beside **Aries**, MOVO's welcoming mascot, and plays a short

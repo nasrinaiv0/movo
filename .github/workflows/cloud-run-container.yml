@@ -1,0 +1,41 @@
+name: MOVO Cloud Run container
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Dockerfile.cloud-run*'
+      - 'src/**'
+      - 'public/**'
+      - 'api/**'
+      - 'docs/legal/upstream/**'
+      - 'scripts/**'
+      - 'package*.json'
+      - 'vercel.json'
+      - 'tsconfig.json'
+      - '.env.production'
+      - '.github/workflows/cloud-run-container.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: movo-cloud-run-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  container:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # verified v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+      - name: Validate explicit Cloud Run configuration
+        run: node --test scripts/render-cloud-run-service.test.cjs
+      - name: Build the pinned non-root image
+        run: docker build --platform linux/amd64 --file Dockerfile.cloud-run --tag movo-cloud-run:${{ github.sha }} .
+      - name: Test container runtime and application gates without credentials
+        run: node scripts/smoke-cloud-run-container.cjs movo-cloud-run:${{ github.sha }}

@@ -12,7 +12,8 @@ export const roundMoney = value => moneyCents(value) / 100;
 export function sumMoney(values) {
   const cents = values.reduce((sum, value) => {
     const next = moneyCents(value);
-    return Number.isFinite(next) ? sum + next : sum;
+    const total = sum + next;
+    return Number.isSafeInteger(total) ? total : NaN;
   }, 0);
   return Number.isSafeInteger(cents) ? cents / 100 : NaN;
 }

@@ -46,9 +46,13 @@ is needed: the native project is generated and synced on Linux, and builds, sign
 
 ## Commands
 
+The installed UI is bundled on the device; server APIs still require an available backend. [Hosting resilience](MOVO_HOSTING_RESILIENCE.md) describes an independent Node host using the same handlers/database. Keeping the owned production hostname preserves old binaries and callbacks. An optional reviewed `REACT_APP_API_ORIGIN` changes React API routing only after rebuilding; it does not remotely update installed binaries, old Shortcuts or public auth/share links.
+
 ```sh
-npm run ios:sync      # (Node 22+) typecheck + tests + build, then copy build/ into ios/App/App/public
-npx cap sync ios      # copy an existing build/ only
+npm run typecheck
+npm test -- --runInBand
+npm run ios:sync      # Node 26: original-only build + credits + artifact audit, then copy into iOS
+npm run ios:submission-check # holds public submission until real rights/store/device evidence exists
 ```
 
 `ios/App/App/public` and the generated `capacitor.config.json` copy are git-ignored; CI regenerates them.
@@ -83,7 +87,7 @@ npx cap sync ios      # copy an existing build/ only
 
 ## Codemagic (phase 4)
 
-`codemagic.yaml` → workflow **iOS TestFlight** (Mac mini M2, Node 22, latest Xcode). One-time setup by the owner:
+`codemagic.yaml` → workflow **iOS TestFlight** (Mac mini M2, Node 26, latest Xcode). One-time setup by the owner:
 
 1. App Store Connect → Users and Access → Integrations → create an API key (App Manager); download the `.p8` once.
 2. Codemagic → Team → Integrations → Developer Portal → add that key and name it **`MOVO_ASC`**.
@@ -91,9 +95,12 @@ npx cap sync ios      # copy an existing build/ only
    `REACT_APP_SUPABASE_ANON_KEY`. These public values already come from `.env.production` (2026-11-12); set the group
    only to override them. Never the service role key. The build fails if the app would lack the cloud connection
    (`scripts/check-bundled-cloud-config.cjs`).
-4. App Store Connect → My Apps → + → iOS app, bundle id `com.nasrinai.movo`, name MOVO.
-5. Start **iOS TestFlight** in Codemagic, or push a tag `ios-vX.Y.Z`. Codemagic creates the distribution
-   certificate and profile, builds, signs (build number = Codemagic build number) and uploads to TestFlight.
+4. Inspect App Store Connect for the existing app record with bundle ID `com.nasrinai.movo`; reuse it. Confirm a single record and resolve the public name before upload. Another Finance app already uses MOVO. Do not create another bundle ID to work around a name or duplicate-app concern.
+5. Complete the identity, rights, single-record and metadata evidence in the [submission packet](app-store/APP_REVIEW_PACKET.md). The signed workflow checks this before archiving/publishing; pending evidence intentionally holds the workflow.
+6. Once those gates are satisfied, start **iOS TestFlight** in Codemagic, or push a tag `ios-vX.Y.Z`. Codemagic creates the distribution
+   certificate and profile, builds, signs (build number = Codemagic build number) and uploads to TestFlight. Verify the actual signed build and live backend before public submission.
+
+All iOS users receive the same original-only artwork policy: generated card illustrations and generic identification labels, with the unverified public media packs excluded from the binary. Source assets and saved selections are retained. Terms includes bundled third-party software notices. A successful technical build establishes neither ownership nor Apple approval. The legacy tutorial-media workflow is documented separately and must not reintroduce unreviewed media into iOS output.
 
 ## CI
 

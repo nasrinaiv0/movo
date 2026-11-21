@@ -1,3 +1,4 @@
+import { readPreferenceFixture, seedPreferenceFixture } from './testPreferenceFixtures';
 import 'fake-indexeddb/auto';
 import { webcrypto } from 'crypto';
 import { clearHybridOwner } from './lib/hybridLocalStore';
@@ -134,7 +135,7 @@ describe('offline-first with Cloud Sync on', () => {
     mockServer.accounts = [{ id: ACCOUNT, user_id: OWNER, name: 'BPI', account_type: 'bank', institution_name: 'BPI', currency: 'PHP', opening_balance: 5000, is_archived: false, display_order: 0, created_at: '2026-11-01T00:00:00Z', updated_at: '2026-11-01T00:00:00Z' }];
     mockServer.transactions = [{ id: EXISTING, user_id: OWNER, account_id: ACCOUNT, transfer_to_account_id: null, transaction_type: 'expense', amount: 120, currency: 'PHP', merchant: 'Bakery', category: 'Food', note: null, occurred_at: '2026-11-08T03:00:00+00:00', source: 'manual', external_reference: null, is_pending: false, created_at: '2026-11-08T03:00:00Z', updated_at: mockStamp(), payment_reference: null, receipt_note: null, receipt_path: null, schedule_id: null }];
     window.localStorage.clear();
-    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ planWelcomeSeen: true, onboarded: true, tutorialSeen: true }));
+    seedPreferenceFixture(OWNER, JSON.stringify({ planWelcomeSeen: true, onboarded: true, tutorialSeen: true }));
     container = document.createElement('div'); document.body.appendChild(container);
     root = createRoot(container);
     await act(async () => { root.render(<App />); });
@@ -305,8 +306,8 @@ describe('offline-first with Cloud Sync on', () => {
   });
 
   test('with "Sync automatically when back online" on, offline changes upload by themselves, with no pop-up', async () => {
-    const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
-    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...prefs, autoSyncOnReconnect: true }));
+    const prefs = JSON.parse(readPreferenceFixture(OWNER));
+    seedPreferenceFixture(OWNER, JSON.stringify({ ...prefs, autoSyncOnReconnect: true }));
     act(() => root.unmount());
     root = createRoot(container);
     await act(async () => { root.render(<App />); });

@@ -1,4 +1,5 @@
-import { parseCsvRows, parseCsvTransactions } from './csvImport';
+import { parseCsvRows, parseCsvTransactions, normalizeImportDate, findUniqueCsvAccount } from './csvImport';
+import { roundMoney } from './moneyMath';
 
 /* Reads a person's own CSV or JSON file in the browser (nothing is uploaded) and
  * returns MOVO-shaped accounts (incl. cards and balances), transactions,
@@ -14,19 +15,20 @@ const BILL_CYCLES = ['one_time', 'weekly', 'monthly', 'quarterly', 'semiannual',
 const key = (v) => String(v || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 const text = (v, n) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim().slice(0, n) : '');
 const num = (v) => {
-  if (typeof v === 'number') return Number.isFinite(v) && Math.abs(v) < 1e17 ? Math.round(v * 100) / 100 : null;
+  if (typeof v === 'number') { const rounded = roundMoney(v); return Number.isFinite(rounded) ? rounded : null; }
   const s = String(v ?? '').trim().replace(/[₱$€£¥,\s]/g, '');
   if (!s) return null;
   const n = Number(/^\(.*\)$/.test(s) ? '-' + s.slice(1, -1) : s);
-  return Number.isFinite(n) && Math.abs(n) < 1e17 ? Math.round(n * 100) / 100 : null;
+  const rounded = roundMoney(n);
+  return Number.isFinite(rounded) ? rounded : null;
 };
 const currency = (v) => (/^[A-Z]{3}$/.test(String(v || '').trim().toUpperCase()) ? String(v).trim().toUpperCase() : '');
 const day = (v) => {
   const s = String(v || '').trim();
   if (!s) return '';
-  const d = /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(`${s}T12:00:00Z`) : new Date(s);
-  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+  return normalizeImportDate(s)?.slice(0, 10) || '';
 };
+const optionalDay = v => v === undefined ? '' : day(v) || null;
 /* First value whose field name matches one of the names (case and punctuation ignored). */
 const pick = (obj, names) => {
   for (const [k, v] of Object.entries(obj || {})) if (names.includes(key(k)) && v !== null && v !== undefined && v !== '') return v;
@@ -48,7 +50,9 @@ export function normalizeAccount(raw, hint) {
   if (!raw || typeof raw !== 'object') return null;
   const name = text(pick(raw, ['name', 'accountname', 'account', 'title', 'label', 'cardname']), 100);
   if (!name) return null;
-  const balance = num(pick(raw, ['balance', 'currentbalance', 'openingbalance', 'amount', 'available', 'availablebalance']));
+  const rawBalance = pick(raw, ['balance', 'currentbalance', 'openingbalance', 'amount', 'available', 'availablebalance']);
+  const balance = rawBalance === undefined ? 0 : num(rawBalance);
+  if (balance === null) return null;
   const digits = String(pick(raw, ['mask', 'last4', 'lastfour', 'cardnumber', 'number']) ?? '').replace(/\D/g, '');
   return {
     name, account_type: accountType(pick(raw, ['type', 'accounttype', 'kind', 'category']), hint),
@@ -83,12 +87,13 @@ export function normalizeSubscription(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const name = text(pick(raw, ['name', 'service', 'title', 'merchant']), 60);
   const amount = num(pick(raw, ['amount', 'price', 'cost', 'fee']));
-  if (!name || amount === null || amount <= 0) return null;
+  const start = optionalDay(pick(raw, ['start', 'nextbillingdate', 'nextbilling', 'renewal', 'renewaldate', 'nextpayment', 'startdate', 'due']));
+  if (!name || amount === null || amount <= 0 || start === null) return null;
   const c = key(pick(raw, ['cycle', 'billingcycle', 'frequency', 'interval', 'period']));
   const cycle = CYCLES.includes(c) ? c : /week/.test(c) ? 'weekly' : /year|annual/.test(c) ? 'yearly' : /quarter|3month/.test(c) ? 'quarterly' : 'monthly';
   return {
     name, amount: Math.abs(amount), currency: currency(pick(raw, ['currency', 'ccy'])), cycle,
-    start: day(pick(raw, ['start', 'nextbillingdate', 'nextbilling', 'renewal', 'renewaldate', 'nextpayment', 'startdate', 'due'])) || new Date().toISOString().slice(0, 10),
+    start: start || new Date().toISOString().slice(0, 10),
     category: text(pick(raw, ['category']), 40) || 'Other', status: key(pick(raw, ['status'])) === 'paused' ? 'paused' : 'active',
   };
 }
@@ -106,9 +111,11 @@ export function normalizeLoan(raw) {
   const principal = num(pick(raw, ['outstandingprincipal', 'currentprincipal', 'currentbalance', 'balance', 'principalamount', 'principal', 'loanamount', 'amount']));
   if (!name || principal === null || principal <= 0) return null;
   const rate = num(pick(raw, ['interestrate', 'annualinterestrate', 'apr', 'rate']));
+  const due = optionalDay(pick(raw, ['due', 'duedate', 'nextpaymentdate', 'maturitydate']));
+  if (due === null) return null;
   return {
     name, principal_amount: principal, currency: currency(pick(raw, ['currency', 'ccy'])),
-    interest_rate: Math.max(0, rate || 0), due_date: day(pick(raw, ['due', 'duedate', 'nextpaymentdate', 'maturitydate'])),
+    interest_rate: Math.max(0, rate || 0), due_date: due,
     lender: text(pick(raw, ['lender', 'creditor', 'provider']), 120),
     obligation_type: key(pick(raw, ['obligationtype', 'type'])) === 'debt' ? 'debt' : 'loan',
     notes: text(pick(raw, ['notes', 'note', 'description']), 2000),
@@ -119,12 +126,13 @@ export function normalizeReceivable(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const name = text(pick(raw, ['name', 'borrower', 'person', 'counterparty', 'title']), 120);
   const amount = num(pick(raw, ['outstandingamount', 'amountowed', 'openingamount', 'receivableamount', 'balance', 'amount']));
-  if (!name || amount === null || amount <= 0) return null;
+  const due = optionalDay(pick(raw, ['due', 'duedate', 'expecteddate', 'repaymentdate']));
+  if (!name || amount === null || amount <= 0 || due === null) return null;
   return {
     name, opening_amount: amount, currency: currency(pick(raw, ['currency', 'ccy'])),
     counterparty: text(pick(raw, ['counterparty', 'borrower', 'person']), 120),
     reason: text(pick(raw, ['reason', 'purpose', 'description']), 500),
-    due_date: day(pick(raw, ['due', 'duedate', 'expecteddate', 'repaymentdate'])),
+    due_date: due,
     notes: text(pick(raw, ['notes', 'note']), 2000),
   };
 }
@@ -158,8 +166,11 @@ export function normalizePlan(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const name = text(pick(raw, ['name', 'goal', 'title']), 60);
   const target = num(pick(raw, ['target', 'targetamount', 'goalamount', 'amount']));
-  if (!name || target === null || target <= 0) return null;
-  return { name, target, saved: Math.max(0, num(pick(raw, ['saved', 'savedamount', 'current', 'progress'])) ?? 0), due: day(pick(raw, ['due', 'deadline', 'targetdate', 'date'])) };
+  const rawSaved = pick(raw, ['saved', 'savedamount', 'current', 'progress']);
+  const saved = rawSaved === undefined ? 0 : num(rawSaved);
+  const due = optionalDay(pick(raw, ['due', 'deadline', 'targetdate', 'date']));
+  if (!name || target === null || target <= 0 || saved === null || due === null) return null;
+  return { name, target, saved: Math.max(0, saved), due };
 }
 
 const LISTS = {
@@ -272,12 +283,13 @@ export function planImport(parsed, existing, { base = 'PHP', newId, batchId, fin
     };
     accounts.push(row); known.push(row);
   }
-  const accountId = (name) => (name ? known.find(k => sameName(k.name, name))?.id : '') || '';
   const seen = new Set((existing.transactions || []).map(fingerprint));
   const transactions = [];
   for (const t of parsed.transactions) {
-    const from = accountId(t.account_name) || 'local';
-    const to = t.transaction_type === 'transfer' ? accountId(t.to_account_name) : undefined;
+    const source = findUniqueCsvAccount(known, t.account_name);
+    if (t.account_name && !source.account) { skipped.conflicts += 1; continue; }
+    const from = source.account?.id || 'local';
+    const to = t.transaction_type === 'transfer' ? findUniqueCsvAccount(known, t.to_account_name).account?.id : undefined;
     if (t.transaction_type === 'transfer' && (!to || to === from)) { skipped.conflicts += 1; continue; }
     const fp = fingerprint({ ...t, account_id: from });
     if (seen.has(fp)) { skipped.duplicates += 1; continue; }

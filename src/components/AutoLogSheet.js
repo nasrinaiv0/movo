@@ -4,7 +4,7 @@ import AccountPicker from './AccountPicker';
 import { Sheet, Toggle } from './ui';
 import { shortcutRecipe, shortcutPrompt, linkTemplate } from '../lib/autoLog';
 import { t as tr } from '../lib/i18n';
-import { appOrigin } from '../lib/platform';
+import { apiOrigin, appOrigin } from '../lib/platform';
 
 /*
  * Automatic logging: registration status, the default account for unmatched card names, and the exact iPhone
@@ -35,8 +35,9 @@ export default function AutoLogSheet({ showBalance = true, prefs, setPref, statu
   const selectedRecipeMode = recipeMode(mode, Boolean(prefs.autoLog));
   const key = prefs.autoLogKey || '';
   const origin = appOrigin();
+  const backendOrigin = apiOrigin();
   const masked = key ? `${key.slice(0, 4)}••••${key.slice(-4)}` : '…';
-  const recipe = shortcutRecipe(origin, masked, selectedRecipeMode);
+  const recipe = shortcutRecipe(backendOrigin, masked, selectedRecipeMode);
   const copy = (text, done) => navigator.clipboard?.writeText(text).then(() => notify(done), () => notify(tr('Could not copy the prompt. Please try again.')));
   const [tone, icon, label] = STATUS[status] || STATUS['needs-signin'];
   const cloudAccounts = accounts.filter(a => /^[0-9a-f-]{36}$/i.test(String(a.id)));
@@ -70,7 +71,7 @@ export default function AutoLogSheet({ showBalance = true, prefs, setPref, statu
         })}
       </ol>
       <div className="al-actions">
-        <button type="button" className="primary-button" disabled={!key} onClick={() => copy(shortcutPrompt(origin, key, selectedRecipeMode), tr('Prompt copied. Paste it into Describe a shortcut.'))}><Icon name="doc" size={16} /> {tr('Copy prompt')}</button>
+        <button type="button" className="primary-button" disabled={!key} onClick={() => copy(shortcutPrompt(backendOrigin, key, selectedRecipeMode), tr('Prompt copied. Paste it into Describe a shortcut.'))}><Icon name="doc" size={16} /> {tr('Copy prompt')}</button>
         <button type="button" className="secondary-button" disabled={!key} onClick={() => copy(`Bearer ${key}`, tr('Authorization value copied.'))}><Icon name="lock" size={16} /> {tr('Copy key')}</button>
       </div>
       <small className="al-hint">{tr('Paste the prompt into Describe a shortcut (Apple Intelligence), or add the steps above yourself. Test with one small payment first.')}</small>

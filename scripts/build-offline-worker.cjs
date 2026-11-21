@@ -4,9 +4,11 @@ const path = require('node:path');
 const root = path.join(__dirname, '..', 'build');
 const manifest = fs.readFileSync(path.join(root, 'asset-manifest.json'), 'utf8');
 const logos = fs.readdirSync(path.join(root, 'brands', 'offline')).map(name => '/brands/offline/' + name);
-const assets = ['/index.html', '/favicon.svg', '/icon-192.png', '/icon-512.png', ...logos,
+const notices = fs.existsSync(path.join(root, 'third-party-notices.txt')) ? ['/third-party-notices.txt'] : [];
+const assets = [...notices, '/index.html', '/favicon.svg', '/icon-192.png', '/icon-512.png', ...logos,
   ...Object.values(JSON.parse(manifest).files).filter(file => /^\/static\/.+\.(?:js|css|woff2?|ttf|png|svg|webp)$/.test(file))];
 const digest = crypto.createHash('sha256').update(manifest);
+for (const name of notices) digest.update(fs.readFileSync(path.join(root, name)));
 for (const name of logos) digest.update(fs.readFileSync(path.join(root, name)));
 const revision = digest.digest('hex').slice(0, 16);
 function listFiles(folder) {
@@ -34,7 +36,20 @@ self.addEventListener('fetch', event => {
   const request = event.request, url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin || url.search) return;
   if (request.mode === 'navigate' && ['/', '/index.html'].includes(url.pathname)) {
-    event.respondWith(fetch(request).catch(() => caches.match('/index.html', { cacheName: CACHE })));
+    // Only the public app shell can recover from a host outage. Never substitute
+    // cached HTML for authentication denials, API responses or private routes.
+    event.respondWith((async () => {
+      let response, failure;
+      try {
+        response = await fetch(request);
+        if (response.status !== 402 && response.status !== 429 && response.status < 500) return response;
+      } catch (error) { failure = error; }
+      let shell;
+      try { shell = await caches.match('/index.html', { cacheName: CACHE }); } catch { /* storage unavailable */ }
+      if (shell) return shell;
+      if (response) return response;
+      throw failure;
+    })());
   } else if (ARTWORK.includes(url.pathname)) {
     event.respondWith(caches.open(CACHE).then(async cache => {
       const hit = await cache.match(request).catch(() => undefined);

@@ -30,4 +30,4 @@ These tasks cannot be completed by changing application code alone. They remain 
 - [ ] Obtain formal legal/privacy/security sign-off before public release.
 
 ## Explicit scope note
-The owner has elected to continue using curated Google-fetched favicons/logos. This implementation retains generic fallbacks, curated-domain-only fetching, no-referrer behavior, and no financial data in image requests. Logo copyright clearance is not tracked as a release blocker in this plan.
+Historical logo approval did not establish rights-holder permission. Superseded for App Store preparation on 2026-11-21: iOS uses original-only artwork, and the archive excludes unverified logo/wallpaper/tutorial/mascot-file packs. Name/trademark clearance, asset/software provenance, a single store record and actual metadata/screenshots remain submission gates. See ../app-store/APP_REVIEW_PACKET.md and submission-evidence.json. Web/Android legacy artwork is not thereby legally cleared.
