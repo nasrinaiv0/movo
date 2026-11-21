@@ -7,6 +7,7 @@ import { evaluate } from '../lib/calc';
 import { BRAND_LOGOS } from '../lib/brandLogos';
 import { t as tr } from '../lib/i18n';
 import BrandLogo from '../components/BrandLogo';
+import { thirdPartyArtworkAllowed } from '../lib/assetRights';
 
 const TABS = [['upcoming', 'Upcoming'], ['calendar', 'Calendar'], ['insights', 'Insights']];
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
@@ -19,7 +20,10 @@ function useMarks() {
   useEffect(() => {
     if (MARKS) return undefined;
     let live = true;
-    marksLoading = marksLoading || import('../lib/brandMarks').then(m => { MARKS = m.BRAND_MARKS; return MARKS; }).catch(() => null);
+    if (process.env.REACT_APP_ASSET_POLICY === 'original-only' || !thirdPartyArtworkAllowed()) return undefined;
+    if (process.env.REACT_APP_ASSET_POLICY !== 'original-only') {
+      marksLoading = marksLoading || import('../lib/brandMarks').then(m => { MARKS = m.BRAND_MARKS; return MARKS; }).catch(() => null);
+    }
     marksLoading.then(m => { if (live && m) setMarks(m); });
     return () => { live = false; };
   }, []);
@@ -35,14 +39,14 @@ export function SubIcon({ sub, size = 40 }) {
   const mark = marks && known?.mark ? marks[known.mark] : null;
   const [broken, setBroken] = useState(false);
   const [faviconBroken, setFaviconBroken] = useState(false);
-  const logo = known && !broken ? BRAND_LOGOS[known.id] : null;
+  const logo = thirdPartyArtworkAllowed() && known && !broken ? BRAND_LOGOS[known.id] : null;
   if (logo) {
     const fill = /\.(png|jpe?g|webp)$/.test(logo);
     return <span className={`sub-icon has-logo fill${fill ? '' : ' vector'}`} style={{ width: size, height: size }} aria-hidden="true">
       <img src={`${process.env.PUBLIC_URL || ''}/brands/${logo}`} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
     </span>;
   }
-  if (mark && !broken) {
+  if (thirdPartyArtworkAllowed() && mark && !broken) {
     return <span className="sub-icon has-mark" style={{ width: size, height: size, background: color }} aria-hidden="true">
       <svg viewBox="0 0 24 24" width={Math.round(size * 0.62)} height={Math.round(size * 0.62)}><path d={mark.path} fill={isLight(color) ? '#111' : '#fff'} /></svg>
     </span>;

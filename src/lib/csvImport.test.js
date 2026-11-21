@@ -63,3 +63,15 @@ test('a MOVO CSV export reads back with transfers, notes, references and stable 
   expect(transactions[0]).toEqual(expect.objectContaining({ category: 'income:salary', note: 'October', payment_reference: 'PAY-1', occurred_at: '2026-10-02T09:15:00.000Z' }));
   expect(transactions[1]).toEqual(expect.objectContaining({ transaction_type: 'transfer', account_name: 'BPI', to_account_name: 'GoTyme' }));
 });
+
+test('CSV amounts share canonical cents and reject unsafe or zero rounded values', () => {
+  const result = parseCsvTransactions('Date,Description,Type,Amount\n2026-11-21,Tie,expense,1.005\n2026-11-21,Unsafe,expense,10000000000000000\n2026-11-21,Tiny,expense,0.001');
+  expect(result.transactions.map(t => t.amount)).toEqual([1.01]);
+  expect(result.errors).toHaveLength(2);
+});
+
+test.each(['2026-02-30', '2026-02-30T10:00:00Z', '02/30/2026'])('CSV rejects calendar rollover: %s', date => {
+  const result = parseCsvTransactions(`Date,Description,Type,Amount\n${date},Invalid,expense,1`);
+  expect(result.transactions).toEqual([]);
+  expect(result.errors).toHaveLength(1);
+});

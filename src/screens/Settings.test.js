@@ -23,6 +23,7 @@ function makeContext(cloudMode = false) {
     setCloudSyncEnabled: jest.fn(),
     openLegal: jest.fn(),
     setSheet: jest.fn(),
+    openDeleteAccount: jest.fn(),
   };
 }
 
@@ -39,7 +40,7 @@ test('signed-in users can delete the account with Cloud Sync off; guests cannot'
   const deletion = Array.from(container.querySelectorAll('button')).find(x => x.textContent.includes('Delete Account'));
   expect(deletion).toBeTruthy();
   act(() => deletion.click());
-  expect(context.setSheet).toHaveBeenCalledWith({ name: 'deleteAccount', ownerId: 'sync-off-owner' });
+  expect(context.openDeleteAccount).toHaveBeenCalledTimes(1);
   act(() => root.render(<Settings c={makeContext(false)} />));
   expect(container.textContent).not.toContain('Delete Account');
   act(() => root.unmount()); container.remove();
@@ -194,7 +195,7 @@ test('account deletion is available to the signed-in owner with sync disabled, a
     act(() => root.render(<Settings c={{ ...c, session: { user: { id: 'user-1' } } }} />));
     expect(findDeletion()).toBeTruthy();
     act(() => findDeletion().click());
-    expect(c.setSheet).toHaveBeenCalledWith({ name: 'deleteAccount', ownerId: 'user-1' });
+    expect(c.openDeleteAccount).toHaveBeenCalledTimes(1);
   } finally {
     act(() => root.unmount());
     container.remove();

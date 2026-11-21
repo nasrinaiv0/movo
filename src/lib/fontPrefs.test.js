@@ -16,7 +16,7 @@ test('pixel sizes follow --font-scale; other units are left alone', () => {
 test('form fields never shrink below 16px, so iOS does not zoom in on focus', () => {
   expect(scaledFontSize('16px', '.flow-custom input[type="date"]')).toBe('max(16px, calc(16px * var(--font-scale, 1)))');
   expect(scaledFontSize('16px', '.movo-ai-prompt-input')).toBe('max(16px, calc(16px * var(--font-scale, 1)))');
-  expect(scaledFontSize('13px', 'input.search')).toBe('calc(13px * var(--font-scale, 1))');
+  expect(scaledFontSize('13px', 'input.search')).toBe('max(16px, calc(13px * var(--font-scale, 1)))');
 });
 
 test('rewrites nested rules, keeps !important, and runs once per stylesheet', () => {

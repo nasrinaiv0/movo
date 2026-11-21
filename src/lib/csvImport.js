@@ -1,3 +1,5 @@
+import { roundMoney } from './moneyMath';
+
 const aliases = {
   date: ['date', 'transactiondate', 'occurredat', 'timestamp'],
   merchant: ['description', 'merchant', 'payee', 'title', 'details'],
@@ -57,8 +59,17 @@ function normalizeType(raw) {
   if (['transfer', 'internal transfer'].includes(value)) return 'transfer';
   return null;
 }
-function normalizeDate(raw) {
+export function normalizeImportDate(raw) {
   const value = String(raw || '').trim();
+  // Date parses impossible calendar days by carrying them into the next month.
+  // Validate the supplied calendar component before parsing a time or offset.
+  const isoDay = value.match(/^(\d{4}-\d{2}-\d{2})(?:$|[Tt\s])/);
+  const usDay = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:$|\s)/);
+  const calendar = isoDay?.[1] || (usDay && `${usDay[3]}-${usDay[1].padStart(2, '0')}-${usDay[2].padStart(2, '0')}`);
+  if (calendar) {
+    const parsed = new Date(`${calendar}T12:00:00Z`);
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== calendar) return null;
+  }
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const parsed = new Date(`${value}T12:00:00Z`);
     if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) return null;
@@ -101,9 +112,9 @@ export function parseCsvTransactions(input) {
     const get = (key) => indexes[key] < 0 ? '' : String(cells[indexes[key]] || '').trim();
     const merchant = get('merchant').slice(0, 160);
     const rawAmount = get('amount').replace(/[₱$€£,\s]/g, '');
-    const amount = Math.abs(Number(rawAmount));
+    const amount = roundMoney(Math.abs(Number(rawAmount)));
     const type = normalizeType(get('type'));
-    const occurred_at = normalizeDate(get('date'));
+    const occurred_at = normalizeImportDate(get('date'));
     if (!merchant) { errors.push({ line, message: 'Description is required.' }); return; }
     if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { errors.push({ line, message: 'Amount must be a positive number.' }); return; }
     if (!type) { errors.push({ line, message: 'Type must be income, expense, or transfer.' }); return; }
@@ -112,7 +123,7 @@ export function parseCsvTransactions(input) {
     const ownCategory = (get('categoryId') || get('category')).slice(0, 60);
     const category = type === 'transfer' ? 'Transfer' : ownCategory || (type === 'income' ? 'Income' : 'Other');
     transactions.push({
-      merchant, amount: Math.round(amount * 100) / 100, transaction_type: type, type, category,
+      merchant, amount, transaction_type: type, type, category,
       occurred_at, date: occurred_at, currency: /^[A-Z]{3}$/.test(get('currency').toUpperCase()) ? get('currency').toUpperCase() : 'PHP',
       account_name: get('account').slice(0, 100), to_account_name: get('destination').slice(0, 100),
       note: get('note').slice(0, 1000), source: 'csv_import',

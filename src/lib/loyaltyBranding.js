@@ -1,3 +1,4 @@
+import { originalOnlyAssets } from './assetRights';
 /**
  * Only known merchants use curated public favicons (64px, lazy-loaded).
  * Unknown/custom merchants never turn user text into network domains.
@@ -56,7 +57,7 @@ export const loyaltyTypeLabel = card => card?.type === 'other'
   : ({ loyalty: 'Loyalty', membership: 'Membership', rewards: 'Rewards', tokens: 'Tokens' }[card?.type] || 'Membership');
 
 export function loyaltyCardStyle(name) {
-  return STYLES[key(name)] || DEFAULT;
+  return originalOnlyAssets() ? DEFAULT : STYLES[key(name)] || DEFAULT;
 }
 
 export function loyaltyLogoUrl(name) {

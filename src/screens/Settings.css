@@ -141,3 +141,8 @@
 
 .movo-app:is(.layout-phone, .layout-dual) .settings-toolbar:has(.settings-search) { flex-wrap: wrap; }
 .movo-app:is(.layout-phone, .layout-dual) .settings-toolbar:has(.settings-search) .header-actions { flex: 0 0 100%; }
+
+/* Audit: let text-sized choices reflow instead of squeezing five labels into every panel. */
+.movo-app .appearance-groups :is(.font-styles, .app-icon-grid) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.5em), 1fr));
+}

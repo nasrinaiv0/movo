@@ -1,3 +1,4 @@
+import { originalOnlyAssets, originalArtwork } from './assetRights';
 import { supabase, supabaseConfigured } from './supabaseClient';
 import { readDisplayAsset, saveDisplayAsset } from './displayAssetCache';
 
@@ -12,7 +13,7 @@ export function storageStickerGenre(path) { return title(path.split('/')[0] || '
 
 /* Read-only Storage integration. This module never uploads, edits, or deletes Storage objects. */
 export async function listPremiumStickers() {
-  if (!supabaseConfigured || !supabase) return [];
+  if (originalOnlyAssets() || !supabaseConfigured || !supabase) return [];
   const { data: folders, error } = await supabase.storage.from(PREMIUM_STICKER_BUCKET).list('', { limit: 200, sortBy: { column: 'name', order: 'asc' } });
   if (error) throw error;
   const collections = (folders || []).filter(item => item && !item.id && item.name && !item.name.startsWith('.'));
@@ -29,6 +30,7 @@ export async function listPremiumStickers() {
 
 export async function resolvePremiumStickerUrl(path) {
   if (!path) return '';
+  if (originalOnlyAssets()) return originalArtwork(path);
   const cached = await readDisplayAsset(path).catch(() => '');
   if (cached) return cached;
   if (!supabaseConfigured || !supabase) return '';

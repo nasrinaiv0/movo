@@ -1,6 +1,6 @@
-/* Generated wallpaper manifest: [key, category, ink, title?]. Keys starting with 'l' are live (video) wallpapers. */
+/* Unverified franchise title removed; IDs retained. Generated wallpaper manifest: [key, category, ink, title?]. Keys starting with 'l' are live (video) wallpapers. */
 export const WALLPAPERS = [
-  ['l01', 'Gaming', 'light', 'Witcher 3 Live'],
+  ['l01', 'Gaming', 'light'],
   ['w001', 'Scenery', 'light'],
   ['w002', 'Scenery', 'light'],
   ['w003', 'Scenery', 'light'],

@@ -1,5 +1,47 @@
 # MOVO Master Change Ledger
 
+## 2026-11-21 — Owner-safe encryption integration and source merge sequence
+
+#330 merged as `c3e37d7c`; #331 merged as `cfb83c51`. #291 combines owner/generation-bound restoration and preferences with encrypted wallet/workspace/outbox/QR stores. Selective reset/deletion preserves foreign/guest ciphertext, vault metadata and unassigned recovery, retains partial server-deletion/device-cleanup reporting and rejects stale A→B→A confirmations. Initial full regression: 264 suites / 1,741 tests, plus the new stale-confirmation case; typecheck, 24 Node checks and strict packaging pass. Synthetic browser migration, exact-cent save/reload and non-destructive missing-key handling pass. Revalidate latest-main integration and hosted/native head before merging; production migrations and signed-device/store/host activation remain held. [Engineering](updates/2026-11-21-encryption-owner-integration.md).
+
+## 2026-11-21 — Fresh full audit and boundary fixes (#330)
+
+[Audit and acceptance limits](../audits/2026-11-21-full-movo-audit.md) · [Engineering record](updates/2026-11-21-full-audit-remediation.md). Bind asynchronous backup restoration to the original owner/generation; reject ambiguous financial routing, unsafe/invalid imported money and impossible calendar days; propagate invalid aggregates; reflow text-sized settings choices, stabilize accessible side-nav names and recover bounded verified-emulator ADB restarts. Preserve all financial structures/history, existing architecture and API contracts. 1,704 tests, typecheck, 24 Node / 23 Python checks, strict builds, responsive/keyboard flows and real-worker outage acceptance pass locally. New-head hosted/native acceptance remains required. Production 402, remaining migration approval, encryption/erasure integration and signed-device/store evidence still block release. No production write or merge.
+
+## 2026-11-21 — Google Cloud Run preparation (#330)
+
+Owner-selected Cloud Run preparation adds a pinned non-root container for existing handlers/original-only UI, a restricted build context, explicit digest/project/secret-version manifest renderer and credential-free container CI/smoke. No live cloud, IAM, registry, database or DNS mutation. [Engineering record](updates/2026-11-21-cloud-run-preparation.md) · [Deployment packet](../CLOUD_RUN_DEPLOYMENT.md). Activation still requires the actual project/account/region, accepted runtime configuration and domain/provider checks.
+
+## 2026-11-21 — Hosting outage resilience (#330)
+
+Keep a previously installed public browser shell available on host 402/429/5xx without substituting for authentication denials/private APIs. Add optional reviewed HTTPS API routing and an independent Node transport reusing existing handlers. Preserve records, owner scopes, auth/consent/billing gates and one authoritative Supabase database; no production hosting/DNS, migration or store action. [Engineering](updates/2026-11-21-hosting-resilience.md) · [Runbook](../MOVO_HOSTING_RESILIENCE.md). Full online operation still requires a deployed, accepted independent backend.
+
+## 2026-11-21 — App Store copyright and duplication preparation (#330)
+
+Enforce original-only artwork for every installed iOS user and its build profile; preserve all 630 wallpaper IDs and user data while excluding unverified public media packs. Add bundled third-party notices to Terms, collected upstream/font licenses and explicit unresolved provenance, plus evidence gates before signed upload/public submission. Keep React/Capacitor, financial structures, canonical app ID and current public name. Name/rights clearance, store record/metadata and signed-device/backend evidence remain pending; no Apple approval, upload or production mutation is claimed.
+
+[Engineering and verification](updates/2026-11-21-app-store-rights-preparation.md) · [Inspected synthetic mobile evidence](../audits/2026-11-21-app-store-rights-review.md) · [Submission packet](../app-store/APP_REVIEW_PACKET.md). The prior R8 retry lost its emulator after seed acceptance; fresh exact-head native checks remain required. Vercel production is still independently restricted.
+
+## 2026-11-20 — iOS system-adaptive controls and panels (#330)
+
+Native UIKit navigation now follows system text/appearance/accessibility settings, uses minimum 44pt actions and flexible dock constraints, preserves disabled state and retains a web fallback if native activation fails. The shared web panels use keyboard viewport/safe-area bounds, semantic surface tokens and growing rows; Wallet actions reflow with text size. iOS system text scale multiplies app preferences without persisting device settings or changing financial structures.
+
+Full local regression: 256 suites / 1,682 tests; focused interface/bridge/font tests: 23. Exact-head native and hosted acceptance remain required. [Review and screenshots](../audits/2026-11-20-ios-interface-review.md) · [Engineering record](updates/2026-11-20-ios-system-interface.md). Vercel's API now confirms the team has an overdue balance; unpause alone did not restore service.
+
+
+## 2026-11-20 — PR #329 follow-up: device cleanup, navigation and financial submission
+
+Re-audited the #329 source, whose complete changes shipped through #327/main `73e293bf`; keep #329 closed as superseded. Extended #330 with selective owner-bound device cleanup, visible cleanup failure/retry, translated accessible tab names with stable highlight matching, and submission of the amount actually displayed on the keypad. Preserve guest/foreign caches, files, profile photos, chat state and unassigned recovery. No schema, record/API format, navigation or visual redesign.
+
+Final local source: 255 suites / 1,670 tests, type checking and strict build pass on Node 26.13.1; 140 responsive measurements and eight browser interaction assertions pass. [Audit report and inspected synthetic screenshots](../audits/2026-11-20-pr329-remediation-review.md). [Separate #331](https://github.com/nasrinaiv0/movo/pull/331) patches compatible build-tool advisories (31→19; production zero).
+
+Release held: Vercel account blocked and public MOVO HTTP 402 DEPLOYMENT_DISABLED; fresh exact-head CI and hosted acceptance required. Prior #330 paired R8 run failed Maven HTTP 429, not a passing emulator result. #274 production erasure/retention approval and native/store/device acceptance remain separate. [Engineering record](updates/2026-11-20-pr329-followup-remediation.md).
+
+
+## 2026-11-20 — Audit handover and account preference preservation
+
+Historical handoffs now lead to the current audit execution matrix. Preserve the existing architecture, financial models, APIs and screens. Reset/deletion results are bound to the confirmed owner; other guest/account preference envelopes and unassigned recovery are retained. No production erasure/retention migration is applied. See [preservation review](updates/2026-11-20-handover-preservation-review.md) and [execution handover](handovers/2026-11-20-audit-gap-execution.md).
+
 ## 2026-11-09 — Vercel Sandbox access restored; PR #247 verification
 
 820 tests / 146 suites, typecheck, optimized build without source maps, isolated plan/RLS SQL including 150 first-time Pro grants, 36 component + 6 app + 30 header cases, and exact-cent Free local save/reload passed. Header 0.5px padding and 34 build/test dependency advisories remain. Production plan RPC/trigger migration and cross-user cloud/offline release blockers remain unresolved; no production changes or signed-device certification. See the dated access/finance/UI audit for scope and failure/retry evidence.

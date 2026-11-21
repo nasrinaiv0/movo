@@ -90,3 +90,39 @@ test('deduplicates imported obligations by name and counterparty', () => {
   expect(result.bills).toEqual([]);
   expect(result.skipped.duplicates).toBe(3);
 });
+
+test('file imports use canonical symmetric cent rounding and reject unsafe cent amounts', () => {
+  const parsed = parseJsonData(JSON.stringify({
+    accounts: [{ name: 'Rounded', balance: -1.005 }, { name: 'Unsafe', balance: 1e16 }, { name: 'Invalid', balance: 'oops' }, { name: 'Empty' }],
+    transactions: [1.005, -1.005, 1e16].map(amount => ({ date: '2026-11-21', description: 'Rounding', amount })),
+  }));
+  expect(parsed.accounts.map(a => [a.name, a.opening_balance])).toEqual([['Rounded', -1.01], ['Empty', 0]]);
+  expect(parsed.transactions.map(t => t.amount)).toEqual([1.01, 1.01]);
+  expect(parsed.skipped).toBe(3);
+});
+
+test('invalid calendar dates are skipped rather than moved to another day or defaulted', () => {
+  const parsed = parseJsonData(JSON.stringify({
+    transactions: [{ date: '2026-02-30', description: 'Impossible', amount: 1 }, { date: '2024-02-29', description: 'Leap day', amount: 1 }],
+    subscriptions: [{ name: 'Wrong renewal', amount: 1, next_billing_date: '2026-02-30' }],
+    plans: [{ name: 'Wrong deadline', target: 10, deadline: '2026-02-30' }],
+    loans: [{ name: 'Wrong due date', principal: 10, due_date: '2026-02-30' }],
+    receivables: [{ name: 'Wrong due date', amount_owed: 10, due_date: '2026-02-30' }],
+    bills: [{ name: 'Wrong due date', amount: 10, first_due_date: '2026-02-30' }],
+  }));
+  expect(parsed.transactions.map(t => t.merchant)).toEqual(['Leap day']);
+  for (const key of ['subscriptions', 'plans', 'loans', 'receivables', 'bills']) expect(parsed[key]).toEqual([]);
+  expect(parsed.skipped).toBe(6);
+});
+
+test('a named import account must match exactly one account before routing money', () => {
+  const parsed = parseJsonData(JSON.stringify({ transactions: [
+    { date: '2026-11-21', description: 'Ambiguous', amount: -1, account: 'Travel Card' },
+    { date: '2026-11-21', description: 'Missing', amount: -1, account: 'Unknown' },
+    { date: '2026-11-21', description: 'Unique', amount: -1, account: 'cAsH' },
+    { date: '2026-11-21', description: 'Ambiguous destination', amount: 1, type: 'transfer', account: 'Cash', to_account: 'Travel Card' },
+  ] }));
+  const result = plan(parsed, { accounts: [{ id: 'a', name: 'Travel Card' }, { id: 'b', name: ' Travel   Card ' }, { id: 'c', name: 'Cash' }] });
+  expect(result.transactions.map(t => [t.merchant, t.account_id])).toEqual([['Unique', 'c']]);
+  expect(result.skipped.conflicts).toBe(3);
+});

@@ -158,3 +158,25 @@ export async function clearLocalAccountQr() {
     tx.onabort = () => reject(tx.error || new Error('account_qr_cache_clear_aborted'));
   });
 }
+
+/** Remove this owner's namespace and known local fallbacks, never the whole store. */
+export async function clearOwnedAccountQr(ownerId, accountIds) {
+  if ((ownerId !== null && (typeof ownerId !== 'string' || !ownerId || ownerId.includes(':'))) ||
+      !Array.isArray(accountIds) || accountIds.some(id => typeof id !== 'string' || !id || id.length > 128)) throw new Error('invalid_account_qr_cleanup');
+  if (typeof indexedDB === 'undefined' || (ownerId === null && !accountIds.length)) return;
+  const localKeys = new Set(accountIds.map(id => 'local:' + id));
+  const prefix = ownerId === null ? null : ownerId + ':';
+  const db = await openDatabase();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const cursor = tx.objectStore(STORE_NAME).openCursor();
+    cursor.onsuccess = () => {
+      const row = cursor.result;
+      if (!row) return;
+      if ((prefix && String(row.key).startsWith(prefix)) || localKeys.has(row.key)) row.delete();
+      row.continue();
+    };
+    tx.oncomplete = resolve;
+    tx.onerror = tx.onabort = () => reject(tx.error || new Error('account_qr_cleanup_failed'));
+  });
+}

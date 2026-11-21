@@ -1,0 +1,64 @@
+{
+  "results": [
+    {
+      "case": "posted/pending/transfer",
+      "balance": "97.91",
+      "cash": "67.91",
+      "bank": "30.00"
+    },
+    {
+      "case": "persisted keypad amount",
+      "reduced": true
+    },
+    {
+      "case": "actual UI expense save and reload",
+      "amount": "7.66",
+      "balance": "80.25"
+    },
+    {
+      "case": "sheet motion and Escape focus",
+      "motion": "reduce",
+      "ms": 0.01
+    },
+    {
+      "case": "sheet motion and Escape focus",
+      "motion": "no-preference",
+      "ms": 200
+    },
+    {
+      "case": "guest sharing",
+      "state": "Sign in required"
+    },
+    {
+      "case": "Arabic labels, RTL and 130% text",
+      "labels": [
+        {
+          "label": "الرئيسية",
+          "title": "الرئيسية"
+        },
+        {
+          "label": "المحفظة",
+          "title": "المحفظة"
+        },
+        {
+          "label": "NasrinAI",
+          "title": "NasrinAI"
+        },
+        {
+          "label": "المعاملات",
+          "title": "المعاملات"
+        },
+        {
+          "label": "القائمة",
+          "title": "القائمة"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "case": "setup focus, legal return and small-screen acceptance",
+      "width": 320
+    }
+  ],
+  "errors": []
+}

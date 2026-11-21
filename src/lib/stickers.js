@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { WALLPAPERS } from './wallpapers';
+import { originalOnlyAssets, originalArtwork } from './assetRights';
 import { t as tr } from './i18n';
 
 /*
@@ -191,8 +192,8 @@ export const WALLPAPER_THEMES = WALLPAPERS.map(([key, genre, ink, title]) => {
   const live = key.startsWith('l'); const dir = live ? 'live' : 'img';
   counts[genre] = (counts[genre] || 0) + 1;
   return {
-    id: `wp-${key}`, name: title || `${genre} ${String(counts[genre]).padStart(2, '0')}`, genre: live ? 'Live' : genre, ink, wallpaper: true,
-    src: `/wallpapers/${dir}/${key}.webp`, thumb: `/wallpapers/${dir}/${key}-t.webp`, video: live ? `/wallpapers/${dir}/${key}.mp4` : undefined,
+    id: `wp-${key}`, name: (!originalOnlyAssets() && title) || `${genre} ${String(counts[genre]).padStart(2, '0')}`, genre: live ? 'Live' : genre, ink, wallpaper: true,
+    src: originalOnlyAssets() ? originalArtwork(key, ink) : `/wallpapers/${dir}/${key}.webp`, thumb: originalOnlyAssets() ? originalArtwork(key, ink) : `/wallpapers/${dir}/${key}-t.webp`, video: live && !originalOnlyAssets() ? `/wallpapers/${dir}/${key}.mp4` : undefined,
   };
 });
 export const WALLPAPER_GENRES = [...new Set(WALLPAPER_THEMES.map(t => t.genre))].sort((a, b) => (a === 'Live' ? -1 : b === 'Live' ? 1 : 0));
@@ -205,6 +206,7 @@ const MAX_CUSTOM_STICKER_BYTES = 10 * 1024 * 1024;
 const MAX_CUSTOM_STICKER_PIXELS = 24_000_000;
 const ALLOWED_CUSTOM_STICKER_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']);
 let customList = [];
+let customGeneration = 0;
 try { customList = JSON.parse(localStorage.getItem(CUSTOM_KEY)) || []; } catch { customList = []; }
 const listeners = new Set();
 const saveCustom = () => {
@@ -235,7 +237,15 @@ export const removeCustomSticker = (id) => {
 /* Cross-device sync: read the list, replace it with a validated copy from the cloud, and hear about changes. */
 export const getCustomStickers = () => customList;
 export const subscribeCustomStickers = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
+// Clear only the runtime view if storage is unavailable during an identity change.
+// The persisted copy remains available for recovery and must not leak into the new view.
+export function resetCustomStickerView() {
+  ++customGeneration;
+  customList = [];
+  listeners.forEach(fn => fn(customList));
+}
 export function replaceCustomStickers(list) {
+  ++customGeneration;
   const valid = (Array.isArray(list) ? list : []).filter(s => s && typeof s.id === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s.src || '')).slice(0, 40);
   const previous = customList;
   customList = valid;
@@ -244,6 +254,7 @@ export function replaceCustomStickers(list) {
 }
 
 export const clearCustomStickers = () => {
+  ++customGeneration;
   const previous = customList;
   try {
     if (typeof window === 'undefined' || !window.localStorage) return false;
@@ -259,6 +270,7 @@ export const clearCustomStickers = () => {
 
 /* Crop to the card ratio at 2x (1712x1080), while bounding input size and decoded pixels. */
 export function addCustomSticker(file) {
+  const generation = customGeneration;
   return new Promise((resolve, reject) => {
     if (!file) { reject(new Error(tr('Choose an image file.'))); return; }
     if (!ALLOWED_CUSTOM_STICKER_TYPES.has(String(file.type || '').toLowerCase())) {
@@ -282,6 +294,7 @@ export function addCustomSticker(file) {
     const img = new Image();
     img.onload = () => {
       try {
+        if (generation !== customGeneration) throw new Error(tr('Could not save. Please try again.'));
         const width = img.naturalWidth || img.width;
         const height = img.naturalHeight || img.height;
         if (!width || !height || width * height > MAX_CUSTOM_STICKER_PIXELS) {

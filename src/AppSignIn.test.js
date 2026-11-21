@@ -1,3 +1,4 @@
+import { seedPreferenceFixture } from './testPreferenceFixtures';
 import 'fake-indexeddb/auto';
 import { webcrypto } from 'crypto';
 import { clearHybridOwner } from './lib/hybridLocalStore';
@@ -35,7 +36,7 @@ jest.mock('./lib/financeRepository', () => ({
   purgeArchivedAutomations: async () => null, listArchivedAutomations: async () => [],
 }));
 jest.mock('./lib/localAttachments', () => ({
-  ...jest.requireActual('./lib/localAttachments'), clearLocalAttachments: jest.fn(),
+  ...jest.requireActual('./lib/localAttachments'), removeLocalAttachments: jest.fn(),
 }));
 jest.mock('./lib/obligationsRepository', () => ({
   listAccountingPostings: async () => [],
@@ -53,7 +54,7 @@ import { recoverHybridWorkspace } from './lib/hybridWorkspaceRecovery';
 // eslint-disable-next-line import/first
 import { deleteMyAccount, getCurrentSession, signOut } from './lib/financeRepository';
 // eslint-disable-next-line import/first
-import { clearLocalAttachments } from './lib/localAttachments';
+import { removeLocalAttachments } from './lib/localAttachments';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 window.scrollTo = jest.fn();
@@ -72,7 +73,7 @@ describe('sign-in session handoff', () => {
   beforeEach(async () => {
     await clearHybridOwner(OWNER);
     localStorage.clear();
-    localStorage.setItem('movo.preferences.v3', JSON.stringify({ planWelcomeSeen: true, onboarded: true, tutorialSeen: true }));
+    seedPreferenceFixture(OWNER, JSON.stringify({ planWelcomeSeen: true, onboarded: true, tutorialSeen: true }));
     mockGetEntitlements.mockReset();
     mockGetEntitlements.mockImplementation(() => new Promise(() => {}));
     getCurrentSession.mockResolvedValue(null);
@@ -133,8 +134,7 @@ describe('sign-in session handoff', () => {
 
   test('confirms cloud account deletion even if device cleanup fails, then attempts sign-out', async () => {
     act(() => root.unmount());
-    const prefs = JSON.parse(localStorage.getItem('movo.preferences.v3'));
-    localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...prefs, cloudSyncEnabled: false }));
+    seedPreferenceFixture(OWNER, JSON.stringify({ planWelcomeSeen: true, onboarded: true, tutorialSeen: true, cloudSyncEnabled: false }));
     root = createRoot(container);
     await act(async () => { root.render(<App />); });
     await act(async () => { mockAuthCallback('SIGNED_IN', session); await new Promise(resolve => setTimeout(resolve, 10)); });
@@ -146,7 +146,7 @@ describe('sign-in session handoff', () => {
     deleteMyAccount.mockResolvedValue(true);
     getCurrentSession.mockResolvedValue(session);
     signOut.mockResolvedValue({ localOnly: true });
-    clearLocalAttachments.mockRejectedValue(new Error('device_storage_unavailable'));
+    removeLocalAttachments.mockRejectedValue(new Error('device_storage_unavailable'));
     const input = container.querySelector('input[aria-label="Type DELETE to confirm"]');
     act(() => {
       Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, 'DELETE');
