@@ -1,5 +1,9 @@
 # MOVO Master Change Ledger
 
+## 2026-11-21 — Fresh full audit and boundary fixes (#330)
+
+[Audit and acceptance limits](../audits/2026-11-21-full-movo-audit.md) · [Engineering record](updates/2026-11-21-full-audit-remediation.md). Bind asynchronous backup restoration to the original owner/generation; reject ambiguous financial routing, unsafe/invalid imported money and impossible calendar days; propagate invalid aggregates; reflow text-sized settings choices, stabilize accessible side-nav names and recover bounded verified-emulator ADB restarts. Preserve all financial structures/history, existing architecture and API contracts. 1,704 tests, typecheck, 24 Node / 23 Python checks, strict builds, responsive/keyboard flows and real-worker outage acceptance pass locally. New-head hosted/native acceptance remains required. Production 402, remaining migration approval, encryption/erasure integration and signed-device/store evidence still block release. No production write or merge.
+
 ## 2026-11-21 — Google Cloud Run preparation (#330)
 
 Owner-selected Cloud Run preparation adds a pinned non-root container for existing handlers/original-only UI, a restricted build context, explicit digest/project/secret-version manifest renderer and credential-free container CI/smoke. No live cloud, IAM, registry, database or DNS mutation. [Engineering record](updates/2026-11-21-cloud-run-preparation.md) · [Deployment packet](../CLOUD_RUN_DEPLOYMENT.md). Activation still requires the actual project/account/region, accepted runtime configuration and domain/provider checks.

@@ -1,0 +1,26 @@
+{
+  "browser": "isolated Chromium",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "syntheticRecords": true,
+  "productionAccess": false,
+  "firstVisitWithoutCacheStill402": true,
+  "installedWorker": true,
+  "host402LoadsCachedApp": true,
+  "localExpenseSavedDuring402": true,
+  "reloadPreservesBalance": true,
+  "api402NotReplacedWithHtml": true,
+  "host503LoadsCachedApp": true,
+  "fullNetworkOfflineLoadsApp": true,
+  "authDenialsPreserved": true,
+  "recoveryHasNoDuplicate": true,
+  "pageErrors": [],
+  "hostResponses": {
+    "401": 1,
+    "402": 5,
+    "403": 1,
+    "503": 1
+  }
+}

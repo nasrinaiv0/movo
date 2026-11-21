@@ -2712,7 +2712,8 @@ function App() {
    * layouts and profile (lib/backupPreferences.js), plus QR codes, the scenery photo and custom stickers from the
    * attachments. Merged into this device; nothing already here is overwritten. Returns how many items were added.
    */
-  const restoreBackupExtras = async (backup, accountIdMap, files) => {
+  const restoreBackupExtras = async (backup, accountIdMap, files, assertImportOwner) => {
+    assertImportOwner();
     const { patch, counts, qrCodes } = planPreferenceRestore(backup, prefsRef.current, accountIdMap, DEFAULTS);
     let added = Object.values(counts).reduce((sum, n) => sum + n, 0);
     const qrPatch = {}; const qrPending = {};
@@ -2720,7 +2721,8 @@ function App() {
       const data = files.get('qr:' + from);
       if (!isAccountQrDataUrl(data)) continue;
       const cacheKey = cloudMode && session?.user?.id ? `${session.user.id}:${to}` : `local:${to}`;
-      try { await saveLocalAccountQr(cacheKey, data); } catch { continue; }
+      try { await saveLocalAccountQr(cacheKey, data); } catch { assertImportOwner(); continue; }
+      assertImportOwner();
       qrPatch[to] = `localqr:${cacheKey}`;
       if (cloudMode && session?.user?.id) qrPending[to] = true;
       added += 1;
@@ -2744,6 +2746,12 @@ function App() {
     // A file import is never sent to a cloud API directly. With Cloud Sync on it is saved into this account's
     // device copy, shown everywhere at once, and uploaded by the verified offline sync (now or on reconnect).
     const signedOwner=session?.user?.id;
+    const assertImportOwner = () => {
+      if (preferenceOwnerRef.current !== (signedOwner || null) || preferenceEpochRef.current !== preferenceEpoch
+        || preferenceErasureRef.current || preferenceBlockedRef.current.has(signedOwner || null))
+        throw new Error(tr('Could not save. Please try again.'));
+    };
+    assertImportOwner();
     const viaCloud=cloudMode&&!!signedOwner;
     const priorWorkspace=signedOwner?loadOfflineWorkspace(signedOwner):null;
     if(viaCloud&&!priorWorkspace)throw new Error('Signed-in account workspace is unavailable. No records were changed.');
@@ -2761,6 +2769,7 @@ function App() {
       delete row.receipt_source_path;
       row.receipt_path = data && /^data:(image\/(jpeg|png|webp)|application\/pdf);base64,/.test(data)
         ? await putLocalAttachment(dataUrlToBlob(data)).catch(() => null) : null;
+      assertImportOwner();
     }
     const hasRows = planned.accounts.length > 0 || planned.transactions.length > 0;
     if (hasRows && viaCloud) {
@@ -2770,7 +2779,12 @@ function App() {
     }
     const result = { accounts: planned.accounts.length, transactions: planned.transactions.length, failed: 0, skipped: planned.skipped, unsupported: planned.unsupported };
     // Preferences point at the restored accounts, so they are applied only after those are safely saved.
-    const withExtras = async () => ({ ...result, other: await restoreBackupExtras(backup, planned.accountIdMap || {}, files) });
+    const withExtras = async () => {
+      assertImportOwner();
+      const other = await restoreBackupExtras(backup, planned.accountIdMap || {}, files, assertImportOwner);
+      assertImportOwner();
+      return { ...result, other };
+    };
     if (!hasRows) return { ...(await withExtras()), accounts: 0, transactions: 0 };
     const nextAccounts = [...deviceAccounts, ...planned.accounts];
     const nextTransactions = [...planned.transactions, ...deviceTransactions];
@@ -2783,6 +2797,7 @@ function App() {
       throw new Error('Local records changed in another tab or are still saving. Reopen the backup and review before importing.');
     if(signedOwner){
       await persistHybridLocalImport(signedOwner,planned.accounts,planned.transactions,viaCloud?'online':'offline');
+      assertImportOwner();
       if(!updateOfflineWorking(signedOwner,{...priorWorkspace.working,financial_accounts:nextAccounts,transactions:nextTransactions}))
         throw new Error('Device storage could not save the imported records; no visible records were changed.');
       const verifiedWorkspace=loadOfflineWorkspace(signedOwner);
@@ -2991,7 +3006,7 @@ function App() {
         <span className="side-brand"><MovoMark size={30} /><span>Movo</span></span>
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
-          return <button type="button" key={label} className={`side-item${active ? ' active' : ''}`} disabled={!setupDone} onClick={() => go(target)} aria-current={active ? 'page' : undefined} title={tr(label)}>
+          return <button type="button" key={label} className={`side-item${active ? ' active' : ''}`} disabled={!setupDone} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={tr(label)} title={tr(label)}>
             <span className="side-icon">{center ? <NasrinMark size={20} /> : <Icon name={icon} size={22} strokeWidth={1.8} filled={active} />}{target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}</span>
             <span className="side-label">{tr(label)}</span>
           </button>;

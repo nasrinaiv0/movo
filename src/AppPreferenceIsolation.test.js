@@ -126,6 +126,41 @@ describe('account preference isolation through real App auth transitions', () =>
     expect(readPreferenceScope({}, B).prefs.subscriptions.map(item => item.id)).toEqual(['b']);
   });
 
+  test.each([null, A])('a backup paused on a receipt for owner %s cannot publish after an account switch', async owner => {
+    if (owner) await auth(owner);
+    let releaseReceipt;
+    const receipt = jest.spyOn(require('./lib/localAttachments'), 'putLocalAttachment')
+      .mockImplementation(() => new Promise(resolve => { releaseReceipt = resolve; }));
+    const backup = {
+      accounts: [{ id: 'old-account', name: 'Guest backup private', account_type: 'cash', currency: 'PHP', opening_balance: 10 }],
+      transactions: [{ id: 'old-tx', merchant: 'Guest backup private', amount: 1, type: 'expense', account_id: 'old-account', date: '2026-11-21', receipt_path: 'receipt.png' }],
+      tables: {}, attachments: [
+        { path: 'receipt.png', dataUrl: 'data:image/png;base64,aGVsbG8=' },
+        { path: 'sticker:private-backup', dataUrl: 'data:image/png;base64,aGVsbG8=' },
+      ],
+    };
+    let outcome;
+    try {
+      await act(async () => { outcome = mockContext.saveFinanceBackupRecords(backup).then(() => 'saved', error => error.message); });
+      expect(releaseReceipt).toEqual(expect.any(Function));
+      await auth(B);
+      const b = localStorage.getItem(preferenceScopeKey(B));
+      await act(async () => { releaseReceipt('local-receipt-audit'); await outcome; });
+      expect(await outcome).toBe('Could not save. Please try again.');
+      expect(container.textContent).not.toContain('Guest backup private');
+      expect(localStorage.getItem(preferenceScopeKey(B))).toBe(b);
+      expect(require('./lib/localFinanceStore').loadLocalAccounts()).toEqual([]);
+      expect(require('./lib/stickers').getCustomStickers().some(item => item.id === 'private-backup')).toBe(false);
+    } finally { receipt.mockRestore(); }
+  });
+
+  test('a stale backup action is rejected after switching accounts before it starts', async () => {
+    const save = mockContext.saveFinanceBackupRecords;
+    await auth(B);
+    await expect(save({ accounts: [], transactions: [], tables: {}, attachments: [] }))
+      .rejects.toThrow('Could not save. Please try again.');
+  });
+
   test('an A response released after B signs in cannot enter B view or upload', async () => {
     let releaseA;
     mockLoadPreferences.mockImplementation(owner => owner === A

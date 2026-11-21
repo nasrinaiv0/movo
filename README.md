@@ -1,5 +1,7 @@
 # MOVO
 
+The [November 21 full audit](docs/audits/2026-11-21-full-movo-audit.md) reproduces and fixes account-switch backup restoration, import routing/cents/calendar errors, unsafe totals and adaptive control issues in #330. Local verification passes 1,704 tests; production hosting, remaining migrations, signed-device and store evidence still gate release. Existing architecture and financial structures are preserved.
+
 [Hosting resilience](docs/MOVO_HOSTING_RESILIENCE.md): the candidate can open its previously installed browser shell on host HTTP 402/429/5xx, and its existing APIs can run through an optional independent Node host. Full online independence still requires a deployed, tested backend and domain routing; no hosting or DNS was changed.
 
 The owner selected [Google Cloud Run preparation](docs/CLOUD_RUN_DEPLOYMENT.md): pinned non-root container, explicit staging configuration and credential-free build/smoke CI. No Google service, IAM change, registry push or domain cutover has been performed.

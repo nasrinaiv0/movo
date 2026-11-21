@@ -2,6 +2,12 @@
 
 Execute against live repository and deployment state. The screenshot and original November 20 audit are historical evidence, not current PR or schema status. Preserve the original audit at `docs/audits/2026-11-20-full-movo-product-audit.md`.
 
+## Fresh full audit — November 21
+
+Start with the [new full audit](../../audits/2026-11-21-full-movo-audit.md) and [remediation record](../updates/2026-11-21-full-audit-remediation.md). #330 now also guards asynchronous backup restore against account/generation changes, fixes financial import routing/cents/calendar validation and unsafe totals, reflows text-sized settings choices and handles bounded verified-emulator ADB restart disconnects. Preserve these guards when integrating #330 into #291/#274. Local verification: 1,704 tests, typecheck, 24 Node / 23 Python checks, strict builds, 27 fresh browser observations and real-worker outage recovery. At `f2aa4587`, seven hosted workflows passed and paired R8 failed at ADB root before instrumentation; new-head hosted checks are required. Do not reuse old device/preview status as current acceptance.
+
+Read-only production inspection confirms 53 public tables with RLS, deployed #328 protections and the still-missing schedule-owner composite constraint. #274's three migrations remain separately approval-held. Production is still HTTP 402; Cloud Run has not been activated. No customer rows, financial history, production data/schema, host/IAM/DNS or store record were changed, and no PR was merged.
+
 ## November 21 continuation: first App Store submission
 
 The owner chose **Prepare for Google Cloud Run**. Continue with [the Cloud Run deployment packet](../../CLOUD_RUN_DEPLOYMENT.md), pinned image, manifest renderer and container verification. No Google project, credentials, region, service/IAM/DNS or resource creation is implied by preparation. Keep one authoritative existing Supabase database and the current app identity; do not deploy a fabricated target or export secrets into the image/client.

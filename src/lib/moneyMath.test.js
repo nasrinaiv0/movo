@@ -7,3 +7,10 @@ test('rounds decimal ties symmetrically and sums cents without floating-point re
   expect(moneyCents(1e30)).toBeNaN();
   expect(moneyCents(Infinity)).toBeNaN();
 });
+
+test('an invalid posting or unsafe intermediate total cannot silently disappear', () => {
+  expect(sumMoney([10, NaN])).toBeNaN();
+  expect(sumMoney([10, Infinity])).toBeNaN();
+  expect(sumMoney([10, 1e16])).toBeNaN();
+  expect(sumMoney([90071992547409, 1, -1])).toBeNaN();
+});
