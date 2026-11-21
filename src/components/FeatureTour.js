@@ -1,3 +1,4 @@
+import { originalOnlyAssets, originalArtwork } from '../lib/assetRights';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import { MovoMark } from './MovoLogo';
@@ -54,7 +55,7 @@ const TAIL_MS = 900;      // a breath after each spoken line
 const WAIT_MS = 2500;     // how long a step waits for its clip to load before carrying on without it
 const STILL_MS = 5200;    // a step with no clip length (never the case for shipped steps)
 const base = () => (typeof process !== 'undefined' && process.env.PUBLIC_URL) || '';
-export const tourImage = (name, dark) => `${base()}/tutorial/${name}-${dark ? 'dark' : 'light'}.webp`;
+export const tourImage = (name, dark) => originalOnlyAssets() ? originalArtwork('tour-' + name, dark ? 'light' : 'dark') : `${base()}/tutorial/${name}-${dark ? 'dark' : 'light'}.webp`;
 export const tourAudio = (id) => `${base()}/tutorial/${id}.mp3`;
 const entry = (id) => manifest.steps[id] || { image: '', rect: [0, 0, 1, 1], ms: 0 };
 const isWhole = (rect) => rect[2] >= 0.999 && rect[3] >= 0.999;
@@ -79,6 +80,7 @@ export function stageLayout(rect, stageW, stageH, aspect = ASPECT, margin = 10) 
 const pct = (v) => `${Math.round(v * 10000) / 100}%`;
 
 export default function FeatureTour({ onDone, dark = false, steps = TOUR_STEPS }) {
+  const original = originalOnlyAssets();
   const auto = canAnimate();
   const [index, setIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
@@ -99,14 +101,15 @@ export default function FeatureTour({ onDone, dark = false, steps = TOUR_STEPS }
   const step = steps[index];
   const info = entry(step.id);
   const last = index === steps.length - 1;
-  const total = (info.ms || STILL_MS) + TAIL_MS;
-  const audible = wantSound && !blocked;
+  const total = (original ? STILL_MS : (info.ms || STILL_MS)) + TAIL_MS;
+  const audible = !original && wantSound && !blocked;
 
   /* ---- sound ---- */
   const startedRef = useRef(false); // a clip has been asked to play, so there may be something to pause
   const stopClip = useCallback(() => { if (!startedRef.current) return; try { audioRef.current?.pause(); } catch { /* not supported */ } }, []);
   // Called straight from tap handlers too, so browsers that need a tap before sound accept it.
   const playClip = useCallback((i) => {
+    if (originalOnlyAssets()) return;
     const audio = audioRef.current;
     if (!audio || typeof audio.play !== 'function') { setBlocked(true); return; }
     try {
@@ -193,7 +196,8 @@ export default function FeatureTour({ onDone, dark = false, steps = TOUR_STEPS }
     const img = new Image(); img.src = tourImage(entry(next.id).image, dark);
   }, [index, steps, dark]);
 
-  const rect = info.rect;
+  // Original illustrations do not depict a screen region; do not highlight fictional UI.
+  const rect = original ? [0, 0, 1, 1] : info.rect;
   const whole = isWhole(rect);
   const { scale, x, y, shotH } = stageLayout(rect, stage.w, stage.h);
   const src = tourImage(info.image, dark);
@@ -208,7 +212,7 @@ export default function FeatureTour({ onDone, dark = false, steps = TOUR_STEPS }
       <div className="ft-progress" aria-hidden="true">{steps.map((s, i) => <span key={s.id}><i style={{ width: `${auto ? fill(i) : (i <= index ? 100 : 0)}%` }} /></span>)}</div>
       <div className="ft-top">
         <span className="ft-count">{tr('{n} of {total}', { n: index + 1, total: steps.length })}</span>
-        <button type="button" className={`ft-icon ft-sound${audible ? '' : ' is-muted'}`} aria-label={audible ? tr('Mute') : tr('Turn sound on')} aria-pressed={audible} onClick={toggleSound}><Icon name="speaker" size={16} /></button>
+        {!original && <button type="button" className={`ft-icon ft-sound${audible ? '' : ' is-muted'}`} aria-label={audible ? tr('Mute') : tr('Turn sound on')} aria-pressed={audible} onClick={toggleSound}><Icon name="speaker" size={16} /></button>}
         {auto && <button type="button" className="ft-icon" aria-label={paused ? tr('Play') : tr('Pause')} onClick={() => (paused ? resume() : pause())}><Icon name={paused ? 'play' : 'pause'} size={16} /></button>}
         <button type="button" className="ft-skip" onClick={skip}>{tr('Skip')}</button>
       </div>

@@ -37,7 +37,7 @@ export function scaledFontSize(value, selector = '') {
   if (!m) return null;
   const px = Number(m[1]);
   const calc = `calc(${px}px * var(--font-scale, 1))`;
-  return px >= 16 && FIELD.test(selector) ? `max(${px}px, ${calc})` : calc;
+  return FIELD.test(selector) ? `max(${Math.max(16, px)}px, ${calc})` : calc;
 }
 
 /** Rewrites pixel font sizes in a list of CSS rules (recursing into @media/@supports/@container). Returns the count. */

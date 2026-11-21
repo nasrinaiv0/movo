@@ -1,3 +1,4 @@
+import ThirdPartyNotices from '../components/ThirdPartyNotices';
 import React from 'react';
 import { SubHeader } from '../components/ui';
 import { t as tr, rich } from '../lib/i18n';
@@ -131,6 +132,7 @@ export function TermsOfService({ c }) {
     </section>
     <section className="legal-section">
       <h2>{tr('11. Contact')}</h2>
+      <ThirdPartyNotices />
       <p>{rich('For questions about these terms, email {link}.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
     </section>
   </LegalPage>;

@@ -40,7 +40,7 @@ test('vulnerability disclosure has a publicly deployable security.txt', () => {
 
 test('phone-automation device keys cannot be mirrored into native preferences', () => {
   const source = fromRoot('src/App.js');
-  expect(source).toContain('JSON.stringify(sanitizeNativePreferenceCache(prefs))');
+  expect(source).toContain('savePreferenceScope(preferenceOwner, sanitizeNativePreferenceCache(prefs), getCustomStickers())');
   expect(source).toContain('saveNativeAutomationKey');
   const vault = fromRoot('src/lib/nativeAutomationKey.js');
   expect(vault).toContain('delete clone.autoLogKey');

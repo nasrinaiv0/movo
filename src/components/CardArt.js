@@ -1,3 +1,4 @@
+import { originalOnlyAssets, originalArtwork } from '../lib/assetRights';
 import { usePlan } from '../lib/PlanContext';
 import React, { memo, useEffect, useId, useState } from 'react';
 import { W, H, rng, hash, defaultThemeFor, findSticker, useCustomStickers } from '../lib/stickers';
@@ -22,6 +23,7 @@ const build = (node, key) => {
 export const StickerArt = memo(function StickerArt({ theme, compact }) {
   const raw = useId(); const u = `s${raw.replace(/[^a-z0-9]/gi, '')}`;
   if (theme.custom) return <img className="sticker-art" src={theme.src} alt="" draggable="false" />;
+  if (originalOnlyAssets()) return <img className="sticker-art" src={originalArtwork(theme.id, theme.ink)} alt="" draggable="false" />;
   if (theme.wallpaper) {
     if (theme.video && !compact && canAnimate()) return <video className="sticker-art" src={theme.video} poster={theme.src} autoPlay muted loop playsInline preload="metadata" aria-hidden="true" disablePictureInPicture />;
     return <img className="sticker-art" src={compact ? theme.thumb : theme.src} alt="" loading="lazy" decoding="async" draggable="false" />;
@@ -286,7 +288,7 @@ export default function CardArt({ a, show, styleId, preview, compact, displayMod
             return <b className="ccx-balance" style={{ '--len': text.length }} title={ci ? tr('Available credit') : undefined}>{text}</b>;
           })()}
         </div>
-        {networkName && <span className={`ccx-net net-${NETWORK_KEY[network] || 'other'}`} role="img" aria-label={networkName}>{network === 'mastercard' ? <><i /><i /></> : NETWORK_MARK[network] || networkName}</span>}
+        {networkName && <span className={`ccx-net${originalOnlyAssets() ? '' : ` net-${NETWORK_KEY[network] || 'other'}`}`} role="img" aria-label={networkName}>{originalOnlyAssets() ? networkName : network === 'mastercard' ? <><i /><i /></> : NETWORK_MARK[network] || networkName}</span>}
       </div>
     </div>
   </div>;

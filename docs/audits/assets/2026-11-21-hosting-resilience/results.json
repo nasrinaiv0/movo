@@ -1,0 +1,33 @@
+{
+  "browser": "isolated Chromium",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "syntheticRecords": true,
+  "productionAccess": false,
+  "firstVisitWithoutCacheStill402": true,
+  "installedWorker": true,
+  "host402LoadsCachedApp": true,
+  "localExpenseSavedDuring402": true,
+  "reloadPreservesBalance": true,
+  "api402NotReplacedWithHtml": true,
+  "host503LoadsCachedApp": true,
+  "fullNetworkOfflineLoadsApp": true,
+  "authDenialsPreserved": true,
+  "recoveryHasNoDuplicate": true,
+  "pageErrors": [],
+  "hostResponses": {
+    "401": 1,
+    "402": 5,
+    "403": 1,
+    "503": 1
+  },
+  "date": "2026-11-21",
+  "assetManifestSha256": "3ef264172aa80a61a2081ae3a0aa7a3725951cd7bd705cc53a3a96da20855cb9",
+  "openingBalance": "100.25",
+  "savedExpense": "12.34",
+  "resultingBalance": "87.91",
+  "signedDeviceEvidence": false,
+  "independentProductionDeployment": false
+}

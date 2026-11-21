@@ -1,3 +1,4 @@
+import { thirdPartyArtworkAllowed } from '../lib/assetRights';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './CryptoMarket.css';
 import Icon from '../components/Icon';
@@ -15,8 +16,8 @@ function CryptoLogo({ coin, size = 38 }) {
   const domain = CRYPTO_DOMAINS[coin.symbol] || (coin.symbol.toLowerCase() + ".org");
   const [failed, setFailed] = useState(false);
   return <span className="crypto-logo" style={{ width: size, height: size }} aria-hidden="true">
-    {!failed && <img src={"https://www.google.com/s2/favicons?domain=" + encodeURIComponent(domain) + "&sz=128"} alt="" loading="lazy" onError={() => setFailed(true)} />}
-    {failed && <b>{coin.symbol.slice(0, 3)}</b>}
+    {thirdPartyArtworkAllowed() && !failed && <img src={"https://www.google.com/s2/favicons?domain=" + encodeURIComponent(domain) + "&sz=128"} alt="" loading="lazy" onError={() => setFailed(true)} />}
+    {(!thirdPartyArtworkAllowed() || failed) && <b>{coin.symbol.slice(0, 3)}</b>}
   </span>;
 }
 

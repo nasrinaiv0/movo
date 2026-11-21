@@ -34,7 +34,7 @@ export function downloadUrl(platform, code) {
   const params = new URLSearchParams({ platform });
   const ref = normalizeReferralCode(code || '');
   if (ref) params.set('ref', ref);
-  return `${appOrigin()}/api/download?${params}`;
+  return new URL(apiUrl(`/api/download?${params}`), appOrigin()).href;
 }
 
 /** A friend's code that arrived through a download link (?ref=M78038), kept on this device until it is used. */

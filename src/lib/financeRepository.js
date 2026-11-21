@@ -313,9 +313,10 @@ export async function savePreferences(userId, prefs, stickers) {
  * ON DELETE RESTRICT); deleting conversations cascades to their messages and server-side mappings.
  */
 /** Permanently deletes the signed-in person's MOVO account and all of its cloud data (server: api/account/delete.js). */
-export async function deleteMyAccount() {
+export async function deleteMyAccount(confirmedOwnerId) {
   const session = unwrap(await requireClient().auth.getSession())?.session;
   if (!session?.access_token) throw new Error('sign_in_required');
+  if (!confirmedOwnerId || session.user?.id !== confirmedOwnerId) throw new Error('account_changed');
   const response = await fetch(apiUrl('/api/account/delete'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },

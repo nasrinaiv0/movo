@@ -43,3 +43,19 @@ test('expense description re-categorizes on every edit, handles ambiguity and ke
     act(()=>root.unmount());container.remove();
   }
 });
+
+test('saving the visible keypad amount does not depend on the parent draft catching up first', async () => {
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container); const save = jest.fn();
+  const form = { amount: '7.6', merchant: 'Audit purchase', transaction_type: 'expense', category: NEEDS_REVIEW,
+    account_id: 'cash', occurred_at: '2026-11-20', time: '' };
+  try {
+    await act(async () => root.render(<TransactionSheet form={form} setForm={() => {}} accounts={[]}
+      cloudMode={false} onClose={() => {}} onSave={save} currency="PHP" />));
+    await act(async () => container.querySelector('.tx-pad button[aria-label="6"]').click());
+    expect(container.querySelector('[aria-label="Amount"]').textContent).toBe('7.66');
+    await act(async () => container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save.mock.calls[0][1]).toMatchObject({ amount: '7.66', merchant: 'Audit purchase', account_id: 'cash' });
+  } finally { act(() => root.unmount()); container.remove(); }
+});

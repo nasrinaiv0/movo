@@ -96,7 +96,15 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
   const cats = CATEGORY_ICONS;
   const current = categoryOf(form.category);
   const canSave = !busy && Number.isFinite(value) && value > 0 && form.merchant.trim();
-  const submit = (e) => { e.preventDefault(); const v = evaluate(expr); if (hasOp && Number.isFinite(v)) setExpr(String(v)); onSave(e); };
+  const submit = (e) => {
+    e.preventDefault();
+    const amount = evaluate(expr);
+    if (!canSave || !Number.isFinite(amount) || amount <= 0) return;
+    if (hasOp) setExpr(String(amount));
+    // The displayed calculator is authoritative; a parent draft can still be
+    // catching up with its effect when another field changes or Save is pressed.
+    onSave(e, { ...form, amount: String(amount) });
+  };
 
   return <Sheet label={label} onClose={onClose} size="wide" hideClose className={`tx-sheet tone-${type}`}>{(close) => <form className="tx-form" onSubmit={submit}>
     <div className="tx-top">

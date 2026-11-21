@@ -1,0 +1,25 @@
+{
+  "errors": [],
+  "forbidden": [],
+  "localNotices": true,
+  "unverifiedVideo": false,
+  "noticeScroll": {
+    "overflow": 215503,
+    "reachedEnd": true,
+    "noHorizontalOverflow": true
+  },
+  "escapeClosesNotices": true,
+  "date": "2026-11-21",
+  "browser": "isolated Chromium",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "reducedMotion": true,
+  "account": "fictional guest fixture",
+  "productionAccess": false,
+  "assetPolicy": "original-only",
+  "assetManifestSha256": "f9f111162a796101ac07dfb2d440f7f04a21fc1d1c8dad23883f0d3e7f3da396",
+  "signedDeviceEvidence": false,
+  "appleApproval": "not-submitted"
+}
