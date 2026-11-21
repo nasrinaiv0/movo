@@ -3,6 +3,7 @@ const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const env = { ...process.env, CI: 'true', REACT_APP_ASSET_POLICY: 'original-only', GENERATE_SOURCEMAP: 'false', BUILD_PATH: path.join(root, 'build'), PUBLIC_URL: '' };
+execFileSync(process.execPath, [path.join(__dirname, 'validate-public-api-origin.cjs')], { cwd: root, env, stdio: 'inherit' });
 execFileSync(process.execPath, [path.join(__dirname, 'generate-third-party-notices.cjs')], { cwd: root, env, stdio: 'inherit' });
 execFileSync(process.execPath, [require.resolve('react-scripts/scripts/build')], { cwd: root, env, stdio: 'inherit' });
 require('./prepare-app-store-assets.cjs').prepare(root);

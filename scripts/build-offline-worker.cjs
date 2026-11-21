@@ -36,7 +36,20 @@ self.addEventListener('fetch', event => {
   const request = event.request, url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin || url.search) return;
   if (request.mode === 'navigate' && ['/', '/index.html'].includes(url.pathname)) {
-    event.respondWith(fetch(request).catch(() => caches.match('/index.html', { cacheName: CACHE })));
+    // Only the public app shell can recover from a host outage. Never substitute
+    // cached HTML for authentication denials, API responses or private routes.
+    event.respondWith((async () => {
+      let response, failure;
+      try {
+        response = await fetch(request);
+        if (response.status !== 402 && response.status !== 429 && response.status < 500) return response;
+      } catch (error) { failure = error; }
+      let shell;
+      try { shell = await caches.match('/index.html', { cacheName: CACHE }); } catch { /* storage unavailable */ }
+      if (shell) return shell;
+      if (response) return response;
+      throw failure;
+    })());
   } else if (ARTWORK.includes(url.pathname)) {
     event.respondWith(caches.open(CACHE).then(async cache => {
       const hit = await cache.match(request).catch(() => undefined);

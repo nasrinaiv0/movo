@@ -46,6 +46,8 @@ is needed: the native project is generated and synced on Linux, and builds, sign
 
 ## Commands
 
+The installed UI is bundled on the device; server APIs still require an available backend. [Hosting resilience](MOVO_HOSTING_RESILIENCE.md) describes an independent Node host using the same handlers/database. Keeping the owned production hostname preserves old binaries and callbacks. An optional reviewed `REACT_APP_API_ORIGIN` changes React API routing only after rebuilding; it does not remotely update installed binaries, old Shortcuts or public auth/share links.
+
 ```sh
 npm run typecheck
 npm test -- --runInBand

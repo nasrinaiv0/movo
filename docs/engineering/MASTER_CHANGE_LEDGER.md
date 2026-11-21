@@ -1,5 +1,9 @@
 # MOVO Master Change Ledger
 
+## 2026-11-21 — Hosting outage resilience (#330)
+
+Keep a previously installed public browser shell available on host 402/429/5xx without substituting for authentication denials/private APIs. Add optional reviewed HTTPS API routing and an independent Node transport reusing existing handlers. Preserve records, owner scopes, auth/consent/billing gates and one authoritative Supabase database; no production hosting/DNS, migration or store action. [Engineering](updates/2026-11-21-hosting-resilience.md) · [Runbook](../MOVO_HOSTING_RESILIENCE.md). Full online operation still requires a deployed, accepted independent backend.
+
 ## 2026-11-21 — App Store copyright and duplication preparation (#330)
 
 Enforce original-only artwork for every installed iOS user and its build profile; preserve all 630 wallpaper IDs and user data while excluding unverified public media packs. Add bundled third-party notices to Terms, collected upstream/font licenses and explicit unresolved provenance, plus evidence gates before signed upload/public submission. Keep React/Capacitor, financial structures, canonical app ID and current public name. Name/rights clearance, store record/metadata and signed-device/backend evidence remain pending; no Apple approval, upload or production mutation is claimed.

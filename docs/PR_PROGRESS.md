@@ -1,3 +1,9 @@
+## 2026-11-21 — Vercel outage resilience and portable existing APIs (#330)
+
+Added public-shell recovery on HTTP 402/429/5xx, optional validated build-time API routing, API-aware Shortcut/download links and a bounded Node 26 transport for the existing handlers. Preserve private API cache exclusions, owner isolation, bearer/consent/store gates and the current financial structures. No automatic write replay, schema/dependency change, production write, hosting/DNS change or store upload.
+
+[Implementation and validation](engineering/updates/2026-11-21-hosting-resilience.md) · [Activation/rollback runbook](MOVO_HOSTING_RESILIENCE.md). Local validation: 258 suites / 1,693 tests, typecheck, 14 Node checks and both strict builds pass. [Real-worker browser outage acceptance](audits/2026-11-21-hosting-outage-review.md) saves 12.34 while the host returns 402 and retains 87.91 through reload/offline/recovery without duplication. Full online availability still needs an independent host, configured integrations and live acceptance. Existing `02ef1cee` workflows now all pass, including iOS/Android/R8; those passes do not cover this new source or waive Vercel/rights/device gates.
+
 ## 2026-11-21 — App Store copyright and duplication preparation (#330)
 
 Added an enforced original-only iOS profile, generic artwork/labels, quarantined franchise title, bundled license notices and evidence gates before store upload/submission. All 630 saved wallpaper IDs, private uploads, financial structures and the canonical bundle ID remain. No public rebrand, store upload, production write or migration occurred.
