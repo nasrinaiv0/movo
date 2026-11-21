@@ -1,5 +1,7 @@
 ## 2026-11-21 — Final source consolidation for owner-directed draft merges
 
+Hosted checks at `2596b59d` pass web, the five explicit server tests, SQL, security, container and Android compilation; R8 loses its emulator during Wallet acceptance and is failed. The same-source compiler comparisons and encrypted seed/vault checks passed. Apply the same bounded resource/renderer setup as #291 (daemon release, memory/disk/RSS evidence, software OpenGL without Vulkan) and require full current-head paired acceptance; no failed or canceled check is relabeled.
+
 #330 merged as `c3e37d7c`; #331 as `cfb83c51`. #274 now includes #291's owner/encryption/backup/deletion safeguards and final R8 fixture, while keeping erasure and retention disabled until separate production approval/activation. Combined JavaScript: 267 suites / 1,766 tests (including five explicitly run server tests), typecheck, 25 Node / 24 Python checks and strict original-only build/notice audit pass. Fresh published-head hosted/native/SQL checks and #291-first merge order remain required. Production migration history is unchanged at #328; no financial data, server flag, hosting/IAM/DNS or store setting was changed. [Engineering](engineering/updates/2026-11-21-combined-erasure-owner-encryption.md).
 
 ## 2026-11-21 — #291 final current-main source validation

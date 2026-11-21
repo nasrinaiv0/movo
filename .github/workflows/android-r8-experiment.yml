@@ -71,6 +71,13 @@ jobs:
       - name: Verify temporary configuration restored
         if: always()
         run: git diff --exit-code -- android/settings.gradle android/app/proguard-rules.pro
+      - name: Release compiler daemons and record memory before emulator
+        if: always() && steps.default-build.outcome == 'success'
+        run: |
+          free -m
+          bash android/gradlew --stop -p android
+          free -m
+          df -h "$RUNNER_TEMP"
       - name: Enable KVM on disposable Linux runner
         if: always() && steps.default-build.outcome == 'success'
         run: |
@@ -88,8 +95,14 @@ jobs:
           profile: pixel_6
           ram-size: 2048M
           disable-linux-hw-accel: false
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           script: python3 scripts/r8/emulator_smoke.py --disposable-emulator --output "$R8_OUTPUT"
+      - name: Record runner resources after emulator failure
+        if: failure() && steps.default-build.outcome == 'success'
+        run: |
+          free -m
+          df -h "$RUNNER_TEMP"
+          ps -eo pid,comm,rss --sort=-rss | sed -n '1,15p'
       - name: Collect emulator diagnostics even on failure
         if: always() && steps.default-build.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
