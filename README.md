@@ -2,6 +2,8 @@
 
 [Hosting resilience](docs/MOVO_HOSTING_RESILIENCE.md): the candidate can open its previously installed browser shell on host HTTP 402/429/5xx, and its existing APIs can run through an optional independent Node host. Full online independence still requires a deployed, tested backend and domain routing; no hosting or DNS was changed.
 
+The owner selected [Google Cloud Run preparation](docs/CLOUD_RUN_DEPLOYMENT.md): pinned non-root container, explicit staging configuration and credential-free build/smoke CI. No Google service, IAM change, registry push or domain cutover has been performed.
+
 App Store preparation now has an original-only iOS artwork profile, bundled software credits and an evidence-based upload gate. See [the submission packet](docs/app-store/APP_REVIEW_PACKET.md). This does not establish Apple approval or name/trademark clearance; the current MOVO public identity remains pending review.
 
 The iOS candidate now connects Dynamic Type, semantic system surfaces and accessibility settings to shared controls and panels, while retaining custom appearance choices and the existing hybrid architecture. See [the iOS interface review](docs/audits/2026-11-20-ios-interface-review.md) for measured coverage and native acceptance limits.

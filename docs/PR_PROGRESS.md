@@ -1,3 +1,7 @@
+## 2026-11-21 — Google Cloud Run preparation (#330)
+
+The owner selected Cloud Run. Added a pinned non-root Node image, restricted build context, explicit staging-manifest renderer with versioned Secret Manager references, container smoke and a build-only CI workflow. Existing database/API/accounting structures are retained; no cloud resource, IAM grant, registry push, DNS, migration or store action. [Engineering and validation](engineering/updates/2026-11-21-cloud-run-preparation.md) · [Deployment packet](CLOUD_RUN_DEPLOYMENT.md). Local image build and two manifest tests pass; runtime smoke is held for hosted CI because local VFS container launch exhausts disk. Fresh source checks, project/account/region and real integration acceptance remain required for activation.
+
 ## 2026-11-21 — Vercel outage resilience and portable existing APIs (#330)
 
 Added public-shell recovery on HTTP 402/429/5xx, optional validated build-time API routing, API-aware Shortcut/download links and a bounded Node 26 transport for the existing handlers. Preserve private API cache exclusions, owner isolation, bearer/consent/store gates and the current financial structures. No automatic write replay, schema/dependency change, production write, hosting/DNS change or store upload.

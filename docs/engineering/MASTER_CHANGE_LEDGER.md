@@ -1,5 +1,9 @@
 # MOVO Master Change Ledger
 
+## 2026-11-21 — Google Cloud Run preparation (#330)
+
+Owner-selected Cloud Run preparation adds a pinned non-root container for existing handlers/original-only UI, a restricted build context, explicit digest/project/secret-version manifest renderer and credential-free container CI/smoke. No live cloud, IAM, registry, database or DNS mutation. [Engineering record](updates/2026-11-21-cloud-run-preparation.md) · [Deployment packet](../CLOUD_RUN_DEPLOYMENT.md). Activation still requires the actual project/account/region, accepted runtime configuration and domain/provider checks.
+
 ## 2026-11-21 — Hosting outage resilience (#330)
 
 Keep a previously installed public browser shell available on host 402/429/5xx without substituting for authentication denials/private APIs. Add optional reviewed HTTPS API routing and an independent Node transport reusing existing handlers. Preserve records, owner scopes, auth/consent/billing gates and one authoritative Supabase database; no production hosting/DNS, migration or store action. [Engineering](updates/2026-11-21-hosting-resilience.md) · [Runbook](../MOVO_HOSTING_RESILIENCE.md). Full online operation still requires a deployed, accepted independent backend.

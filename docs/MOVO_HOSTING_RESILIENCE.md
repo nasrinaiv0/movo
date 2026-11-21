@@ -2,6 +2,8 @@
 
 2026-11-21. Implementation in #330. This is preparation for an independent host, not a deployed replacement. Vercel remains restricted; no billing, DNS, Supabase production settings or store records were changed. Preserve React/CRA, Capacitor, existing API handlers, owner scopes and the current financial model.
 
+The owner has selected **Google Cloud Run preparation**. Use the [Cloud Run deployment packet](CLOUD_RUN_DEPLOYMENT.md) for the tested image, explicit project/secret inputs, staging and cutover steps. No actual Google resource has been created.
+
 ## What can work during an outage
 
 | Surface | Available behavior | Limit |
