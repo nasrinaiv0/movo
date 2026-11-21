@@ -713,3 +713,6 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 - Evidence, open risks and rollback documented in docs/engineering/updates/2026-11-06-native-session-hardening.md. Release remains blocked for signed-device and authorization verification.
 
 - PR #227 follow-up: native phone-automation API device key moved out of the mirrored general preferences JSON into device-only Keychain/Keystore, with write-before-delete migration, failed-vault protections, safe rotation and regression tests. Documentation: docs/engineering/updates/2026-11-06-native-session-hardening.md
+
+
+2026-11-21 — Preserve continuous pinned-device logcat, host kernel and disposable emulator crash evidence before the unresolved paired R8 failure; 25 host tests pass. No app runtime, production activation or acceptance relaxation. See [integration evidence](updates/2026-11-21-encryption-owner-integration.md).

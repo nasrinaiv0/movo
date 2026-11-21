@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Hard-failing minified-release instrumentation on a network-isolated disposable AVD."""
 import argparse
+from contextlib import contextmanager
 from datetime import date
 import json
 from pathlib import Path
@@ -158,6 +159,26 @@ def capture(folder):
         (folder / "diagnostic-errors.txt").write_text("\n".join(errors) + "\n")
 
 
+@contextmanager
+def stream_device_log(folder):
+    """Keep pre-failure evidence when a disposable emulator vanishes entirely."""
+    if not ADB_SERIAL:
+        raise RuntimeError("Require the verified disposable emulator before recording logs")
+    with (folder / "live-logcat.txt").open("w") as log:
+        recorder = subprocess.Popen(["adb", "-s", ADB_SERIAL, "logcat", "-v", "threadtime"],
+                                    stdout=log, stderr=subprocess.STDOUT, text=True)
+        try:
+            yield
+        finally:
+            if recorder.poll() is None:
+                recorder.terminate()
+                try:
+                    recorder.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    recorder.kill()
+                    recorder.wait(timeout=5)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
@@ -186,33 +207,34 @@ def main():
         built = output / "default" / label
         folder = built / "device"
         folder.mkdir(parents=True, exist_ok=True)
-        try:
-            adb("uninstall", TEST_PACKAGE, check=False)
-            adb("uninstall", PACKAGE, check=False)
-            adb("install", "-r", str(built / "app-release.apk"))
-            adb("install", "-r", "-t", str(built / "app-release-androidTest.apk"))
-            adb("logcat", "-c")
-            # Seed native Preferences before any WebView/React state can write
-            # defaults over an out-of-band fixture. The first real startup must
-            # restore it through the production Preferences bridge.
-            instrument(folder, "seedOfflineWallet", fixture)
-            adb("shell", "am", "force-stop", PACKAGE)
-            cold = adb("shell", "am", "start", "-S", "-W", "-n", PACKAGE + "/.MainActivity")
-            (folder / "cold-launch.txt").write_text(cold)
-            if "Status: ok" not in cold:
-                raise RuntimeError("Cold launch failed")
-            for method in ("bridgeVaultPersistsAcrossActivityRecreation",
-                           "offlineWalletLogoStyleAndSyntheticOAuthCallback"):
+        with stream_device_log(folder):
+            try:
+                adb("uninstall", TEST_PACKAGE, check=False)
+                adb("uninstall", PACKAGE, check=False)
+                adb("install", "-r", str(built / "app-release.apk"))
+                adb("install", "-r", "-t", str(built / "app-release-androidTest.apk"))
+                adb("logcat", "-c")
+                # Seed native Preferences before any WebView/React state can write
+                # defaults over an out-of-band fixture. The first real startup must
+                # restore it through the production Preferences bridge.
+                instrument(folder, "seedOfflineWallet", fixture)
                 adb("shell", "am", "force-stop", PACKAGE)
-                instrument(folder, method, fixture)
-            adb("shell", "am", "force-stop", PACKAGE)
-            instrument(folder, "processPersistencePhase", fixture, "seed")
-            adb("shell", "am", "force-stop", PACKAGE)
-            # Do not clear/uninstall between these phases: same Keystore+storage.
-            instrument(folder, "processPersistencePhase", fixture, "verify")
-            (folder / "passed.txt").write_text("Synthetic bridge/offline/native callback and separate-process vault checks passed.\nReal Google/email sign-in and signed store purchases were NOT tested.\n")
-        finally:
-            capture(folder)
+                cold = adb("shell", "am", "start", "-S", "-W", "-n", PACKAGE + "/.MainActivity")
+                (folder / "cold-launch.txt").write_text(cold)
+                if "Status: ok" not in cold:
+                    raise RuntimeError("Cold launch failed")
+                for method in ("bridgeVaultPersistsAcrossActivityRecreation",
+                               "offlineWalletLogoStyleAndSyntheticOAuthCallback"):
+                    adb("shell", "am", "force-stop", PACKAGE)
+                    instrument(folder, method, fixture)
+                adb("shell", "am", "force-stop", PACKAGE)
+                instrument(folder, "processPersistencePhase", fixture, "seed")
+                adb("shell", "am", "force-stop", PACKAGE)
+                # Do not clear/uninstall between these phases: same Keystore+storage.
+                instrument(folder, "processPersistencePhase", fixture, "verify")
+                (folder / "passed.txt").write_text("Synthetic bridge/offline/native callback and separate-process vault checks passed.\nReal Google/email sign-in and signed store purchases were NOT tested.\n")
+            finally:
+                capture(folder)
 
 
 if __name__ == "__main__":

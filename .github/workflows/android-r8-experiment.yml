@@ -103,6 +103,7 @@ jobs:
           free -m
           df -h "$RUNNER_TEMP"
           ps -eo pid,comm,rss --sort=-rss | sed -n '1,15p'
+          sudo dmesg --ctime | tail -n 120
       - name: Collect emulator diagnostics even on failure
         if: always() && steps.default-build.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -111,6 +112,7 @@ jobs:
           path: |
             tmp/r8-experiment/legal-fixture.json
             tmp/r8-experiment/default/*/device/
+            /tmp/android-runner/
           if-no-files-found: warn
           retention-days: 7
       - name: Collect evidence even on failure

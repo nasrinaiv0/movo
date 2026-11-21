@@ -1,3 +1,7 @@
+## 2026-11-21 — Preserve evidence before paired emulator disappearance
+
+#291 at `1bc69dc9` passes iOS and six other workflows but loses the emulator during baseline Wallet acceptance. Available memory/disk does not establish OOM. Add continuous pinned-device logcat, host kernel diagnostics and emulator crash-data artifacts without relaxing acceptance. All 25 host harness tests pass. Both remaining source merges wait for a complete paired pass. [Engineering](engineering/updates/2026-11-21-encryption-owner-integration.md).
+
 ## 2026-11-21 — #291 final current-main source validation
 
 R8 at `31f5dcc6` passed both compiler comparisons and complete encrypted baseline acceptance; the emulator disappeared during candidate Wallet acceptance after seed/vault checks. #274's parallel combined run also lost the emulator. These are failed checks. The workflow now releases compiler daemons, records runner memory/disk/RSS and disables the Vulkan path for identical software OpenGL execution in both variants. Assertions, deadlines and isolation remain unchanged; fresh paired acceptance is required.

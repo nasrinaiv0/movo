@@ -154,6 +154,26 @@ class EmulatorSafetyTests(unittest.TestCase):
             self.assertIn('logcat:', (folder / 'diagnostic-errors.txt').read_text())
             self.assertIn('screenshot:', (folder / 'diagnostic-errors.txt').read_text())
 
+    def test_live_recording_refuses_unverified_devices_and_preserves_acceptance_failure(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(smoke.subprocess, 'Popen') as popen:
+            folder = Path(directory)
+            with self.assertRaises(RuntimeError):
+                with smoke.stream_device_log(folder):
+                    self.fail('unverified target was accepted')
+            popen.assert_not_called()
+            smoke.ADB_SERIAL = 'emulator-5554'
+            recorder = popen.return_value
+            recorder.poll.return_value = None
+            recorder.wait.side_effect = [subprocess.TimeoutExpired(['adb'], 5), 0]
+            with self.assertRaisesRegex(AssertionError, 'wallet acceptance failed'):
+                with smoke.stream_device_log(folder):
+                    raise AssertionError('wallet acceptance failed')
+            self.assertEqual(popen.call_args.args[0],
+                             ['adb', '-s', 'emulator-5554', 'logcat', '-v', 'threadtime'])
+            recorder.terminate.assert_called_once()
+            recorder.kill.assert_called_once()
+            self.assertEqual(recorder.wait.call_count, 2)
+
 
 if __name__ == '__main__':
     unittest.main()
