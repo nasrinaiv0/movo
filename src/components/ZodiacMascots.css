@@ -8,14 +8,9 @@
 }
 
 .zodiac-mascot { display: block; min-width: 0; line-height: 0; }
-.zodiac-portrait {
-  display: block;
-  aspect-ratio: 1;
-  background-image: url('../assets/movo-zodiac-guardians.webp');
-  background-size: 400% 300%;
-  background-repeat: no-repeat;
-  transform-origin: 50% 87%;
-}
+.zodiac-portrait { display: block; width: 100%; height: auto; overflow: visible; }
+.zodiac-figure { transform-box: view-box; transform-origin: 50% 87%; }
+.zodiac-trail { transform-box: fill-box; transform-origin: center; }
 .auth-zodiac-row > .zodiac-mascot { margin-bottom: 3px; }
 .auth-zodiac-row > :is(:first-child, :last-child) { margin-bottom: 6px; }
 .auth-zodiac-row > :is(:nth-child(6), :nth-child(7), :nth-child(8)) { margin-bottom: 0; }
@@ -50,9 +45,10 @@
   .guardian-arm-lift { animation: guardian-lift 2.65s ease-in-out var(--zodiac-delay, 0s); }
   .guardian-wave-layer { animation: guardian-wave-reveal 2.65s linear var(--zodiac-delay, 0s); }
   .guardian-blink-layer { animation: guardian-blink-reveal 2.65s linear var(--zodiac-delay, 0s); }
-  .zodiac-portrait { animation: var(--zodiac-action) 2.88s ease-in-out var(--zodiac-delay, 0s); }
+  .zodiac-trail { animation: zodiac-trail-rise 2.88s ease-in-out var(--zodiac-delay, 0s); }
+  .zodiac-figure { animation: var(--zodiac-action) 2.88s ease-in-out var(--zodiac-delay, 0s); }
 }
-.ios-reduce-motion .zodiac-mascot :is(.zodiac-portrait, .aries-figure, .aries-arm-right, .aries-eye, .guardian-arm-lift, .guardian-wave-layer, .guardian-blink-layer) { animation: none !important; }
+.ios-reduce-motion .zodiac-mascot :is(.zodiac-figure, .zodiac-trail, .aries-figure, .aries-arm-right, .aries-eye, .guardian-arm-lift, .guardian-wave-layer, .guardian-blink-layer) { animation: none !important; }
 
 @keyframes zodiac-original-hop {
   0%, 26%, 80%, 100% { transform: translateY(0); }
@@ -75,6 +71,11 @@
 @keyframes guardian-blink-reveal {
   0%, 22%, 32%, 100% { opacity: 0; }
   24%, 30% { opacity: 1; }
+}
+@keyframes zodiac-trail-rise {
+  0%, 18%, 79%, 100% { opacity: 0; transform: translateY(2px) scale(.8); }
+  40% { opacity: .9; transform: translateY(-2px) scale(1); }
+  74% { opacity: .24; transform: translateY(-8px) scale(1.12); }
 }
 @keyframes zodiac-nod {
   0%, 100% { transform: none; }

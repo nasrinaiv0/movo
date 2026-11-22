@@ -49,13 +49,15 @@ describe('MOVO Google OAuth sign-in', () => {
       'aries', 'aries-guardian', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
       'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
     ]);
-    const portraits = [...row.querySelectorAll('[data-zodiac-portrait]')];
+    const portraits = [...row.querySelectorAll('svg.zodiac-portrait')];
     expect(portraits).toHaveLength(11);
-    expect(new Set(portraits.map(node => node.style.backgroundPosition)).size).toBe(11);
+    const crops = portraits.map(node => node.querySelector('svg').getAttribute('viewBox'));
+    expect(new Set(crops).size).toBe(11);
+    expect(portraits.every(node => node.querySelector('.zodiac-figure') && node.querySelector('.zodiac-trail'))).toBe(true);
     const guardian = row.querySelector('[data-zodiac="aries-guardian"] svg.guardian-aries');
     expect(guardian.querySelectorAll('.aries-eye')).toHaveLength(2);
     expect(guardian.querySelector('.aries-arm-right')).not.toBeNull();
-    expect(portraits[10].style.backgroundPosition).toBe('100% 100%');
+    expect(crops[10]).toBe('384 256 128 128');
     expect(row.querySelector('[data-zodiac="aries"] .aries-mascot')).not.toBeNull();
     expect(container.querySelector('.auth-head .aries-mascot')).not.toBeNull();
     expect(row.querySelector('a, button, input, [tabindex]')).toBeNull();

@@ -1,3 +1,7 @@
+## 2026-11-23 — Animated SVGs for every zodiac mascot (#337)
+
+The thirteen sign-in characters now use animated SVG with the two Aries designs retained. The other eleven signs keep their original pixels and move with character-specific gestures and a separate vector effect. The production build and all 1,772 tests passed. The current lineup and twelve alternate designs are available as twenty-five standalone animated files. [Engineering update](engineering/updates/2026-11-23-all-zodiac-svg-motion.md).
+
 ## 2026-11-23 — Sync gold-horned Aries' SVG motion with the original Aries (#337)
 
 The two Aries designs share the 2.65-second hop, blink and wave timing in the sign-in row. The new layered SVG keeps the gold-horned portrait and uses its free hand for the wave. Both SVG and animation preview were decoded and checked. All 1,772 tests and the production build passed locally. [Engineering update](engineering/updates/2026-11-23-guardian-aries-svg-motion.md).
