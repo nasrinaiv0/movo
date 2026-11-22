@@ -723,3 +723,5 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 
 
 2026-11-21 — Carry identical continuous emulator/host crash diagnostics into the combined erasure/encryption candidate; 25 host tests pass. Source merge remains pending paired acceptance and released-main integration.
+
+2026-11-22 — Integrate released #291 main `b55429d8` into #274, preserving all 2,404 compared source/config/test fingerprints. New Android build 21 bug report and failed #274 paired emulator acceptance remain active work; public API 402 is independently confirmed.

@@ -1,5 +1,7 @@
 # MOVO
 
+#291 is merged as `b55429d8` after all eight checks passed. #274 integrates that released main and remains pending emulator acceptance and the Android build 21 follow-up. Public API hosting still returns 402; production features have not been restored.
+
 The remaining encryption/erasure source merges are waiting for complete paired Android emulator acceptance. Emulator disappearance remains a failed check with continuous pre-failure diagnostic capture. No production activation is inferred.
 
 MOVO combines the audited owner/import/iOS safeguards, development-tool patches and selected wallet/workspace/outbox/QR encryption, while preserving account IDs, financial fields/math and the React/Supabase/Capacitor structure. Server erasure and retention default to disabled pending separately approved migrations and activation. [Source consolidation and validation](docs/engineering/updates/2026-11-21-combined-erasure-owner-encryption.md) records the owner-directed merge sequence; production hosting and signed-device/store evidence remain separate release gates.

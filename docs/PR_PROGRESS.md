@@ -1,3 +1,7 @@
+## 2026-11-22 — Released encryption integration and Android build 21 report
+
+#291 merged as `b55429d8` after all eight exact-head workflows passed at `0db76a9b`, including full paired emulator acceptance. #274 integrates actual released main; fingerprints of 2,404 tracked application/config/test files match the preceding combined candidate. Its paired emulator run at `6a5ad0f0` failed and remains unresolved. New Android build 21 reports cover connectivity labels, cross-device subscriptions, balances, markets, friends and planning. Public API still returns 402 DEPLOYMENT_DISABLED; do not claim runtime recovery from source changes. Destructive flags are absent in Vercel metadata and the three migrations remain unapplied.
+
 ## 2026-11-21 — Combined candidate retains pre-failure emulator evidence
 
 Paired acceptance at `16abd407` remains failed after emulator disappearance. Add the same serial-pinned continuous logcat and host/crash diagnostics as #291; all 25 host harness tests pass. No assertions, timeouts or application behavior change. Keep #274 unmerged until paired acceptance and actual #291 main integration pass. [Engineering](engineering/updates/2026-11-21-combined-erasure-owner-encryption.md).
