@@ -1,5 +1,7 @@
 # MOVO
 
+[Android build 21 recovery](docs/engineering/updates/2026-11-22-android-build21-service-recovery.md): API hosting failure is distinct from connectivity. Device-copy labels and denial classification are corrected; live services, balance reproduction and final native validation remain pending.
+
 #291 is merged as `b55429d8` after all eight checks passed. #274 integrates that released main and remains pending emulator acceptance and the Android build 21 follow-up. Public API hosting still returns 402; production features have not been restored.
 
 The remaining encryption/erasure source merges are waiting for complete paired Android emulator acceptance. Emulator disappearance remains a failed check with continuous pre-failure diagnostic capture. No production activation is inferred.

@@ -207,7 +207,7 @@ export function UsageSheet({ c, onClose }) {
     <div className={`plan-usage-current tier-${tier}`} aria-busy={tier === 'checking' ? 'true' : undefined}>
       <span className="plan-usage-mark" aria-hidden="true"><MovoMark size={24} tone={tier === 'pro_plus' ? 'platinum' : tier === 'pro' ? 'gold' : 'color'} /></span>
       <span className="plan-usage-name"><strong>{planName}</strong>{planNote && <small>{planNote}</small>}</span>
-      <span className="plan-usage-mode">{c.cloudMode ? tr('Cloud') : tr('Local (offline)')}</span>
+      <span className="plan-usage-mode">{c.cloudMode ? tr('Cloud') : tr('On this device')}</span>
     </div>
     <ul className="plan-usage-stats">{stats.map(([k, v]) => <li key={k}><strong>{v}</strong><small>{k}</small></li>)}</ul>
     {!c.session?.access_token && <p className="form-hint">{tr('Sign in to MOVO to link and restore your store purchases.')}</p>}

@@ -25,6 +25,11 @@ const NETWORK_MESSAGE = /failed to fetch|load failed|networkerror|network reques
 
 export function isNetworkFailure(cause) {
   if (!cause) return false;
+  // A completed HTTP/database response takes precedence over a stale WebView
+  // connectivity hint. Never turn authorization or ledger errors into retries.
+  const status = Number(cause.status ?? cause.statusCode);
+  if (status >= 400 && status <= 599) return false;
+  if (/^[0-9A-Z]{5}$|^PGRST\d+$/.test(String(cause.code || ''))) return false;
   if (cause.code === 'MOVO_TIMEOUT' || cause.name === 'NetworkTimeoutError' || cause.name === 'AbortError') return true;
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return true;
   // supabase-js reports an unreachable server as an error object whose message carries the fetch failure.

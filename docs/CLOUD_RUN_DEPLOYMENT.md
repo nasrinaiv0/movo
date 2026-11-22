@@ -1,5 +1,7 @@
 # Google Cloud Run preparation
 
+2026-11-22 update: the owner supplied project `project-005bfd34-e896-4664-a8e`. Use `asia-northeast1` (Tokyo), selected to match the existing database region; this region has not been independently owner-confirmed. The project has not been authenticated or inspected. This workspace has no Google Cloud connector, gcloud CLI or application credentials. Registry, runtime identity, immutable image digest and secret versions remain unverified.
+
 2026-11-21. The owner selected **Prepare for Google Cloud Run**. No Google project, registry, service, secrets, IAM binding, DNS or paid resource has been created. No cloud credential is present in this repository. [Hosting design and outage limitations](MOVO_HOSTING_RESILIENCE.md).
 
 ## Prepared artifacts
@@ -38,8 +40,8 @@ Set `MOVO_GCP_PUBLIC_KEY_VERSION` and `MOVO_GCP_SERVICE_KEY_VERSION` to their ac
 After the project/repository and permissions are ready, publish the exact tested local image to the selected private Artifact Registry. These commands perform real authentication/publishing and have not been run here:
 
 ```sh
-export MOVO_GCP_PROJECT='your-real-project-id'
-export MOVO_GCP_REGION='your-selected-region'
+export MOVO_GCP_PROJECT='project-005bfd34-e896-4664-a8e'
+export MOVO_GCP_REGION='asia-northeast1'
 export MOVO_GCP_IMAGE_TAG="${MOVO_GCP_REGION}-docker.pkg.dev/${MOVO_GCP_PROJECT}/movo/movo:tested-candidate"
 gcloud auth configure-docker "${MOVO_GCP_REGION}-docker.pkg.dev"
 docker tag movo-cloud-run:local "$MOVO_GCP_IMAGE_TAG"
@@ -50,8 +52,8 @@ docker image inspect "$MOVO_GCP_IMAGE_TAG" --format '{{range .RepoDigests}}{{pri
 Use the returned immutable registry digest below. Do not substitute an unreviewed public image or a mutable tag.
 
 ```sh
-export MOVO_GCP_PROJECT='your-real-project-id'
-export MOVO_GCP_REGION='your-selected-region'
+export MOVO_GCP_PROJECT='project-005bfd34-e896-4664-a8e'
+export MOVO_GCP_REGION='asia-northeast1'
 export MOVO_GCP_SERVICE_ACCOUNT="movo-runtime@${MOVO_GCP_PROJECT}.iam.gserviceaccount.com"
 export MOVO_GCP_IMAGE="${MOVO_GCP_REGION}-docker.pkg.dev/${MOVO_GCP_PROJECT}/movo/movo@sha256:YOUR_REAL_IMAGE_DIGEST"
 node scripts/render-cloud-run-service.cjs > /tmp/movo-cloud-run-service.json

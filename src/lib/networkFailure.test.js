@@ -12,9 +12,13 @@ test('unreachable servers, browser offline and timeouts are network failures', (
 });
 
 test('server answers are never treated as a lost connection', () => {
+  Object.defineProperty(window.navigator, 'onLine', { value: false, configurable: true });
   expect(isNetworkFailure(null)).toBe(false);
   expect(isNetworkFailure({ message: 'new row violates row-level security policy', code: '42501' })).toBe(false);
   expect(isNetworkFailure({ message: 'canceling statement due to statement timeout', code: '57014' })).toBe(false);
+  expect(isNetworkFailure({ status: 402, message: 'DEPLOYMENT_DISABLED' })).toBe(false);
+  expect(isNetworkFailure({ statusCode: 401, message: 'Failed to fetch account' })).toBe(false);
+  Object.defineProperty(window.navigator, 'onLine', { value: true, configurable: true });
   expect(isNetworkFailure(new Error('Transaction amount must be greater than zero.'))).toBe(false);
 });
 

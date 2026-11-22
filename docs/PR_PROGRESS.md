@@ -1,3 +1,7 @@
+## 2026-11-22 — Android build 21 service recovery
+
+Confirmed API 402 DEPLOYMENT_DISABLED separately from device connectivity. Correct Planning/plan storage labels and prevent completed HTTP/database denials from becoming offline retries under stale WebView status. Focused 50 tests and typecheck pass; full/new-head validation is pending. Cross-device entitlement, markets and friends need restored API hosting. Await actual Cloud Run project/region and a fictional balance reproduction. Preserve financial records and all activation gates. [Handover](engineering/updates/2026-11-22-android-build21-service-recovery.md).
+
 ## 2026-11-22 — Released encryption integration and Android build 21 report
 
 #291 merged as `b55429d8` after all eight exact-head workflows passed at `0db76a9b`, including full paired emulator acceptance. #274 integrates actual released main; fingerprints of 2,404 tracked application/config/test files match the preceding combined candidate. Its paired emulator run at `6a5ad0f0` failed and remains unresolved. New Android build 21 reports cover connectivity labels, cross-device subscriptions, balances, markets, friends and planning. Public API still returns 402 DEPLOYMENT_DISABLED; do not claim runtime recovery from source changes. Destructive flags are absent in Vercel metadata and the three migrations remain unapplied.
