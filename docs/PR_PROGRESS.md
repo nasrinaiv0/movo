@@ -1,3 +1,12 @@
+## 2026-11-22 — Aries motion and Home hero entrance
+
+- Aries settles in when an expression changes. Each mood has calm idle motion: look-around, nod, droop and sigh, or huff with an arm pump. On Home, Aries rises onto the balance card and waves once per session. All of it is off under reduced motion. [Details](engineering/updates/2026-11-22-aries-motion-hero.md).
+
+## 2026-11-22 — Production API disabled (Vercel 402); Plans retry; tabletop foldables; Aries horns
+
+- Friends, Plans and balances that differ between devices share one cause: `movo.nasrinai.com/api` returns 402 `DEPLOYMENT_DISABLED` because the Vercel account is blocked. When the plan check fails, cloud sync falls back to each device's own copy. **Owner action:** restore the Vercel account, then redeploy `main`.
+- The Plans panel on phones now explains an empty or failed store query and offers Try again, instead of a grey button. Half-folded foldables keep sheets off the hinge. Aries has new ridged, curled ram horns. [Details](engineering/updates/2026-11-22-outage-diagnosis-plans-foldables-aries.md).
+
 ## 2026-11-22 — Approved tester billing migration deployed
 
 #333 is merged as `73524d1f` after all six current-head workflows passed. After explicit owner approval, production migration `verified_store_tester_subscriptions` applied as `20261122064410` (source `20261122055847`). Exact deployed body, service-only execution, tester RLS and no new security advisories verified. No existing financial/purchase rows rewritten; all three #274 migrations remain held. API still returns 402, so live tester acceptance remains blocked by hosting. [Rollout record](engineering/updates/2026-11-22-verified-tester-subscriptions.md#approved-production-migration--2026-11-22).

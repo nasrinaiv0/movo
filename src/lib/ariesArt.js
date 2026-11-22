@@ -16,6 +16,36 @@ export const states = [
   { id: 'angry', label: 'Determined', description: 'Let’s get back on track together.' },
 ];
 let instance = 0;
+// Ram-horn geometry: a tapering spiral tube from the root (tucked under the wool) curling out and back in.
+const f = n => Math.round(n * 10) / 10;
+function hornGeometry({ cx = 84, cy = 136, r0 = 50, r1 = 11, a0 = -38, sweep = 470, w0 = 30, w1 = 7, steps = 72, ridges = 15 } = {}) {
+  const pts = [];
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps, e = 1 - Math.pow(1 - t, 1.35);
+    const a = (a0 - sweep * t) * Math.PI / 180, r = r0 + (r1 - r0) * e;
+    pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a), w: w0 + (w1 - w0) * Math.pow(t, .85), t });
+  }
+  const side = pts.map((p, i) => {
+    const q = pts[Math.min(i + 1, steps)], o = pts[Math.max(i - 1, 0)];
+    const dx = q.x - o.x, dy = q.y - o.y, l = Math.hypot(dx, dy) || 1;
+    const nx = -dy / l, ny = dx / l;
+    return { ...p, ox: p.x + nx * p.w / 2, oy: p.y + ny * p.w / 2, ix: p.x - nx * p.w / 2, iy: p.y - ny * p.w / 2, nx, ny };
+  });
+  const tip = side[steps];
+  const outline = `M${side.map(p => `${f(p.ox)} ${f(p.oy)}`).join('L')}Q${f(tip.x + (tip.x - side[steps - 2].x) * 1.4)} ${f(tip.y + (tip.y - side[steps - 2].y) * 1.4)} ${f(tip.ix)} ${f(tip.iy)}L${side.slice().reverse().map(p => `${f(p.ix)} ${f(p.iy)}`).join('L')}Z`;
+  const ridgeLines = [];
+  for (let k = 1; k <= ridges; k += 1) {
+    const p = side[Math.round(steps * (k / (ridges + 1)) ** .9)];
+    const bow = p.w * .18;
+    ridgeLines.push(`M${f(p.ox)} ${f(p.oy)}Q${f(p.x + (p.ox - p.ix) * 0 - p.ny * -bow)} ${f(p.y + p.nx * -bow)} ${f(p.ix)} ${f(p.iy)}`);
+  }
+  const edge = side.slice(2, Math.round(steps * .62)).map(p => `${f(p.x + (p.ox - p.x) * .62)} ${f(p.y + (p.oy - p.y) * .62)}`);
+  const inner = side.slice(Math.round(steps * .08), steps - 3).map(p => `${f(p.x + (p.ix - p.x) * .7)} ${f(p.y + (p.iy - p.y) * .7)}`);
+  return { outline, ridges: ridgeLines.join(''), highlight: `M${edge.join('L')}`, shade: `M${inner.join('L')}` };
+}
+
+// Computed once: the same horn for every state, mirrored for the right side.
+const HORN = hornGeometry({ cx: 90, cy: 138, a0: -16, r0: 50, sweep: 480 });
 const safe = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function ariesSVG(state = 'welcome', options = {}) {
   if (!states.some(item => item.id === state)) state = 'welcome';
@@ -59,8 +89,8 @@ export function ariesSVG(state = 'welcome', options = {}) {
   <defs>
     <linearGradient id="${p}-wool" x1="123" y1="218" x2="234" y2="318" gradientUnits="userSpaceOnUse"><stop stop-color="#fff9ea"/><stop offset=".56" stop-color="#f6eddc"/><stop offset="1" stop-color="#e6d9c0"/></linearGradient>
     <radialGradient id="${p}-face" cx="0" cy="0" r="1" gradientTransform="translate(166 147) rotate(64) scale(100 90)" gradientUnits="userSpaceOnUse"><stop stop-color="#fffaf0"/><stop offset=".65" stop-color="#fbf1df"/><stop offset="1" stop-color="#eadcc1"/></radialGradient>
-    <linearGradient id="${p}-horn" x1="63" y1="74" x2="113" y2="194" gradientUnits="userSpaceOnUse"><stop stop-color="#d6d1c5"/><stop offset=".35" stop-color="#bab9ad"/><stop offset="1" stop-color="#8d9182"/></linearGradient>
-    <linearGradient id="${p}-horn-inner" x1="57" y1="105" x2="99" y2="177" gradientUnits="userSpaceOnUse"><stop stop-color="#a5a698"/><stop offset="1" stop-color="#7e8578"/></linearGradient>
+    <linearGradient id="${p}-horn" x1="132" y1="88" x2="58" y2="196" gradientUnits="userSpaceOnUse"><stop stop-color="#f6eedd"/><stop offset=".42" stop-color="#ddcaa8"/><stop offset="1" stop-color="#a88f69"/></linearGradient>
+    <linearGradient id="${p}-horn-inner" x1="60" y1="96" x2="104" y2="180" gradientUnits="userSpaceOnUse"><stop stop-color="#8a7556"/><stop offset="1" stop-color="#6f5c42"/></linearGradient>
     <linearGradient id="${p}-scarf" x1="142" y1="211" x2="219" y2="248" gradientUnits="userSpaceOnUse"><stop stop-color="#3f7050"/><stop offset="1" stop-color="#1c4935"/></linearGradient>
     <linearGradient id="${p}-scarf-tail" x1="207" y1="230" x2="237" y2="277" gradientUnits="userSpaceOnUse"><stop stop-color="#346746"/><stop offset="1" stop-color="#204832"/></linearGradient>
     <linearGradient id="${p}-hoof" x1="152" y1="300" x2="160" y2="323" gradientUnits="userSpaceOnUse"><stop stop-color="#616451"/><stop offset="1" stop-color="#3e4438"/></linearGradient>
@@ -84,16 +114,16 @@ export function ariesSVG(state = 'welcome', options = {}) {
     <g class="aries-arm aries-arm-right"><path d="M229 236c12-3 21 8 22 19 1 9-5 13-11 10-7-4-12-14-15-23Z" fill="${url('wool')}"/><path d="M251 255q-5 6-13 4c3 10 11 10 13 3Z" fill="#555e49"/><path d="M245 240q-5-5-10-4" stroke="#fffdf4" stroke-width="3" stroke-linecap="round"/></g>
     <g class="aries-head">
       <g class="aries-horn aries-horn-left">
-        <path d="M128 103c-11-30-42-39-65-22-27 19-34 58-21 87 10 23 37 29 55 14 15-12 13-36-3-43-10-5-22-1-25 7-3 9 2 15 8 13 4-1 4-5 2-8 7-2 12 8 6 14-9 10-23 1-24-13-3-21 9-39 24-42 12-2 19 4 24 13Z" fill="${url('horn')}"/>
-        <path d="M112 120c-12-18-36-12-46 6-8 15-6 35 4 42 9 7 21 2 21-8-2 6-8 9-14 5-9-5-10-20-3-25 8-7 18-2 20 6-1-7-6-12-13-12-15-1-23 13-17 26-14-18 0-47 19-48 11 0 17 5 23 15Z" fill="${url('horn-inner')}"/>
-        <path d="M61 90q10 0 17 8m-25 5q10 1 17 9m-23 6q9-1 16 4m-18 14q7-3 15-2m-12 21q6-5 13-5m-4 21q6-6 11-7m1 15 4-10" stroke="#f3eee0" stroke-width="1.5" stroke-opacity=".24" stroke-linecap="round"/>
-        <path d="M124 101c-12-25-39-32-60-17-15 11-24 30-24 46" stroke="#eeebdf" stroke-opacity=".6" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="${HORN.outline}" fill="${url('horn')}" stroke="#9a8462" stroke-opacity=".3" stroke-width="1.1" stroke-linejoin="round"/>
+        <path d="${HORN.shade}" stroke="${url('horn-inner')}" stroke-opacity=".16" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${HORN.ridges}" stroke="#8c7553" stroke-opacity=".26" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="${HORN.highlight}" stroke="#fffaf0" stroke-opacity=".72" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
       </g>
       <g class="aries-horn aries-horn-right" transform="translate(360 0) scale(-1 1)">
-        <path d="M128 103c-11-30-42-39-65-22-27 19-34 58-21 87 10 23 37 29 55 14 15-12 13-36-3-43-10-5-22-1-25 7-3 9 2 15 8 13 4-1 4-5 2-8 7-2 12 8 6 14-9 10-23 1-24-13-3-21 9-39 24-42 12-2 19 4 24 13Z" fill="${url('horn')}"/>
-        <path d="M112 120c-12-18-36-12-46 6-8 15-6 35 4 42 9 7 21 2 21-8-2 6-8 9-14 5-9-5-10-20-3-25 8-7 18-2 20 6-1-7-6-12-13-12-15-1-23 13-17 26-14-18 0-47 19-48 11 0 17 5 23 15Z" fill="${url('horn-inner')}"/>
-        <path d="M61 90q10 0 17 8m-25 5q10 1 17 9m-23 6q9-1 16 4m-18 14q7-3 15-2m-12 21q6-5 13-5m-4 21q6-6 11-7m1 15 4-10" stroke="#f3eee0" stroke-width="1.5" stroke-opacity=".24" stroke-linecap="round"/>
-        <path d="M124 101c-12-25-39-32-60-17-15 11-24 30-24 46" stroke="#eeebdf" stroke-opacity=".6" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="${HORN.outline}" fill="${url('horn')}" stroke="#9a8462" stroke-opacity=".3" stroke-width="1.1" stroke-linejoin="round"/>
+        <path d="${HORN.shade}" stroke="${url('horn-inner')}" stroke-opacity=".16" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${HORN.ridges}" stroke="#8c7553" stroke-opacity=".26" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="${HORN.highlight}" stroke="#fffaf0" stroke-opacity=".72" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
       </g>
       <path d="M128 150c-18-14-34-10-37-4 2 14 13 23 28 19m114-15c18-14 34-10 37-4-2 14-13 23-28 19" fill="#f6eddc"/>
       <path d="M119 153c-8-6-15-6-20-5 4 8 10 11 19 9m124-4c8-6 15-6 20-5-4 8-10 11-19 9" fill="#d8c7ac" opacity=".65"/>
