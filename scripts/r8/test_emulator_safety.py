@@ -116,6 +116,16 @@ class EmulatorSafetyTests(unittest.TestCase):
                 with patch.object(smoke, 'adb', side_effect=[output, '']), self.assertRaises(RuntimeError):
                     smoke.instrument(Path(folder), 'testMethod', legal)
 
+    def test_each_instrumentation_explicitly_requires_the_selected_finance_format(self):
+        passed = 'MOVO_R8_SMOKE_PASS testMethod\nINSTRUMENTATION_CODE: -1\n'
+        for encrypted in [True, False]:
+            with self.subTest(encrypted=encrypted), tempfile.TemporaryDirectory() as folder:
+                with patch.object(smoke, 'adb', return_value=passed) as adb:
+                    smoke.instrument(Path(folder), 'testMethod', {'date': '2026-11-20', 'revision': '', 'encryptedFinance': encrypted})
+                    args = adb.call_args.args
+                    position = args.index('movoExpectEncryptedFinance')
+                    self.assertEqual(args[position + 1], 'true' if encrypted else 'false')
+
     def test_adb_deadline_is_a_hard_failure_even_for_best_effort_command(self):
         with patch.object(smoke.subprocess, 'run', side_effect=subprocess.TimeoutExpired(['adb'], 90)) as run:
             with self.assertRaises(subprocess.TimeoutExpired):
@@ -143,6 +153,26 @@ class EmulatorSafetyTests(unittest.TestCase):
             self.assertEqual(adb.call_args.args[0], 'pull')
             self.assertIn('logcat:', (folder / 'diagnostic-errors.txt').read_text())
             self.assertIn('screenshot:', (folder / 'diagnostic-errors.txt').read_text())
+
+    def test_live_recording_refuses_unverified_devices_and_preserves_acceptance_failure(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(smoke.subprocess, 'Popen') as popen:
+            folder = Path(directory)
+            with self.assertRaises(RuntimeError):
+                with smoke.stream_device_log(folder):
+                    self.fail('unverified target was accepted')
+            popen.assert_not_called()
+            smoke.ADB_SERIAL = 'emulator-5554'
+            recorder = popen.return_value
+            recorder.poll.return_value = None
+            recorder.wait.side_effect = [subprocess.TimeoutExpired(['adb'], 5), 0]
+            with self.assertRaisesRegex(AssertionError, 'wallet acceptance failed'):
+                with smoke.stream_device_log(folder):
+                    raise AssertionError('wallet acceptance failed')
+            self.assertEqual(popen.call_args.args[0],
+                             ['adb', '-s', 'emulator-5554', 'logcat', '-v', 'threadtime'])
+            recorder.terminate.assert_called_once()
+            recorder.kill.assert_called_once()
+            self.assertEqual(recorder.wait.call_count, 2)
 
 
 if __name__ == '__main__':

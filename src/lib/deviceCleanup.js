@@ -4,6 +4,16 @@ const GUEST_WALLET = new Set(['movo.local.accounts.v1', 'movo.local.transactions
 
 /** Keep unrelated device copies when resetting one account. No persisted format changes. */
 export function preserveDeviceCopy(key, ownerId) {
+  if (key === 'movo.finance.vault.initialized.v1' || key === 'movo-finance-cache-key-v1') return true;
+  if (key.startsWith('movo.finance.sealed.v1:')) {
+    const logical = key.slice('movo.finance.sealed.v1:'.length);
+    return GUEST_WALLET.has(logical) || /^movo\.offline\.workspace\.v2\.[0-9a-f-]{36}$/i.test(logical)
+      ? preserveDeviceCopy(logical, ownerId) : true;
+  }
+  if (/^movo\.finance\.recovery\.v[12]:/.test(key)) {
+    const match = /^movo\.finance\.recovery\.v[12]:movo\.offline\.workspace\.v2\.([0-9a-f-]{36}):/i.exec(key);
+    return !match || ownerId === null || match[1] !== ownerId;
+  }
   if (preservePreferenceCopy(key, ownerId) || key.startsWith('sb-')) return true;
   if (ownerId !== null && GUEST_WALLET.has(key)) return true;
   for (const prefix of ['movo.offline.workspace.v2.', 'movo.ai.ack.v1.', 'movo.profile-photo.v1.']) {

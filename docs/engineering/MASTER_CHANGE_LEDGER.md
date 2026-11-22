@@ -1,5 +1,12 @@
 # MOVO Master Change Ledger
 
+## 2026-11-21 — #291 validates released build-tool/audit main
+
+Final integration includes main `cfb83c51`: fresh locked install, 265 suites / 1,746 tests, typecheck and 24 Node checks pass. Existing strict source-profile bundle and fresh browser encryption/migration/reload/key-loss checks pass; final clean-graph/hosted/native checks remain pending at this record. The owner-directed source merge leaves production host/migration/store activation separate. [Engineering](updates/2026-11-21-encryption-owner-integration.md).
+
+## 2026-11-21 — Owner-safe encryption integration and source merge sequence
+
+#330 merged as `c3e37d7c`; #331 merged as `cfb83c51`. #291 combines owner/generation-bound restoration and preferences with encrypted wallet/workspace/outbox/QR stores. Selective reset/deletion preserves foreign/guest ciphertext, vault metadata and unassigned recovery, retains partial server-deletion/device-cleanup reporting and rejects stale A→B→A confirmations. Initial full regression: 264 suites / 1,741 tests, plus the new stale-confirmation case; typecheck, 24 Node checks and strict packaging pass. Synthetic browser migration, exact-cent save/reload and non-destructive missing-key handling pass. Revalidate latest-main integration and hosted/native head before merging; production migrations and signed-device/store/host activation remain held. [Engineering](updates/2026-11-21-encryption-owner-integration.md).
 ## 2026-11-21 — Owner-directed draft merge sequence
 
 #330 merged as `c3e37d7c` after eight exact-head hosted workflows passed. #331 now integrates released audit source with its development overrides: clean install, 259 suites / 1,708 tests, typecheck, 24 Node checks and strict original-only bundle pass. Preserve both documentation histories. Revalidate this head before merging; integrate current owner/selective-cleanup guards into encryption and erasure branches next. Production migrations, hosting/provider changes and signed store/device release remain held independently. [Engineering](updates/2026-11-21-merge-build-tool-hardening.md).
@@ -706,3 +713,6 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 - Evidence, open risks and rollback documented in docs/engineering/updates/2026-11-06-native-session-hardening.md. Release remains blocked for signed-device and authorization verification.
 
 - PR #227 follow-up: native phone-automation API device key moved out of the mirrored general preferences JSON into device-only Keychain/Keystore, with write-before-delete migration, failed-vault protections, safe rotation and regression tests. Documentation: docs/engineering/updates/2026-11-06-native-session-hardening.md
+
+
+2026-11-21 — Preserve continuous pinned-device logcat, host kernel and disposable emulator crash evidence before the unresolved paired R8 failure; 25 host tests pass. No app runtime, production activation or acceptance relaxation. See [integration evidence](updates/2026-11-21-encryption-owner-integration.md).

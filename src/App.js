@@ -1,4 +1,5 @@
 import { useProfilePhoto } from './lib/useProfilePhoto';
+import { Preferences } from '@capacitor/preferences';
 import FriendsSheet, { FriendsContent } from './components/FriendsSheet';
 import FriendFinanceSummary from './components/FriendFinanceSummary';
 import NavTierDefs from './components/NavTierDefs';
@@ -306,6 +307,9 @@ function App() {
   const autoSyncTriedRef = useRef(false);
   const [autoSyncFailed, setAutoSyncFailed] = useState(false);
   const syncActiveRef = useRef(false);
+  // The clean device copy a sync has just saved, until the screen shows it. Until then an effect from an earlier render
+  // still holds the rows from before the sync and must not write them back over that copy.
+  const syncedCopyRef = useRef(null);
   const lastSyncRetryRef = useRef(false); // the last failed sync only needs the connection back
   const [view, setView] = useState('Home');
   // After each screen change, or a cancelled touch, the bottom bar's touch-down marking (pressNav) is put back in step
@@ -537,6 +541,7 @@ function App() {
     }).catch(() => { trialAutoRef.current = ''; });
   }, [session?.user?.id, session?.access_token, prefs.planWelcomeSeen, entitlement, refreshEntitlement, notify]);
   useEffect(() => {
+    if (syncedCopyRef.current?.transactions===rawTxs) syncedCopyRef.current=null;
     if (cloudMode) {
       if (!pendingLocalDataRef.current) setLocalPersistenceWarning(false);
       return;
@@ -546,6 +551,9 @@ function App() {
     if (ownerId) {
       if (offlineOwnerId!==ownerId) return; // auth-transition guard
       const stored=loadOfflineWorkspace(ownerId);
+      const synced=syncedCopyRef.current;
+      // Rows from a render before the sync's clean save are out of date: the sync's own render follows with the new copy.
+      if (synced&&synced.ownerId===ownerId&&stored&&!stored.dirty&&stored.lastConfirmedAt===synced.at)return;
       const data={...(stored?.working||{}),financial_accounts:localAccounts,transactions:rawTxs};
       if (stored) {
         const unchanged=JSON.stringify(data)===JSON.stringify(stored.working);
@@ -697,6 +705,7 @@ function App() {
         lastConfirmedAt:new Date().toISOString(),pendingDeletions:{},deletedRows:{}};
       if(!saveOfflineWorkspace(ownerId,synced))
         throw Error('Device storage could not hold the reconciled copy. Cloud was not enabled; export records and free space.');
+      syncedCopyRef.current={ownerId,at:synced.lastConfirmedAt,transactions:shared.transactions};
       await acknowledgeReconciledWorkspace(ownerId,confirmed,capturedOperations);
       setOfflineOwnerId(ownerId);setLocalAccounts(shared.financial_accounts);setRawTxs(shared.transactions);
       setCloudAccounts(confirmed.financial_accounts);setCloudPostings(postings||[]);
@@ -707,6 +716,8 @@ function App() {
       lastSyncRetryRef.current=false;
       return true;
     }catch(cause){
+      // The screen is reloaded from the device copy below, so later edits must persist as usual.
+      syncedCopyRef.current=null;
       // A lost or slow connection is retried automatically; anything else (a conflict, a plan check) waits for review.
       const retry=isNetworkFailure(cause)||cause?.retryable===true;
       if(retry&&!allowOffline)holdOfflineWorkspaceForApproval(ownerId);
@@ -2022,6 +2033,7 @@ function App() {
     setSheet(null); notify(tr('CSV export prepared.'));
   };
   const [clearText, setClearText] = useState('');
+  const openDeleteAccount = () => setSheet({ name: 'deleteAccount', ownerId: preferenceOwner, ownerEpoch: preferenceEpoch });
   const clearAll = async () => {
     if (clearText.trim().toUpperCase() !== 'DELETE') return;
     const ownerId = preferenceOwner;
@@ -2054,31 +2066,74 @@ function App() {
   /* Delete the MOVO account itself (App Store 5.1.1(v)): server deletes the account and its cloud data, then this
      device is cleared and signed out. */
   const deleteAccount = async () => {
-    if (clearText.trim().toUpperCase() !== 'DELETE') return;
-    const ownerId = preferenceOwner;
-    const epoch = preferenceEpoch;
-    if (!ownerId || preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) return;
+    if (busy || sheet?.accountDeleted || clearText.trim().toUpperCase() !== 'DELETE') return;
+    const ownerId = sheet?.ownerId;
+    const epoch = sheet?.ownerEpoch;
+    const stillOwnsDeviceSession = () => preferenceOwnerRef.current === ownerId && preferenceEpochRef.current === epoch;
+    if (!ownerId || session?.user?.id !== ownerId || !stillOwnsDeviceSession()) {
+      setError(tr('The signed-in account changed. Close this window and open Delete Account again.'));
+      return;
+    }
     setBusy(true); setError('');
+    let accountDeleted = false;
     try {
       const files = collectDeviceFiles(ownerId, { accounts: [...localAccounts, ...cloudAccounts], transactions: rawTxs, prefs: prefsRef.current, workspace: loadOfflineWorkspace(ownerId) });
       await deleteMyAccount(ownerId);
-      if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
-      if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
-      if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
-      await Promise.all([clearOwnedAccountQr(ownerId, files.accountIds), removeLocalAttachments(files.receiptKeys)]);
-      if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
-      preferenceErasureRef.current = true;
-      preferenceRecoveryRef.current.delete(ownerId);
-      prefsRef.current = { ...DEFAULTS };
+      accountDeleted = true;
+      if (!stillOwnsDeviceSession()) return;
       invalidateChatHistoryWrites();
-      setAIConsent(session?.user?.id, false);
-      const wipe = (store) => { Object.keys(store).filter(k => k.startsWith('movo.') && !preserveDeviceCopy(k, ownerId)).forEach(k => store.removeItem(k)); };
-      wipe(localStorage); wipe(sessionStorage);
-      if (!clearCustomStickers()) throw new Error('sticker_cleanup_failed');
-      setSheet(null); setClearText('');
-      notify(tr('Your MOVO account was deleted.'));
-      signOut().catch(() => {}).finally(() => window.location.reload());
-    } catch { setError(tr('Could not delete your account. Check your connection and try again.')); }
+      setAIConsent(ownerId, false);
+      const cleanup = [
+        Promise.resolve().then(() => { if (!clearOfflineWorkspace(ownerId)) throw new Error('workspace_cleanup_failed'); }),
+        clearOwnedAccountQr(ownerId, files.accountIds), removeLocalAttachments(files.receiptKeys),
+      ];
+      if (typeof indexedDB !== 'undefined') cleanup.push(clearHybridOwner(ownerId));
+      const results = await Promise.allSettled(cleanup);
+      if (!stillOwnsDeviceSession()) return;
+      if (results.every(result => result.status === 'fulfilled')) {
+        preferenceErasureRef.current = true;
+        preferenceRecoveryRef.current.delete(ownerId);
+        prefsRef.current = { ...DEFAULTS };
+        const wipe = store => Object.keys(store).filter(key => key.startsWith('movo.') && !preserveDeviceCopy(key, ownerId)).forEach(key => store.removeItem(key));
+        wipe(localStorage); wipe(sessionStorage);
+        if (!clearCustomStickers()) results.push({ status: 'rejected' });
+        if (isNativeApp()) {
+          try {
+            const { keys } = await Preferences.keys();
+            if (!stillOwnsDeviceSession()) return;
+            const nativeCleanup = await Promise.allSettled([
+              ...keys.filter(key => key.startsWith('movo.') && !preserveDeviceCopy(key, ownerId)).map(key => Preferences.remove({ key })),
+              saveNativeAutomationKey(''),
+            ]);
+            results.push(...nativeCleanup);
+          } catch { results.push({ status: 'rejected' }); }
+        }
+      }
+      if (!stillOwnsDeviceSession()) return;
+      let signedOut = false;
+      try {
+        const activeOwner = (await getCurrentSession())?.user?.id;
+        if (!stillOwnsDeviceSession()) return;
+        if (!activeOwner) signedOut = true;
+        else if (activeOwner === ownerId) { await signOut(); signedOut = true; }
+      } catch { /* Keep a verified-server-deletion, partial-device-cleanup notice. */ }
+      if (signedOut && results.every(result => result.status === 'fulfilled')) {
+        if (preferenceOwnerRef.current && preferenceOwnerRef.current !== ownerId) return;
+        setSheet(null); setClearText(''); window.location.reload(); return;
+      }
+      if (stillOwnsDeviceSession()) {
+        setSheet(current => current?.name === 'deleteAccount' ? { ...current, ownerId, accountDeleted: true } : current);
+        setClearText('');
+        setError(tr('Some data may remain on this device. Contact support for help clearing the remaining copy.'));
+      }
+    } catch {
+      if (!stillOwnsDeviceSession()) return;
+      if (accountDeleted) {
+        setSheet(current => current?.name === 'deleteAccount' ? { ...current, ownerId, accountDeleted: true } : current);
+        setClearText('');
+        setError(tr('Some data may remain on this device. Contact support for help clearing the remaining copy.'));
+      } else setError(tr('Could not confirm account deletion. Try again or contact support.'));
+    }
     finally { setBusy(false); }
   };
   /* ---------- automation links (Apple Pay / Google Pay / notifications) ---------- */
@@ -2836,6 +2891,7 @@ function App() {
 
   const openFriendSummary = friend => go('FriendSummary', { friend: { ...friend, owner: friendIdentity } });
   const c = {
+    openDeleteAccount,
     openFriends: () => go('Friends'),
     saveProfilePhoto: profilePhoto.savePhoto,
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
@@ -3108,7 +3164,7 @@ function App() {
       {/* Last setup step, after the free-month panel above: accept the Terms and Privacy Policy, then the dashboard
           opens. Reading either one returns here. */}
       {showSetupAgreement && <SetupAgreement onOpenLegal={openLegal}
-        onDeleteAccount={session?.user ? () => setSheet({ name: 'deleteAccount' }) : undefined}
+        onDeleteAccount={session?.user ? openDeleteAccount : undefined}
         onAccept={() => { setPrefs(cur => ({ ...cur, legalAccepted: LEGAL_ACCEPTANCE_DATE, legalAcceptedRevision: LEGAL_VERSION, legalAcceptedAt: new Date().toISOString() })); go('Home'); }} />}
       {locked && <LockScreen account={session?.user} onUnlock={unlock} onForgot={() => confirm({
         // Only offered for guest or legacy locks with no account to verify. Email recovery does not erase data.
@@ -3160,15 +3216,17 @@ function App() {
 
         </div>
       </Sheet>}
-      {sheet?.name === 'deleteAccount' && <Sheet title={tr('Delete your account?')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Delete Account')}>
-        <p className="form-hint" lang="en">{legalCore.deleteScope[0]}</p>
+      {sheet?.name === 'deleteAccount' && <Sheet title={sheet.accountDeleted ? tr('Your MOVO account was deleted.') : tr('Delete your account?')} onClose={() => { if (!busy) { setSheet(null); setClearText(''); } }} label={tr('Delete Account')}>
+        {!sheet.accountDeleted && <p className="form-hint" lang="en">{legalCore.deleteScope[0]}</p>}
+        {sheet.accountDeleted ? <><p className="form-error" role="alert">{error}</p><button type="button" className="secondary-button" onClick={() => setSheet(null)}>{tr('Done')}</button></> : <>
         <p className="form-hint">{tr('Subscriptions are billed and managed by Apple or Google. Cancel in your store account to stop renewal.')}</p>
         <p className="form-hint">{tr('You can request account deletion in MOVO or at movo.nasrinai.com/account-deletion.html. Deleting your MOVO account does not automatically cancel a subscription billed by Apple or Google; cancel it in your store account to stop renewal.')}</p>
         <form className="sheet-form" onSubmit={e => { e.preventDefault(); deleteAccount(); }}>
           <label>{tr('Type DELETE to confirm')}<input aria-label={tr('Type DELETE to confirm')} autoComplete="off" value={clearText} onChange={e => setClearText(e.target.value)} placeholder={tr('DELETE')} /></label>
           {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setClearText(''); }}>{tr('Cancel')}</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? tr('Deleting…') : tr('Delete my account')}</button></div>
+          <div className="sheet-actions"><button type="button" className="secondary-button" disabled={busy} onClick={() => { setSheet(null); setClearText(''); }}>{tr('Cancel')}</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? tr('Deleting…') : tr('Delete my account')}</button></div>
         </form>
+        </>}
       </Sheet>}
       {sheet?.name === 'clear' && <Sheet title={tr('Clear records')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Clear records')}>
         <p className="form-note" lang="en">{legalCore.clearScope[0]}</p>

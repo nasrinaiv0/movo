@@ -1,5 +1,8 @@
 # MOVO
 
+The remaining encryption/erasure source merges are waiting for complete paired Android emulator acceptance. Native builds and iOS pass for #291; emulator disappearance remains a failed check with additional diagnostic capture. No production activation is inferred.
+
+Source merges #330 (`c3e37d7c`) and #331 (`cfb83c51`) are complete. The remaining encryption/erasure candidates are integrating their current owner/session guards and selective cleanup before source merge. Selected encryption covers wallet/workspace/outbox/QR data; preserved recovery and explicit limitations remain. Production hosting, unapplied migrations and signed-device/store activation are still separately gated.
 #330's audited owner/import/iOS/hosting-preparation fixes are merged into main (`c3e37d7c`). The owner-directed draft merge sequence is integrating the remaining development-tool, encryption and erasure branches with fresh combined checks. Production hosting, unapplied migrations and signed-device/store activation remain separately gated; merging source does not establish a live deployment.
 
 The [November 21 full audit](docs/audits/2026-11-21-full-movo-audit.md) reproduces and fixes account-switch backup restoration, import routing/cents/calendar errors, unsafe totals and adaptive control issues in #330. Local verification passes 1,704 tests; production hosting, remaining migrations, signed-device and store evidence still gate release. Existing architecture and financial structures are preserved.

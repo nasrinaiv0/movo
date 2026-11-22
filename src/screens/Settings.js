@@ -291,7 +291,7 @@ export default function Settings({ c }) {
       { icon: 'shield', title: tr('Security & Privacy'), sub: tr('Read how MOVO handles your information'), onClick: () => Browser.open({ url: 'https://movo.nasrinai.com/security' }).catch(() => {}) },
       ...(c.session?.user ? [{ icon: 'spark', title: tr('AI data sharing'), sub: tr('Read how MOVO handles your information'), toggle: 'aiConsent' }] : []),
       { icon: 'trash', title: tr('Clear records'), sub: tr('Read how MOVO handles your information'), onClick: () => c.setSheet({ name: 'clear' }), danger: true },
-      ...(c.session?.user ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Read how MOVO handles your information'), onClick: () => c.setSheet({ name: 'deleteAccount' }), danger: true }] : []),
+      ...(c.session?.user ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Read how MOVO handles your information'), onClick: c.openDeleteAccount, danger: true }] : []),
     ] },
     { title: tr('Transaction History'), rows: [
       { icon: 'list', title: tr('Show balance after each transaction'),

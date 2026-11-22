@@ -96,7 +96,10 @@ test('storage mirroring does nothing on the web', async () => {
 
 test('in the app, MOVO keys missing from web storage are restored and later writes are mirrored', async () => {
   jest.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true);
-  const saved = { 'movo.preferences.v3': '{"theme":"dark"}', 'sb-x-auth-token': 'tok', 'other.key': 'skip' };
+  const saved = { 'movo.preferences.v3': '{"theme":"dark"}', 'sb-x-auth-token': 'tok',
+    'movo.local.transactions.v1': '[{"merchant":"PRIVATE legacy"}]',
+    'movo.offline.workspace.v2.11111111-1111-4111-8111-111111111111': '{"dirty":true}',
+    'other.key': 'skip' };
   Preferences.keys.mockResolvedValue({ keys: Object.keys(saved) });
   Preferences.get.mockImplementation(async ({ key }) => ({ value: saved[key] }));
   const set = Preferences.set.mockResolvedValue();
@@ -106,6 +109,9 @@ test('in the app, MOVO keys missing from web storage are restored and later writ
   expect(window.localStorage.getItem('movo.preferences.v3')).toBe('{"theme":"dark"}');
   expect(window.localStorage.getItem('sb-x-auth-token')).toBeNull();
   expect(window.localStorage.getItem('other.key')).toBeNull();
+  expect(window.localStorage.getItem('movo.local.transactions.v1')).toBeNull();
+  expect(window.localStorage.getItem('movo.offline.workspace.v2.11111111-1111-4111-8111-111111111111')).toBeNull();
+  expect(Preferences.get).not.toHaveBeenCalledWith({ key: 'movo.local.transactions.v1' });
   expect(Preferences.get).not.toHaveBeenCalledWith({ key: 'sb-x-auth-token' });
   expect(Preferences.set).not.toHaveBeenCalledWith({ key: 'sb-x-auth-token', value: 'tok' });
   // Non-secret Preferences may be mirrored, but never Supabase auth tokens.
@@ -113,10 +119,14 @@ test('in the app, MOVO keys missing from web storage are restored and later writ
   set.mockClear();
   window.localStorage.setItem('movo.local.accounts.v1', '[]');
   window.localStorage.setItem('unrelated', '1');
-  expect(set).toHaveBeenCalledTimes(1);
-  expect(set).toHaveBeenCalledWith({ key: 'movo.local.accounts.v1', value: '[]' });
+  expect(set).not.toHaveBeenCalled();
+  const sealed = 'movo.finance.sealed.v1:movo.local.accounts.v1';
+  window.localStorage.setItem(sealed, '{"__movo_finance_sealed_v1":1}');
+  expect(set).toHaveBeenCalledWith({ key: sealed, value: '{"__movo_finance_sealed_v1":1}' });
   window.localStorage.removeItem('movo.local.accounts.v1');
-  expect(remove).toHaveBeenCalledWith({ key: 'movo.local.accounts.v1' });
+  expect(remove).not.toHaveBeenCalledWith({ key: 'movo.local.accounts.v1' });
+  window.localStorage.removeItem(sealed);
+  expect(remove).toHaveBeenCalledWith({ key: sealed });
   // Encrypted finance cache storage is never copied to native Preferences.
   set.mockClear();
   const cacheKey = 'movo.readCache.v1:11111111-1111-4111-8111-111111111111:loans';

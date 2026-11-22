@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-21",
+  "browser": "isolated Chromium",
+  "syntheticRecordsOnly": true,
+  "legacyMigratedBeforeRendering": true,
+  "financialWritesEncrypted": true,
+  "amount": 12.34,
+  "balance": 87.91,
+  "reloadDecrypts": true,
+  "webKeyNonExportable": true,
+  "keyLossBlocksWallet": true,
+  "keyLossPreservesCiphertext": true,
+  "pageErrors": [],
+  "nativeDeviceAcceptance": false
+}

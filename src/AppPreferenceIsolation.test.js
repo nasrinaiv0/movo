@@ -196,7 +196,7 @@ describe('account preference isolation through real App auth transitions', () =>
   });
 
   const submitClear = async (name = 'clear') => {
-    await act(async () => { mockContext.setSheet({ name }); });
+    await act(async () => { if (name === 'deleteAccount') mockContext.openDeleteAccount(); else mockContext.setSheet({ name }); });
     const input = container.querySelector('input[aria-label="Type DELETE to confirm"]');
     await act(async () => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'DELETE');
@@ -207,6 +207,24 @@ describe('account preference isolation through real App auth transitions', () =>
       await new Promise(resolve => setTimeout(resolve, 100));
     });
   };
+
+  test('a stale deletion opener cannot be reused after returning to the same account', async () => {
+    await auth(A);
+    const staleOpen = mockContext.openDeleteAccount;
+    await auth(B);
+    await auth(A);
+    await act(async () => { staleOpen(); });
+    const input = container.querySelector('input[aria-label="Type DELETE to confirm"]');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'DELETE');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      container.querySelector('[role="dialog"] form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    expect(mockDeleteAccount).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('The signed-in account changed.');
+  });
 
   test('clearing B preserves A, guest and unassigned preference recovery copies', async () => {
     await auth(B);

@@ -1,3 +1,18 @@
+## 2026-11-21 — Preserve evidence before paired emulator disappearance
+
+#291 at `1bc69dc9` passes iOS and six other workflows but loses the emulator during baseline Wallet acceptance. Available memory/disk does not establish OOM. Add continuous pinned-device logcat, host kernel diagnostics and emulator crash-data artifacts without relaxing acceptance. All 25 host harness tests pass. Both remaining source merges wait for a complete paired pass. [Engineering](engineering/updates/2026-11-21-encryption-owner-integration.md).
+
+## 2026-11-21 — #291 final current-main source validation
+
+R8 at `31f5dcc6` passed both compiler comparisons and complete encrypted baseline acceptance; the emulator disappeared during candidate Wallet acceptance after seed/vault checks. #274's parallel combined run also lost the emulator. These are failed checks. The workflow now releases compiler daemons, records runner memory/disk/RSS and disables the Vulkan path for identical software OpenGL execution in both variants. Assertions, deadlines and isolation remain unchanged; fresh paired acceptance is required.
+
+The final clean-graph original-only build/notice audit passes. Both R8 compiler variants build the same app source and now require the same mandatory encrypted storage, balance/card identity/style, native bridge, process restart, isolation and hard-failure assertions. Only older source without the finance vault uses the old plaintext fixture-ID check. Twenty-four host harness tests pass; fresh paired emulator/native checks are required for this final source head.
+
+Integrated released #330/#331 main `cfb83c51`, preserving encrypted stores, owner/generation-bound import and confirmation, selective cleanup and partial-deletion reporting. Fresh locked install, 265 suites / 1,746 tests, typecheck and 24 Node checks pass. Synthetic browser migration, encrypted save/reload and non-destructive key-loss gating pass. Final clean-graph bundle and exact-head hosted/native checks are required before the owner-directed source merge; production activation remains separate. [Engineering](engineering/updates/2026-11-21-encryption-owner-integration.md).
+
+## 2026-11-21 — #291 integrates released owner/restore safeguards
+
+The owner requested source merges of all drafts. #330 merged as `c3e37d7c`, and #331 as `cfb83c51`, after their applicable checks passed. #291 retains encryption while integrating owner/generation guards, selective cleanup, partial-deletion failure notices, updated UI/hosting/asset protections and explicit recovery preservation. Initial combined validation: 264 suites / 1,741 tests, an additional stale-confirmation regression, typecheck, 24 Node checks and strict bundle/notice audit pass. Fresh browser migration/write/reload/key-loss acceptance passes with synthetic data. Integrate latest main and revalidate before merge; production migration, host and signed-device/store activation remain separate. [Engineering](engineering/updates/2026-11-21-encryption-owner-integration.md).
 ## 2026-11-21 — Owner-directed source merges; #331 current-main integration
 
 #330 merged as `c3e37d7c` after all eight exact-head code/native/SQL/container checks passed. The owner now explicitly asks to merge all drafts. #331 integrates that released source while retaining its development-only overrides. Fresh clean-install combined validation: 259 suites / 1,708 tests, typecheck, 24 Node checks and strict iOS-profile build/packaging pass. New-head hosted validation is required before #331 merges. #291/#274 still need combined owner/encryption/cleanup validation. Production migration approval/activation, Vercel account resolution and signed store/device evidence remain separate from these source merges. [Engineering record](engineering/updates/2026-11-21-merge-build-tool-hardening.md).
@@ -65,6 +80,17 @@ Release held: Vercel account blocked and public MOVO HTTP 402 DEPLOYMENT_DISABLE
 - #328 is deployed after explicit approval. #327 merged as `73e293bf` after every applicable check passed; its tree matches tested head `305323ed`. #274 production erasure/retention approval and signed store/device acceptance remain separate gates.
 - [Execution handoff](engineering/handovers/2026-11-20-audit-gap-execution.md) · [Implementation](engineering/updates/2026-11-20-owner-preference-isolation.md).
 
+## 2026-11-20 — Encryption integration with current privacy controls
+
+- Reconciled #291 with current main while retaining revision-aware consent, owner-bound account deletion, AI withdrawal and the compact security guide. Native mirroring now excludes both chat history and encrypted finance recovery namespaces.
+- Documented selected version-dependent finance encryption in canonical privacy disclosures and refreshed acceptance to November 20 revision 1. No complete-device or end-to-end encryption claim is made.
+- Encryption regressions, final full-suite/build checks and hosted checks are required before merge. No store release or production schema change is included.
+
+## 2026-11-18 — Safe encryption upgrade and privacy review
+
+- Separate storage for encrypted records, atomic IndexedDB upgrade, protected key-loss recovery, and native migration retries preserve pending data.
+- Account deletion works for signed-in customers across plans. iOS privacy and export metadata now reflect the code and the outstanding App Store Connect classification.
+- [Evidence and release gates](engineering/updates/2026-11-18-encryption-privacy-audit.md).
 ## 2026-11-20 — Open PR consolidation
 
 ## 2026-11-20 — Build-tool security advisory remediation
@@ -240,6 +266,66 @@ Node 26.13.1: clean install, full build (including offline-worker, localization 
 
 - The main Settings list and search results display feature names with their existing controls. Search still matches descriptions, and assistive technology can still read them.
 - Local Node 26 typecheck, strict build and regression tests passed (244 suites, 1,541 tests). The Vercel sandbox passed 12 focused tests. Open PR scopes #274, #290 and #291 were reviewed. [Implementation and rollback notes](engineering/updates/2026-11-17-settings-feature-names.md).
+
+## 2026-11-17 — PR #291 brought up to date with #309; sync race fixed
+- Merges #309's branch, which carries `main` and #294's Security & Data Guide. Terms and Privacy keep #309's referral section and this PR's encryption wording, and are effective November 20, 2026. The guide's encryption claims now match what ships: selected local records, dependent on app version, never "everything".
+- Fixes a race on `main`. After a sync saved a clean device copy, an effect from an earlier render could write the old rows back as unsynced. This PR's encrypted storage made it happen more often. [Details](engineering/updates/2026-11-17-pr-291-referral-integration.md).
+
+## 2026-11-17 — PR #291 brought up to date with main
+
+- The encryption wording and #314's friend-sharing wording are both kept. Terms and Privacy are effective November 19, 2026. The legal page generator now takes its dates from `legalVersion.js`. #290 is contained in this PR. [Details](engineering/updates/2026-11-17-pr-291-main-integration.md).
+
+## 2026-11-16 — PR #291 conflict resolution
+
+- Integrated main `77bcacc`. Preserved pre-render encryption and legacy recovery alongside main’s reminder settings cache, install referrals, and Friends routing. Preserved current receipt and Friends privacy disclosures.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-291-main-conflicts.md).
+
+## 2026-11-13 — PR #291 non-production merge of concurrent PR #292 (precommit)
+
+- An independent collaborator merged [PR #292](https://github.com/nasrinaiv0/movo/pull/292) to main `636eb35` while PR #291's security checks were running. **We did not merge PR #292 or trigger the queued Vercel production deployment.**
+- PR #292 changed `src/App.js`, `src/App.css`, `src/App.test.js`, `docs/PR_PROGRESS.md` and added `docs/engineering/updates/2026-11-12-android-bottom-nav.md`; no finance-vault, QR cipher, API authorization, legal generator or database changes.
+- **Integration plan**: on the existing *non-production PR branch only*, preserve PR #291's legal consent/finance test changes and add PR #292's new touch-down bottom-nav test; take PR #292's App.js/App.css and progress document, and retain all prior encryption/security audit records. Create a two-parent merge commit on PR #291 (parents `3c15601` and `636eb35`) so the open PR is mergeable again without force-pushing or altering main.
+- CI for `3c15601` passed Phase 1: **229/229 suites, 1,379/1,379 tests**, hybrid security, PG tenant isolation and IAP integrity; Android Gradle native compilation was in progress; iOS queued and Vercel preview queued. New integration head **must rerun all checks** because navigation code has changed. No production or database modification.
+
+## 2026-11-13 — PR #291 second CI iteration (precommit record)
+
+- Exact-head `3d6a786` Phase 1 regression: **228/229 suites, 1,378/1,379 tests passed**. Atomic QR upgrade tests, legal generator, user-facing security contracts and earlier offline CSV-sync test PASSED. The one remaining test in `src/App.test.js` asserts old Terms/Privacy UI effective dates (Nov 11 and Nov 6) while current staged legal pages correctly show **Nov 13**.
+- Fix only this stale UI fixture to expect Nov 13; do not change legal publication, canonical data, financial sync code, QR encryption, rollback assertions or production. Verify again with exact-head CI and preview, Android and iOS gates.
+- Production/main unchanged. Both prerequisite PRs #289/#290 and follow-up PR #291 remain open and unmerged. No database/Auth/billing settings changed.
+
+## 2026-11-13 — PR #291 red first-head CI; documented repairs before commit
+
+- Initial exact-head `0c0f04b` CI: **226/229 suites and 1,376/1,379 tests passed**; red Phase 1, hybrid-accounting, Android web/Jest gate; Vercel preview ERROR. Supabase tenant-isolation and IAP-integrity checks passed. iOS queued.
+- **QR regression fixture:** invented `iVBORw0KGgp=` was intentionally rejected by the PNG-signature validator, incorrectly used in the legacy migration success test. Replace fixture with valid PNG signature; keep MIME spoof rejection, whole-transaction rollback and tamper detection tests.
+- **Canonical legal generator:** Privacy/Terms pages were updated in staged code, but `src/lib/legalSupplement.json` source-of-truth was not. Amend the canonical legal security paragraph, regenerate canonical Privacy/Terms exact bytes, and bump both `src/lib/legalVersion.js` dates to 13 Nov 2026; require renewed user acceptance for material changes. Update legal/version tests to reject previously accepted 11 Nov version. Do not publish legal changes to production before separate release approval.
+- **Offline CSV CI:** one `AppOfflineFirst.test.js` previously green on parent PR #290 timed out waiting for clean cloud-sync projection after mock upload. Neither QR implementation nor trust docs edits the financial writer. Preserve the test and financial accounting code unchanged for a clean rerun; if reproducible, inspect actual sync state rather than masking accounting regression.
+- Validate exact-head full Jest, QR migration, legal generator, Android native compile, iOS simulator and Vercel preview. No main, database, production or store changes.
+
+## 2026-11-13 — Security assurance / encrypted QR cache follow-up (DOCUMENTED BEFORE COMMIT)
+
+- Owner requested an evidence-based document explaining why MOVO is designed to protect user data and safe security hardening inside the code. Read live Supabase schema/advisors, open PRs #289/#290, Vercel production commit, legal pages and QR local storage.
+- **Verified** 44/44 public tables have RLS; selected finance/AI table policies enforce `auth.uid() = user_id`; security advisor still has 15 callable SECURITY DEFINER warnings, 15 intentional/no-policy informational findings and 1 leaked-password protection warning. No database, billing or auth-console modification made.
+- **New code (staged)**: seal offline bank/e-wallet QR PNGs with the finance vault; atomic IndexedDB legacy data migration and fail-closed tamper detection; pre-render migration and regression tests. Adds accessible `/security` trust page and non-exaggerated user data security assurance documentation; fixes outdated Privacy/Terms version-dependent encryption descriptions.
+- Existing main production remains at `2b9a1cf7`, and PRs #289/#290 are open. New PR must be stacked on #290 and **not merged or deployed**. All new CI tests, Vercel preview, iOS native and real-device acceptance still pending.
+- Detailed log: `docs/engineering/updates/2026-11-13-security-assurance-qr-cache.md`. Security document: `docs/security/MOVO_USER_DATA_SECURITY_ASSURANCE_2026-11-13.md`.
+
+## 2026-11-13 — PR #290 exact-head CI red; non-destructive repair before commit
+
+- Exact initial head `89e159c`, Phase 1, hybrid-sync accounting, and Android CI stopped at Jest; **220/227 suites passed, 7 failed (1,347/1,368 tests passed)**. Disposable PG tenant isolation and IAP integrity both passed; no production deploy.
+- Found and corrected **native restore regex with double-escaped literal backslashes**; it prevented reading harmless `movo.preferences.v3`. Use correct regex escaping, still skip sensitive raw finance keys during generic restore.
+- Removed a **static financeVault import in Jest global setup** which preloaded native/platform code before per-test mocks, breaking native auth/browser/back-button tests. Test-only finance key now passed as a global byte array read only during financeVault module init in `NODE_ENV=test`. Ensure JSDOM supplies full WebCrypto, not just `getRandomValues`.
+- Updated `src/App.test.js` to assert through normal decrypted storage interfaces instead of interpreting encrypted localStorage as plaintext arrays; retain actual UI/accounting expectations.
+- IndexedDB interrupted-upgrade test expects a failed abort, and still verifies the entire original raw journal is byte-for-byte unchanged; fake-indexeddb reports a standard AbortError instead of the injected exception.
+- Release gates: rerun all exact-head tests + Android/iOS compiles + Vercel preview. Preserve both pending journal and old installation data. **Do not merge or deploy**.
+
+## 2026-11-13 — Separate staged financial ledger encryption PR (precommit)
+
+- Scope: protect synchronous `offlineWorkspaceStore` and `localFinanceStore` and the atomic IndexedDB `hybridLocalStore` pending outbox, without changing accounting transaction IDs, tombstones, approvals or cloud state.
+- Design: audited sync XChaCha20-Poly1305 cipher and HKDF domain separation from PR #289's mobile Keychain/Keystore seed; browser non-extractable HMAC-based local key; encrypted, verified pre-render legacy migration and whole-transaction IDB rollback.
+- Protect startup against key loss (block UI, never show empty wallet), keep legacy pref conflict in encrypted recovery capsule, and retain async native mirroring of ciphertext.
+- Tested: standalone Python AEAD round-trip/tamper-property check. Vercel temporary sandbox **unavailable due 402 payment_required**; no billing action taken. Use GitHub's disposable CI. Native hardware acceptance and rollback/downgrade safety are release blockers.
+- This is a **stacked PR based on #289, not a production change**. Do not merge or redeploy. Exact-head tests pending.
+- Detailed precommit record: `docs/engineering/updates/2026-11-13-encrypted-finance-ledger-nondestructive.md`.
 
 ## 2026-11-17 — PR #309 brought up to date with main
 

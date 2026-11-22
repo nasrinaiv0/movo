@@ -1,13 +1,14 @@
 import { LEGAL_VERSION, TERMS_EFFECTIVE_DATE, PRIVACY_EFFECTIVE_DATE, hasAcceptedLegal, mergeLegalAcceptance, LEGAL_ACCEPTANCE_DATE } from './legalVersion';
 
 test('material same-day changes have an explicit revision tied to the effective date', () => {
-  expect(LEGAL_VERSION).toBe([TERMS_EFFECTIVE_DATE, PRIVACY_EFFECTIVE_DATE].sort().pop().slice(0, 10) + '-r2');
+  expect(LEGAL_VERSION).toBe([TERMS_EFFECTIVE_DATE, PRIVACY_EFFECTIVE_DATE].sort().pop().slice(0, 10) + '-r1');
   expect(hasAcceptedLegal({ legalAccepted: '2026-11-19' })).toBe(false);
 });
 
 test('only the exact current revision counts; unknown future versions cannot waive notice', () => {
   expect(hasAcceptedLegal({ legalAccepted: LEGAL_ACCEPTANCE_DATE, legalAcceptedRevision: LEGAL_VERSION })).toBe(true);
   expect(hasAcceptedLegal({ legalAccepted: '2026-11-06' })).toBe(false);
+  expect(hasAcceptedLegal({ legalAccepted: '2026-11-11' })).toBe(false);
   expect(hasAcceptedLegal({ legalAccepted: '' })).toBe(false);
   expect(hasAcceptedLegal({ legalAccepted: 'yes' })).toBe(false);
   expect(hasAcceptedLegal({ legalAccepted: true })).toBe(false);

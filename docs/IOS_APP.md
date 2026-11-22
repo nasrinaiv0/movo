@@ -60,7 +60,8 @@ npm run ios:submission-check # holds public submission until real rights/store/d
 ## Native project settings (`ios/App/App/Info.plist`)
 
 - Camera, microphone, photo library and Face ID permission text.
-- `ITSAppUsesNonExemptEncryption = false` (HTTPS only), so TestFlight does not ask about export compliance.
+- The App target includes `PrivacyInfo.xcprivacy`. Reason `CA92.1` covers the iPhone app's private UserDefaults flag for a pending Watch quick-log request.
+- App Store Connect prompts for an export compliance declaration because `ITSAppUsesNonExemptEncryption` is omitted. Classify the encryption in the archived binary, including the bundled XChaCha20-Poly1305 finance vault, before making a declaration.
 - App icon (1024px, opaque) and splash use the MOVO mark.
 - Bundle id `com.nasrinai.movo` (owner-confirmed 2026-11-02; it cannot change after the first upload) and display
   name `MOVO`. App Store subtitle: up to 30 characters, still to be chosen.
@@ -128,7 +129,8 @@ Codemagic uses locked dependencies, checks for Xcode 26+, and signs only through
 3. Verify that offline account/transaction writes load after force-quit, reconnect through explicit Sync local to cloud, keep cents exact and never cross Supabase user ownership boundaries.
 4. Test receipt capture, photo picker, microphone transcription, Siri review and local notifications with granted, denied and revoked permissions.
 5. Validate account deletion, restored purchases, canceled purchases, auto-renewal, server notifications, refunds and expiration. Use Apple's Sandbox through an isolated staging entitlement environment; do not grant production paid/referral credits for Sandbox receipts.
-6. Produce and inspect Xcode's privacy manifest report for all included Capacitor/third-party SDKs; complete App Store privacy disclosures, age rating, legal/support URLs, support contact, review notes and sample credentials.
-7. Validate small and large iPhone layouts and keyboard/safe-area responsiveness using the **final signed TestFlight artifact**.
+6. Produce and inspect Xcode's privacy manifest report for the app and all included Capacitor and other third-party SDKs. Complete App Store privacy disclosures, age rating, legal and support URLs, support contact, review notes and sample credentials.
+7. Complete the App Store Connect export compliance questions for the signed build and submit any documentation Apple requires for the selected distribution territories, including France when applicable. [Apple's export compliance documentation](https://developer.apple.com/help/app-store-connect/reference/app-information/export-compliance-documentation-for-encryption)
+8. Validate small and large iPhone layouts and keyboard/safe-area responsiveness using the **final signed TestFlight artifact**.
 
 **Release decision:** Do not mark public iOS distribution ready until these gates have evidence. Vercel Sandbox access returned `402 payment_required` during this audit; resolving that billing restriction is an external requirement, not a code patch.

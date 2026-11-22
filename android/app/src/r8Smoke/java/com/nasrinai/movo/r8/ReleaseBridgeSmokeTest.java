@@ -64,7 +64,7 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
                 case "seedOfflineWallet":
                     awaitJs("synthetic wallet restored by the real startup bridge",
                         "!!document.querySelector('main[data-view=\"Home\"]') && " +
-                        "JSON.parse(localStorage.getItem('movo.local.accounts.v1'))?.[0]?.id===" + quote(ACCOUNT) + " && " +
+                        savedWalletCondition() + " && " +
                         "JSON.parse(localStorage.getItem('movo.preferences.v3'))?.onboarded===true", 45000);
                     break;
                 case "offlineWalletLogoStyleAndSyntheticOAuthCallback":
@@ -157,6 +157,22 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
             target.getSharedPreferences("movo_auth_ciphertext", Context.MODE_PRIVATE).contains(VAULT_KEY));
     }
 
+    private String savedWalletCondition() {
+        // Unencrypted app versions retain the exact plaintext fixture-ID check.
+        // Both compiler variants of encrypted app source require no plaintext
+        // copy and must render the fixture balance;
+        // the subsequent card/finish checks verify its ACCOUNT-keyed style too.
+        if (!"true".equals(arguments.getString("movoExpectEncryptedFinance", "false"))) {
+            return "JSON.parse(localStorage.getItem('movo.local.accounts.v1'))?.[0]?.id===" + quote(ACCOUNT);
+        }
+        return "(() => {const raw=localStorage.getItem('movo.local.accounts.v1');" +
+            "const sealed=JSON.parse(localStorage.getItem('movo.finance.sealed.v1:movo.local.accounts.v1'));" +
+            "return raw===null && sealed?.__movo_finance_sealed_v1===1 && sealed.alg==='XCHACHA20-POLY1305' && " +
+            "typeof sealed.n==='string' && sealed.n.length===32 && typeof sealed.c==='string' && sealed.c.length>24 && " +
+            "localStorage.getItem('movo.finance.vault.initialized.v1')==='v1' && " +
+            "document.querySelector('main')?.textContent.includes('125.50');})()";
+    }
+
     private void offlineWalletLogoStyleAndSyntheticOAuthCallback() throws Exception {
         assertBridgeContracts();
         // ADB already isolated the entire emulator before this fresh app process booted.
@@ -164,7 +180,7 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
         runOnMainSync(() -> requireWebView(activity).setNetworkAvailable(false));
         awaitJs("offline Home rendered from the saved wallet", "navigator.onLine === false && " +
             "!!document.querySelector('main[data-view=\"Home\"]') && " +
-            "JSON.parse(localStorage.getItem('movo.local.accounts.v1'))?.[0]?.id===" + quote(ACCOUNT), 45000);
+            savedWalletCondition(), 45000);
         tapControl("Wallet button", "document.querySelector('.bottom-nav button[aria-label=Wallet]')");
         awaitJs("offline Wallet route", "!!document.querySelector('main[data-view=\"Wallet\"]')", 15000);
         String cardsFilter = "Array.from(document.querySelectorAll('.wallet-chip-bar button[data-chip]'))" +
@@ -180,7 +196,7 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
             "getComputedStyle(card).getPropertyValue('--card-tint').trim()==='#7f8792' && " +
             "!!image && image.complete && image.naturalWidth>0 && " +
             "new URL(image.currentSrc).pathname==='/brands/offline/bpi.com.ph.png';})()", 20000);
-        awaitJs("synthetic wallet fixture persisted", "JSON.parse(localStorage.getItem('movo.local.accounts.v1'))[0].id===" + quote(ACCOUNT), 1000);
+        awaitJs("synthetic wallet fixture persisted in the required storage format", savedWalletCondition(), 1000);
         awaitWalletFrame();
         screenshot("offline-wallet.png");
         assertBridgeContracts();
