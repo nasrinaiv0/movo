@@ -1,31 +1,13 @@
 # MOVO
 
-#274 is held after candidate emulator disappearance in both attempts. Its seven other checks and 1,767 JavaScript tests pass. Paired validation now gives each compiler output a fresh, identically configured AVD; all 27 host tests pass and new-head native acceptance is required. Live API hosting and stock credentials remain unresolved.
-
-[Android build 21 recovery](docs/engineering/updates/2026-11-22-android-build21-service-recovery.md): API hosting failure is distinct from connectivity. Device-copy labels and denial classification are corrected; live services, balance reproduction and final native validation remain pending.
-
-#291 is merged as `b55429d8` after all eight checks passed. #274 integrates that released main and remains pending emulator acceptance and the Android build 21 follow-up. Public API hosting still returns 402; production features have not been restored.
-
-The remaining encryption/erasure source merges are waiting for complete paired Android emulator acceptance. Emulator disappearance remains a failed check with continuous pre-failure diagnostic capture. No production activation is inferred.
-
-MOVO combines the audited owner/import/iOS safeguards, development-tool patches and selected wallet/workspace/outbox/QR encryption, while preserving account IDs, financial fields/math and the React/Supabase/Capacitor structure. Server erasure and retention default to disabled pending separately approved migrations and activation. [Source consolidation and validation](docs/engineering/updates/2026-11-21-combined-erasure-owner-encryption.md) records the owner-directed merge sequence; production hosting and signed-device/store evidence remain separate release gates.
-#330's audited owner/import/iOS/hosting-preparation fixes are merged into main (`c3e37d7c`). The owner-directed draft merge sequence is integrating the remaining development-tool, encryption and erasure branches with fresh combined checks. Production hosting, unapplied migrations and signed-device/store activation remain separately gated; merging source does not establish a live deployment.
-
-The [November 21 full audit](docs/audits/2026-11-21-full-movo-audit.md) reproduces and fixes account-switch backup restoration, import routing/cents/calendar errors, unsafe totals and adaptive control issues in #330. Local verification passes 1,704 tests; production hosting, remaining migrations, signed-device and store evidence still gate release. Existing architecture and financial structures are preserved.
-
-[Hosting resilience](docs/MOVO_HOSTING_RESILIENCE.md): the candidate can open its previously installed browser shell on host HTTP 402/429/5xx, and its existing APIs can run through an optional independent Node host. Full online independence still requires a deployed, tested backend and domain routing; no hosting or DNS was changed.
-
-The owner selected [Google Cloud Run preparation](docs/CLOUD_RUN_DEPLOYMENT.md): pinned non-root container, explicit staging configuration and credential-free build/smoke CI. No Google service, IAM change, registry push or domain cutover has been performed.
-
-App Store preparation now has an original-only iOS artwork profile, bundled software credits and an evidence-based upload gate. See [the submission packet](docs/app-store/APP_REVIEW_PACKET.md). This does not establish Apple approval or name/trademark clearance; the current MOVO public identity remains pending review.
-
-The iOS candidate now connects Dynamic Type, semantic system surfaces and accessibility settings to shared controls and panels, while retaining custom appearance choices and the existing hybrid architecture. See [the iOS interface review](docs/audits/2026-11-20-ios-interface-review.md) for measured coverage and native acceptance limits.
-
-The [PR #329 follow-up audit](docs/audits/2026-11-20-pr329-remediation-review.md) records owner-safe cleanup, financial-entry and localized-navigation fixes in #330, plus dependency hardening in #331. Current production returns HTTP 402 DEPLOYMENT_DISABLED; hosted acceptance and release remain blocked. Existing architecture and financial formats are preserved.
-Build-tool security remediation and its remaining release gates are recorded in [the November 20 engineering update](docs/engineering/updates/2026-11-20-build-tool-security.md). This candidate does not change application structures or production dependencies.
-The owner-directed draft source merge keeps #274's erasure and retention endpoints disabled by default. Their separately approved database rollout and explicit server activation remain necessary; merging source does not activate destructive production behavior or establish store acceptance. See [rollout safeguards](docs/engineering/updates/2026-11-21-inert-erasure-retention-rollout.md).
-
 MOVO is a financial-tracking web app prototype with a calm, iOS-inspired interface.
+
+2026-11-22: #330, #331, #291 and #274 are merged after their applicable checks passed. The [current source-merge and Android recovery handover](docs/engineering/handovers/2026-11-22-source-merges-android-recovery.md) records exact commits, 1,767 JavaScript tests and complete fresh-emulator acceptance. React/CRA, Supabase, Capacitor/UIKit, account identifiers and financial history are preserved.
+
+Android device-copy labels and server-denial classification are corrected in source. Installed build 21 needs a signed update. Public API hosting still returns 402; stock-provider configuration, authenticated Cloud Run deployment and the reported balance discrepancy remain unresolved. No destructive production migration, activation or store upload was performed.
+
+[Hosting resilience](docs/MOVO_HOSTING_RESILIENCE.md) · [Google Cloud Run deployment](docs/CLOUD_RUN_DEPLOYMENT.md) · [Full audit](docs/audits/2026-11-21-full-movo-audit.md) · [iOS interface review](docs/audits/2026-11-20-ios-interface-review.md) · [App Store review packet](docs/app-store/APP_REVIEW_PACKET.md). Source validation does not establish live availability or store acceptance.
+
 
 ## UI redesign (mockup match)
 

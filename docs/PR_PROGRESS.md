@@ -1,3 +1,7 @@
+## 2026-11-22 — All four source PRs merged; live recovery remains open
+
+#330 `c3e37d7c`, #331 `cfb83c51`, #291 `b55429d8` and #274 `ff9edc52` are merged after their applicable current-head checks passed. #274 passes all eight workflows, including both fresh-AVD acceptance steps; its merged tree equals tested `9a0d48d2`. Current JavaScript count is 1,767; 27 host harness tests pass. Historical failed attempts remain failures. Main post-merge iOS status is tracked separately. Public API 402, missing project-level stock key, Google Cloud authentication and balance reproduction remain unresolved. No destructive rollout or store publishing occurred. [Current execution handover](engineering/handovers/2026-11-22-source-merges-android-recovery.md).
+
 ## 2026-11-22 — Separate paired emulator state after two failed attempts
 
 At `65f63b83`, all seven non-R8 workflows pass, including 1,767 JavaScript tests. Both R8 attempts lose the candidate emulator after full baseline acceptance and candidate startup/vault checks. Run each compiler output on an identically configured fresh AVD, requiring both full acceptance sequences. All 27 host tests pass; application code, assertions and isolation are unchanged. New-head checks remain mandatory. Build 21 is traced to `cfb83c51`; stock-provider key is missing from project settings. [Current handover](engineering/updates/2026-11-22-android-build21-service-recovery.md).
