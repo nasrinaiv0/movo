@@ -91,7 +91,7 @@ The encrypted acknowledgment outbox is committed with entitlements. Retries neve
 
 ## Verified tester subscriptions (2026-11-22)
 
-The owner requests subscription access for testers in both stores. Deploy the verified Sandbox receipt/notification handlers together with `20261122055847_verified_store_tester_subscriptions.sql`. This targeted billing migration preserves the existing tables, client grants, account binding, lease fencing, environment separation, revocation tombstones and paid-referral rules. It does not require or authorize the three held #274 financial-erasure/retention migrations.
+The owner requests subscription access for testers in both stores. For a new environment, deploy the verified Sandbox receipt/notification handlers together with `20261122055847_verified_store_tester_subscriptions.sql`. The current production rollout is recorded below; do not replay an already recorded migration. This targeted billing migration preserves the existing tables, client grants, account binding, lease fencing, environment separation, revocation tombstones and paid-referral rules. It does not require or authorize the three held #274 financial-erasure/retention migrations.
 
 After successful server verification and atomic commit, MOVO automatically records the owner as a tester in its existing service-owned table. No manual MOVO tester allowlist entry is needed. That row alone grants no access: a current, unexpired store entitlement is still required. Clients cannot self-enroll, choose `sandbox`, replace the trusted store environment or move a receipt to another account. Existing administrator-admitted testers remain compatible. Sandbox entitlements remain `sandbox`, always have `paid_verified=false`, and earn no paid-referral credits.
 
@@ -104,3 +104,6 @@ After successful server verification and atomic commit, MOVO automatically recor
 Apple signed notifications retain the verified transaction environment. Unclaimed Sandbox events cannot create production revocation tombstones; a signed-in purchase/restore first establishes ownership. Known test renewals and refunds update the same account's test entitlement. Google test acknowledgements still occur only after verification and persistence, with encrypted retry jobs.
 
 Required live acceptance: active API hosting; valid store-server credentials; billing configuration readiness and controlled checkout activation; applied targeted migration; correctly configured store products/testers/webhooks; real purchases and second-device checks. The public API was last confirmed HTTP 402 `DEPLOYMENT_DISABLED`; local tests cannot establish live tester availability while it is disabled. Do not paste credentials into chat or store them in frontend variables.
+
+
+2026-11-22 production status: after explicit owner approval, the targeted tester migration is deployed as `20261122064410` (source `20261122055847`). Exact function, service-only access and tester RLS were verified. The API remains HTTP 402; no live purchase, checkout activation or store acceptance is established by this database rollout.
