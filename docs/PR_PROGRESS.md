@@ -1,3 +1,7 @@
+## 2026-11-22 — Verify the window bridge in minified Android releases
+
+Expand the mandatory paired R8 contract to call the reflected window bridge before and after activity recreation, validate positive viewport dimensions and reject unexpected non-geometry fields. Native compile and both emulator variants must pass on this head; no application, finance or production behavior changed. [Acceptance handover](engineering/updates/2026-11-22-adaptive-device-compatibility.md).
+
 ## 2026-11-22 — Adaptive phone, foldable and wearable interfaces
 
 Implement read-only fold geometry and safe panes without remounting transaction forms, adaptive native iOS navigation with iPad/landscape packaging, and round-screen/scalable-text watch companions. Preserve all finance, account, purchase and storage paths. Local full JavaScript run: 267 suites / 1,786 tests; typecheck and strict original-only build pass. English/default and Arabic/largest-text browser runs pass 56 checks; native CI acceptance is tracked in the [implementation handover](engineering/updates/2026-11-22-adaptive-device-compatibility.md); physical devices, Duo SDK/poses, signed pairing and live hosting remain separate release gates.
