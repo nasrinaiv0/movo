@@ -1,3 +1,7 @@
+## 2026-11-22 — Approved tester billing migration deployed
+
+#333 is merged as `73524d1f` after all six current-head workflows passed. After explicit owner approval, production migration `verified_store_tester_subscriptions` applied as `20261122064410` (source `20261122055847`). Exact deployed body, service-only execution, tester RLS and no new security advisories verified. No existing financial/purchase rows rewritten; all three #274 migrations remain held. API still returns 402, so live tester acceptance remains blocked by hosting. [Rollout record](engineering/updates/2026-11-22-verified-tester-subscriptions.md#approved-production-migration--2026-11-22).
+
 ## 2026-11-22 — Owner-requested verified tester subscriptions
 
 Implement genuine Apple TestFlight/Sandbox and Google Play license-test access for the bound MOVO account, with automatic service-owned admission only after a successful fenced commit. Preserve expiry/refunds, account/environment isolation and zero paid-referral rewards. All 266 frontend suites / 1,771 tests, typecheck, strict bundle and isolated SQL/security/concurrency checks pass. Targeted billing migration and published-head hosted checks remain pending; API hosting is still independently blocked. No financial records or unrelated migrations changed. [Engineering and rollout](engineering/updates/2026-11-22-verified-tester-subscriptions.md).

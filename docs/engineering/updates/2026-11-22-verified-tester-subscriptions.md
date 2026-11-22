@@ -16,7 +16,7 @@ The plan belongs to the MOVO account across both device platforms. Another devic
 
 `api/lib/purchaseVerification.js`, `api/purchases/apple-notifications.js`, billing/handler tests, `scripts/security/iap-*`, and `20261122055847_verified_store_tester_subscriptions.sql`. The targeted migration replaces only `movo_iap_commit`, preserving service-role-only execution, security-invoker mode, existing tables, policies and constraints. No existing entitlement or financial row is rewritten. Verified future commits can add tester participation rows atomically.
 
-Read-only production metadata confirms the currently deployed commit body exactly matches the prior repository function, client/anonymous execution is denied, and the tester table has RLS. Production schema rollout remains pending current-head hosted checks. Do not replay the three separately held #274 erasure/retention migrations. Never use a broad migration push as a substitute for this targeted billing rollout.
+Read-only production metadata confirms the currently deployed commit body exactly matches the prior repository function, client/anonymous execution is denied, and the tester table has RLS. Current-head hosted checks subsequently passed and the explicitly approved targeted migration is deployed; see the approved production migration record below. Do not replay the three separately held #274 erasure/retention migrations. Never use a broad migration push as a substitute for this targeted billing rollout.
 
 ## Verification
 
@@ -31,3 +31,11 @@ Apple TestFlight uses Sandbox purchases. Google testers must be configured under
 See [store setup](../../commercial/STORE_BILLING_SETUP.md#verified-tester-subscriptions-2026-11-22). Real signed-device purchase/restore/renew/refund testing, store product availability, server credentials, webhook routing, controlled checkout readiness, targeted migration deployment and an operational API remain required. The public API was last confirmed HTTP 402 DEPLOYMENT_DISABLED, and authenticated Google Cloud deployment access remains unavailable. No real store purchase or live tester acceptance is claimed from local tests. No billing switch, store listing, DNS/IAM or hosting setting was changed here.
 
 Rollback: before activation, revert the verifier and targeted function together. After activation, preserve all purchase history and financial records; revocations/expiry must use the verified store lifecycle. Do not delete production purchases or pretend that reverting code automatically revokes existing valid test terms.
+
+## Approved production migration — 2026-11-22
+
+After explicit owner approval, applied only `verified_store_tester_subscriptions` to MOVO production Supabase `cjsjmorqvuvvwbfyztiz`. Recorded version is **20261122064410**, corresponding to source file `20261122055847_verified_store_tester_subscriptions.sql`. Do not infer that a difference in source/runtime timestamps requires replaying the migration or any held migrations.
+
+Post-apply metadata queries confirm the exact tested function body, security-invoker mode, execution allowed for service_role and denied for authenticated/anon, tester-table RLS, and no new security advisories. The three #274 erasure/retention migrations remain unapplied. No existing financial or purchase rows were rewritten, no synthetic production tester grants were inserted, and no checkout flag, hosting/IAM/DNS or store configuration changed.
+
+The earlier automatic-review rejection did not execute SQL. This successful attempt followed the owner's explicit production-migration approval. The database capability is now deployed; the matching merged #333 backend handlers must also be served before Apple Sandbox acceptance is available. Restoring an old production-only deployment is insufficient. The billing API still returns HTTP 402 DEPLOYMENT_DISABLED. Live purchase/restore/renew/refund and second-device verification remain blocked by hosting and must not be represented as passed.
