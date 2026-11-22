@@ -30,16 +30,21 @@ module.exports = async function handler(req, res) {
       throw new Error("invalid_request");
     }
     const jws = event.data.signedTransactionInfo;
-    const { transaction: tx } = await decodeAppleTransaction(jws);
+    const { transaction: tx, environment } = await decodeAppleTransaction(jws);
+    if (event.data.environment !== (environment === "sandbox" ? "Sandbox" : "Production"))
+      throw new Error("invalid_request");
     const key = String(tx.originalTransactionId || "");
     if (!key) throw new Error("invalid_request");
     await S.lease(db, "apple", key, async (fence) => {
       const existing = await S.owner(db, "apple", key);
+      // A test event cannot create an unowned tombstone in the production identity namespace.
+      // The signed-in purchase/restore path claims and verifies test purchases first.
+      if (!existing && environment === "sandbox") return;
       const revoked = ["REFUND", "REVOKE"].includes(event.notificationType);
       let verified;
       if (existing)
         verified = revoked
-          ? appleEntitlement(tx, "production", existing.user_id)
+          ? appleEntitlement(tx, environment, existing.user_id)
           : await verifyApple(jws, existing.user_id);
       else {
         if (!revoked) throw new Error("iap_owner_unknown");

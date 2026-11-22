@@ -84,7 +84,7 @@ npm run ios:submission-check # holds public submission until real rights/store/d
 - **Before Google/Apple sign-in works in the app:** add `movo://auth-callback` to Supabase → Authentication → URL
   Configuration → Redirect URLs, and enable the Apple provider. Email codes work without this.
 - Paid plans must use Apple's In-App Purchase on iOS. MOVO includes a StoreKit purchase/restore flow, but `MOVO_STORE_BILLING_ENABLED` must stay disabled until signed TestFlight verification, App Store Connect products, notifications, entitlements and expiry/refund tests pass. Do not activate purchases using client-only plan status or bypass the server verification gate.
-- Apple TestFlight purchases are **Sandbox** purchases. MOVO's production receipt verifier and database entitlement commit intentionally reject Sandbox receipts and must not be loosened. Use a separately isolated staging backend/DB to exercise real Sandbox purchase-to-entitlement flows, or leave subscriptions unavailable until that test environment has been validated. A signed IPA alone is not a paid-billing acceptance test.
+- Apple TestFlight purchases are **Sandbox** purchases. The owner-requested verified-tester policy (2026-11-22) accepts genuine, Apple-verified Sandbox subscriptions and Google-verified license-test subscriptions for their bound MOVO account after the targeted billing migration is deployed. Test access follows store expiry/refunds, is never paid revenue and earns no paid-referral rewards. See [tester setup](commercial/STORE_BILLING_SETUP.md#verified-tester-subscriptions-2026-11-22). A signed IPA alone is not a real purchase acceptance test.
 
 ## Codemagic (phase 4)
 

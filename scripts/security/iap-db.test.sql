@@ -1,8 +1,9 @@
 \set ON_ERROR_STOP on
-insert into auth.users(id) values('11111111-1111-4111-8111-111111111111'),('22222222-2222-4222-8222-222222222222');
+insert into auth.users(id) values('11111111-1111-4111-8111-111111111111'),('22222222-2222-4222-8222-222222222222'),('33333333-3333-4333-8333-333333333333');
 set role service_role;
 do $$
 declare u uuid:='11111111-1111-4111-8111-111111111111'; other_user uuid:='22222222-2222-4222-8222-222222222222';
+ tester_user uuid:='33333333-3333-4333-8333-333333333333';
  v jsonb; f uuid; r jsonb; oldf uuid; key text:=repeat('a',64); linked text:=repeat('b',64); n integer;
 begin
  v:=jsonb_build_object('platform','google','storeSubscriptionKey',key,'purchaseTokenHash',key,'storeTransactionId','order1',
@@ -38,16 +39,17 @@ begin
  if not exists(select 1 from public.movo_iap_revocations where identity_key=repeat('c',64)) then raise exception 'TEST: missing predecessor tombstone'; end if;
  -- Atomic rollback: a failure must not mark the event processed.
  f:=public.movo_iap_acquire('google',linked);
- begin perform public.movo_iap_commit(u,v||'{"environment":"sandbox"}',f,'bad-env'); raise exception 'TEST: sandbox accepted'; exception when others then if sqlerrm<>'test_account_not_enabled' then raise; end if; end;
+ begin perform public.movo_iap_commit(u,v||'{"environment":"sandbox"}',f,'bad-env'); raise exception 'TEST: sandbox accepted'; exception when others then if sqlerrm<>'invalid_store_state' then raise; end if; end;
  if exists(select 1 from public.movo_iap_events where event_id='bad-env') then raise exception 'TEST: event survived rollback'; end if;
 
  -- Synthetic license-test account: service-role only; does not count as revenue.
- insert into public.movo_store_test_users(user_id) values(u);
+ if exists(select 1 from public.movo_store_test_users where user_id=u) then raise exception 'TEST: tester pre-enrolled'; end if;
  v:=jsonb_build_object('platform','google','storeSubscriptionKey',repeat('d',64),'purchaseTokenHash',repeat('d',64),
  'storeTransactionId','license-test-order','productId','com.nasrinai.movo.proplus.monthly','tier','pro_plus',
  'status','active','environment','sandbox','eventAt',now(),'expiresAt',now()+interval '1 hour',
  'paidVerified',true,'needsAcknowledgement',false);
  f:=public.movo_iap_acquire('google',repeat('d',64)); r:=public.movo_iap_commit(u,v,f,'license-verified');
+ if not exists(select 1 from public.movo_store_test_users where user_id=u) then raise exception 'TEST: verified tester not admitted'; end if;
  if r->>'environment'<>'sandbox' or r->>'status'<>'active' then raise exception 'TEST: sandbox receipt not stored'; end if;
  if not exists(select 1 from public.movo_store_entitlements where store_subscription_key=repeat('d',64)
     and environment='sandbox' and not paid_verified) then raise exception 'TEST: sandbox credited as revenue'; end if;
@@ -59,6 +61,36 @@ begin
  delete from public.movo_iap_leases;
  delete from public.movo_store_test_users where user_id=u;
  if public.movo_plan_status(u)->>'tier'<>'pro' then raise exception 'TEST: sandbox privilege survived allowlist removal'; end if;
+
+ -- Apple testers are admitted by a successful verified commit, without manual enrollment.
+ v:=jsonb_build_object('platform','apple','storeSubscriptionKey','apple-sandbox-original',
+ 'originalTransactionId','apple-sandbox-original','storeTransactionId','sandbox-tx-1',
+ 'productId','com.nasrinai.movo.proplus.monthly','tier','pro_plus','status','active',
+ 'environment','sandbox','eventAt',now(),'purchasedAt',now()-interval '1 minute',
+ 'expiresAt',now()+interval '1 hour','paidVerified',true);
+ f:=public.movo_iap_acquire('apple','apple-sandbox-original');
+ r:=public.movo_iap_commit(tester_user,v,f,'apple-sandbox-claimed');
+ if public.movo_plan_status(tester_user)->>'tier'<>'pro_plus' then raise exception 'TEST: Apple tester access missing'; end if;
+ if not exists(select 1 from public.movo_store_test_users where user_id=tester_user) then raise exception 'TEST: Apple tester not enrolled'; end if;
+ if exists(select 1 from public.movo_store_entitlements where user_id=tester_user and paid_verified) then raise exception 'TEST: test transaction counted as paid'; end if;
+ f:=public.movo_iap_acquire('apple','apple-sandbox-original');
+ begin perform public.movo_iap_commit(u,v,f,'apple-sandbox-stolen'); raise exception 'TEST: Apple test receipt transferred';
+ exception when others then if sqlerrm<>'purchase_already_linked' then raise; end if; end;
+ if exists(select 1 from public.movo_store_test_users where user_id=u) then raise exception 'TEST: failed claim admitted tester'; end if;
+ delete from public.movo_iap_leases;
+ f:=public.movo_iap_acquire('apple','apple-sandbox-original');
+ perform public.movo_iap_commit(tester_user,v||jsonb_build_object('status','expired','expiresAt',now()-interval '1 second'),f,'apple-sandbox-expired');
+ if (public.movo_plan_status(tester_user)->>'active')::boolean then raise exception 'TEST: expired test subscription retained access'; end if;
+ f:=public.movo_iap_acquire('apple','apple-sandbox-original');
+ perform public.movo_iap_commit(tester_user,v||jsonb_build_object('status','revoked'),f,'apple-sandbox-refund');
+ f:=public.movo_iap_acquire('apple','apple-sandbox-original');
+ r:=public.movo_iap_commit(tester_user,v,f,'apple-sandbox-restore-old');
+ if r->>'status'<>'revoked' then raise exception 'TEST: refunded test purchase resurrected'; end if;
+ f:=public.movo_iap_acquire('apple','apple-sandbox-original');
+ perform public.movo_iap_commit(tester_user,v||jsonb_build_object('storeTransactionId','sandbox-tx-2',
+   'purchasedAt',now(),'eventAt',now()+interval '1 second'),f,'apple-sandbox-new-renewal');
+ if public.movo_plan_status(tester_user)->>'tier'<>'pro_plus' then raise exception 'TEST: valid renewed test term missing'; end if;
+ if exists(select 1 from public.movo_referral_points_ledger where referred_id=tester_user and event_kind in ('paid_upgrade','invitee_paid')) then raise exception 'TEST: test purchase awarded paid referral'; end if;
 
  -- Apple revocation before registration survives replay; a genuinely later purchase can succeed.
  delete from public.movo_iap_leases;
@@ -96,3 +128,18 @@ begin
  if has_function_privilege('authenticated','public.movo_iap_commit(uuid,jsonb,uuid,text)','EXECUTE') then raise exception 'TEST: public RPC'; end if;
  raise notice 'PASS: leases, fencing, replay, revocation, linked tokens, atomic dedup, environment isolation, rate limit, grants';
 end $$;
+
+-- A second authenticated device reads the same server-owned tester entitlement.
+reset role;
+set role authenticated;
+select set_config('request.jwt.claim.sub','33333333-3333-4333-8333-333333333333',false);
+select set_config('request.jwt.claims','{"role":"authenticated"}',false);
+do $$begin
+ begin insert into public.movo_store_test_users(user_id) values('11111111-1111-4111-8111-111111111111'); raise exception 'TEST: client self-enrolled';
+ exception when insufficient_privilege then null; end;
+ if public.movo_plan_status()->>'tier'<>'pro_plus' then raise exception 'TEST: tester plan not readable by account on another device'; end if;
+ begin perform public.movo_plan_status('11111111-1111-4111-8111-111111111111'); raise exception 'TEST: foreign plan disclosed';
+ exception when insufficient_privilege then null; end;
+end$$;
+reset role;
+select set_config('request.jwt.claims','{"role":"service_role"}',false);

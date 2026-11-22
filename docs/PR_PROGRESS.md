@@ -1,3 +1,7 @@
+## 2026-11-22 — Owner-requested verified tester subscriptions
+
+Implement genuine Apple TestFlight/Sandbox and Google Play license-test access for the bound MOVO account, with automatic service-owned admission only after a successful fenced commit. Preserve expiry/refunds, account/environment isolation and zero paid-referral rewards. All 266 frontend suites / 1,771 tests, typecheck, strict bundle and isolated SQL/security/concurrency checks pass. Targeted billing migration and published-head hosted checks remain pending; API hosting is still independently blocked. No financial records or unrelated migrations changed. [Engineering and rollout](engineering/updates/2026-11-22-verified-tester-subscriptions.md).
+
 ## 2026-11-22 — All four source PRs merged; live recovery remains open
 
 #330 `c3e37d7c`, #331 `cfb83c51`, #291 `b55429d8` and #274 `ff9edc52` are merged after their applicable current-head checks passed. #274 passes all eight workflows, including both fresh-AVD acceptance steps; its merged tree equals tested `9a0d48d2`. Current JavaScript count is 1,767; 27 host harness tests pass. Historical failed attempts remain failures. Main post-merge iOS status is tracked separately. Public API 402, missing project-level stock key, Google Cloud authentication and balance reproduction remain unresolved. No destructive rollout or store publishing occurred. [Current execution handover](engineering/handovers/2026-11-22-source-merges-android-recovery.md).

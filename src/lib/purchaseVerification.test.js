@@ -8,10 +8,12 @@ describe('MOVO store purchase verification', () => {
   let googleOverrides;
   let verifiedEnvironments;
   let orderLookupFailure;
+  let appleEnvironment, appleServerEnvironment, appleSignatureValid, serverEnvironments;
 
   beforeEach(() => {
     jest.resetModules();
     googleOverrides={}; verifiedEnvironments=[]; orderLookupFailure=false;
+    appleEnvironment='Production'; appleServerEnvironment=null; appleSignatureValid=true; serverEnvironments=[];
     process.env.APPLE_ROOT_CERTS_BASE64 = 'Y2VydA==';
     process.env.APPLE_APP_ID = '123456789';
     process.env.APPLE_IAP_SIGNING_KEY='test-key'; process.env.APPLE_IAP_KEY_ID='test-id'; process.env.APPLE_IAP_ISSUER_ID='test-issuer';
@@ -31,10 +33,18 @@ describe('MOVO store purchase verification', () => {
     };
     jest.doMock('@apple/app-store-server-library', () => ({
       Environment: { PRODUCTION: 'Production', SANDBOX: 'Sandbox' },
-      AppStoreServerAPIClient: class { async getTransactionInfo() { return { signedTransactionInfo: 'current-server-jws' }; } },
+      AppStoreServerAPIClient: class { constructor(_key,_id,_issuer,_bundle,environment){serverEnvironments.push(environment);} async getTransactionInfo() { return { signedTransactionInfo: 'current-server-jws' }; } },
       SignedDataVerifier: class {
-        constructor(roots,online,environment){verifiedEnvironments.push(environment);}
-        async verifyAndDecodeTransaction() { return applePayload; }
+        constructor(roots,online,environment){this.environment=environment;verifiedEnvironments.push(environment);}
+        async verifyAndDecodeTransaction(jws) {
+          const expected=jws==='current-server-jws' ? appleServerEnvironment || appleEnvironment : appleEnvironment;
+          if(!appleSignatureValid || this.environment!==expected)throw Error('invalid signed environment');
+          return applePayload;
+        }
+        async verifyAndDecodeNotification(){
+          if(!appleSignatureValid || this.environment!==appleEnvironment)throw Error('invalid signed environment');
+          return {notificationUUID:'test-event',notificationType:'TEST',data:{bundleId:applePayload.bundleId,environment:appleEnvironment}};
+        }
       },
     }));
     jest.doMock('googleapis', () => ({
@@ -156,6 +166,34 @@ describe('MOVO store purchase verification', () => {
   test('never falls back to the Apple Sandbox verifier', async()=>{
     await verifyApple('signed',userId);
     expect(verifiedEnvironments.every(e=>e==='Production')).toBe(true);
+    expect(serverEnvironments).toEqual(['Production']);
+  });
+  test('verified Apple Sandbox purchases use the Sandbox server and never earn paid rewards', async()=>{
+    appleEnvironment='Sandbox'; applePayload.price=1000;
+    expect(await verifyApple('sandbox-jws',userId)).toMatchObject({environment:'sandbox',status:'active',paidVerified:false});
+    expect(serverEnvironments).toEqual(['Sandbox']);
+    expect(verifiedEnvironments).toContain('Sandbox');
+  });
+  test('Sandbox verification still rejects forged, foreign-account and mixed-environment receipts', async()=>{
+    appleEnvironment='Sandbox'; appleSignatureValid=false;
+    await expect(verifyApple('forged',userId)).rejects.toThrow('apple_transaction_verification_failed');
+    appleSignatureValid=true; applePayload.appAccountToken=appAccountTokenForUser('other');
+    await expect(verifyApple('sandbox',userId)).rejects.toThrow('purchase_account_mismatch');
+    applePayload.appAccountToken=appAccountTokenForUser(userId); appleServerEnvironment='Production';
+    await expect(verifyApple('sandbox',userId)).rejects.toThrow('invalid_apple_transaction');
+  });
+  test('Sandbox subscriptions expire and revoke using Apple evidence', async()=>{
+    appleEnvironment='Sandbox'; applePayload.expiresDate=Date.now()-1000;
+    expect(await verifyApple('sandbox',userId)).toMatchObject({environment:'sandbox',status:'expired',paidVerified:false});
+    applePayload.expiresDate=Date.now()+86400000;applePayload.revocationDate=Date.now();
+    expect((await verifyApple('sandbox',userId)).status).toBe('revoked');
+  });
+  test('signed Sandbox notifications are accepted while forged notifications fail', async()=>{
+    appleEnvironment='Sandbox';
+    const {verifyAppleNotification}=require('../../api/lib/purchaseVerification');
+    expect((await verifyAppleNotification('signed')).data.environment).toBe('Sandbox');
+    appleSignatureValid=false;
+    await expect(verifyAppleNotification('forged')).rejects.toThrow('apple_notification_verification_failed');
   });
   test.each(['SUBSCRIPTION_STATE_PENDING','SUBSCRIPTION_STATE_PENDING_PURCHASE_CANCELED','SUBSCRIPTION_STATE_PAUSED','SUBSCRIPTION_STATE_ON_HOLD','SUBSCRIPTION_STATE_EXPIRED'])('does not grant access for %s',async state=>{
     googleOverrides.subscriptionState=state;

@@ -732,3 +732,5 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 
 
 2026-11-22 — All four formerly open source PRs merged after current-head checks: #330 `c3e37d7c`, #331 `cfb83c51`, #291 `b55429d8`, #274 `ff9edc52`. Preserve exact Android fresh-AVD visual evidence and publish the [current handover](handovers/2026-11-22-source-merges-android-recovery.md). Live API recovery, licensed stock configuration, authenticated Google Cloud access and the user balance example remain open. Production migration history is unchanged; destructive switches remain off and no store upload occurred.
+
+2026-11-22 — Owner-requested verified tester subscriptions: accept genuine Apple Sandbox evidence and matching Server API state; atomically admit verified Apple/Google testers through service-only receipt commit while retaining account/environment/refund/expiry/referral safeguards. Local 1,771 frontend tests, strict build, typecheck and isolated SQL/security/concurrency checks pass; targeted production rollout and hosted checks remain pending. [Record](updates/2026-11-22-verified-tester-subscriptions.md).

@@ -36,7 +36,7 @@ function appleVerifierConfig() {
 async function decodeAppleTransaction(jws) {
   if (!jws || typeof jws !== 'string' || jws.length > 20000) throw new Error('invalid_apple_transaction');
   const config = appleVerifierConfig();
-  for (const candidate of [config.Environment.PRODUCTION]) {
+  for (const candidate of [config.Environment.PRODUCTION, config.Environment.SANDBOX]) {
     if (candidate === config.Environment.PRODUCTION && (!Number.isFinite(config.appAppleId) || config.appAppleId <= 0)) continue;
     try {
       const verifier = new config.SignedDataVerifier(
@@ -59,7 +59,7 @@ async function decodeAppleTransaction(jws) {
 async function verifyAppleNotification(signedPayload) {
   if (!signedPayload || typeof signedPayload !== 'string' || signedPayload.length > 100000) throw new Error('invalid_apple_notification');
   const config = appleVerifierConfig();
-  for (const candidate of [config.Environment.PRODUCTION]) {
+  for (const candidate of [config.Environment.PRODUCTION, config.Environment.SANDBOX]) {
     if (candidate === config.Environment.PRODUCTION && (!Number.isFinite(config.appAppleId) || config.appAppleId <= 0)) continue;
     try {
       const verifier = new config.SignedDataVerifier(
@@ -113,7 +113,7 @@ function appleEntitlement(transaction, environment, userId) {
   return {
     eventAt: new Date(transaction.signedDate).toISOString(),
     purchasedAt: new Date(transaction.purchaseDate).toISOString(),
-    paidVerified: transaction.offerDiscountType !== 'FREE_TRIAL' && Number(transaction.price) > 0,
+    paidVerified: environment === 'production' && transaction.offerDiscountType !== 'FREE_TRIAL' && Number(transaction.price) > 0,
     platform: 'apple',
     productId: transaction.productId,
     tier: product.tier,
