@@ -9490,3 +9490,15 @@ html.ios-interface.native-chrome .movo-app.movo-app.movo-app.movo-app .screen > 
 .ios-interface .movo-app .qa-button { overflow-wrap: anywhere; }
 .ios-interface .movo-app .menu-row:has(> .toggle) { flex-wrap: wrap; }
 .ios-interface .movo-app .menu-row:has(> .toggle) > .menu-main { flex: 1 1 10em; }
+
+/* =====================================================================
+   Foldables, tabletop posture (2026-11-22): a phone half-folded with the
+   hinge across the screen (Galaxy Z Flip/Fold "Flex mode"). Content stays
+   on the upper half; sheets and forms open on the lower half so nothing
+   is typed or tapped across the fold.
+   ===================================================================== */
+@media (vertical-viewport-segments: 2) {
+  .movo-app.layout-dual .sheet-backdrop { align-items: flex-end; padding-top: env(viewport-segment-top 0 1, 50vh); }
+  .movo-app.layout-dual .sheet { max-height: calc(100vh - env(viewport-segment-top 0 1, 50vh)); border-radius: 22px 22px 0 0; }
+  .movo-app.layout-dual .toast { bottom: calc(100vh - env(viewport-segment-bottom 0 0, 50vh) + 16px); }
+}
