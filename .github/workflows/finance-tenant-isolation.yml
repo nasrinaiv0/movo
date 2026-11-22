@@ -44,7 +44,7 @@ jobs:
           test -n "${MOVO_TEST_PG_CONTAINER:?Postgres service is missing}"
           client_dir="${RUNNER_TEMP}/movo-pg-client"
           mkdir -p "$client_dir"
-          for client in psql createdb dropdb; do
+          for client in psql createdb dropdb pg_dump pg_restore; do
             cat > "$client_dir/$client" <<'SH'
           #!/usr/bin/env bash
           set -euo pipefail
@@ -54,7 +54,9 @@ jobs:
           done
           "$client_dir/psql" -h 127.0.0.1 -p 5432 -U postgres -d postgres -X -v ON_ERROR_STOP=1 -Atqc 'SELECT 1' | grep -qx '1'
           printf '%s\n' "$client_dir" >> "$GITHUB_PATH"
-      - name: Run migrations and cross-account authorization against disposable localhost DB
+      - name: Verify staged migration and synthetic rollback safety contracts
+        run: python3 scripts/test-pr274-migration-plan.py
+      - name: Run migrations, old-app compatibility, retention and snapshot restore against disposable database
         env:
           MOVO_TEST_PGHOST: 127.0.0.1
           MOVO_TEST_PGPORT: "5432"

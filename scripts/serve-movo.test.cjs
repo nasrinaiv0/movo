@@ -110,3 +110,23 @@ test('the real existing routes retain purchase gating and authorization without 
     for (const target of Object.values(ROUTES)) assert.equal(typeof require(path.join(__dirname, '../api', target)), 'function');
   } finally { if (saved === undefined) delete process.env.MOVO_STORE_BILLING_ENABLED; else process.env.MOVO_STORE_BILLING_ENABLED = saved; }
 });
+
+test('portable account clear/delete and retention remain inert without explicit rollout activation', async () => {
+  const saved = [process.env.MOVO_ACCOUNT_ERASURE_ENABLED, process.env.MOVO_DATA_RETENTION_ENABLED];
+  delete process.env.MOVO_ACCOUNT_ERASURE_ENABLED; delete process.env.MOVO_DATA_RETENTION_ENABLED;
+  try {
+    await fixture(async base => {
+      for (const route of ['clear', 'delete']) {
+        const response = await fetch(base + '/api/account/' + route, { method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer synthetic-disabled-rollout' }, body: JSON.stringify({ confirm: 'DELETE' }) });
+        assert.equal(response.status, 503);
+        assert.deepEqual(await response.json(), { error: 'account_erasure_unavailable' });
+      }
+      assert.equal((await fetch(base + '/api/account/retention')).status, 503);
+    });
+  } finally {
+    for (const [index, name] of ['MOVO_ACCOUNT_ERASURE_ENABLED', 'MOVO_DATA_RETENTION_ENABLED'].entries()) {
+      if (saved[index] === undefined) delete process.env[name]; else process.env[name] = saved[index];
+    }
+  }
+});

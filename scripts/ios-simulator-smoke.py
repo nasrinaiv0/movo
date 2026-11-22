@@ -66,7 +66,14 @@ def choose_iphone(simulator_json):
 
 
 
-def launch_with_cold_boot_retry(device_id, *, runner=run_command, sleeper=time.sleep):
+def recover_stalled_simulator(device_id, *, runner=run_command):
+    """Restart the selected disposable simulator without erasing installed data."""
+    runner(["xcrun", "simctl", "shutdown", device_id], timeout=90)
+    runner(["xcrun", "simctl", "boot", device_id], timeout=90)
+    runner(["xcrun", "simctl", "bootstatus", device_id, "-b"], timeout=450)
+
+
+def launch_with_cold_boot_retry(device_id, *, runner=run_command, sleeper=time.sleep, recovery=None):
     """Cold restart the disposable CI simulator after one launch timeout.
 
     A booted simulator can retain stuck launch services after first-boot migration;
@@ -85,9 +92,10 @@ def launch_with_cold_boot_retry(device_id, *, runner=run_command, sleeper=time.s
                 raise
             print("::warning::CoreSimulator launch timed out on first attempt; "
                   "cold restarting the disposable simulator before one final launch.", flush=True)
-            runner(["xcrun", "simctl", "shutdown", device_id], timeout=90)
-            runner(["xcrun", "simctl", "boot", device_id], timeout=90)
-            runner(["xcrun", "simctl", "bootstatus", device_id, "-b"], timeout=450)
+            if recovery is None:
+                recover_stalled_simulator(device_id, runner=runner)
+            else:
+                recovery(device_id)
             sleeper(15)
     raise SmokeFailure("Simulator launch did not complete")
 

@@ -1,8 +1,14 @@
 # MOVO
 
-The remaining encryption/erasure source merges are waiting for complete paired Android emulator acceptance. Native builds and iOS pass for #291; emulator disappearance remains a failed check with additional diagnostic capture. No production activation is inferred.
+#274 is held after candidate emulator disappearance in both attempts. Its seven other checks and 1,767 JavaScript tests pass. Paired validation now gives each compiler output a fresh, identically configured AVD; all 27 host tests pass and new-head native acceptance is required. Live API hosting and stock credentials remain unresolved.
 
-Source merges #330 (`c3e37d7c`) and #331 (`cfb83c51`) are complete. The remaining encryption/erasure candidates are integrating their current owner/session guards and selective cleanup before source merge. Selected encryption covers wallet/workspace/outbox/QR data; preserved recovery and explicit limitations remain. Production hosting, unapplied migrations and signed-device/store activation are still separately gated.
+[Android build 21 recovery](docs/engineering/updates/2026-11-22-android-build21-service-recovery.md): API hosting failure is distinct from connectivity. Device-copy labels and denial classification are corrected; live services, balance reproduction and final native validation remain pending.
+
+#291 is merged as `b55429d8` after all eight checks passed. #274 integrates that released main and remains pending emulator acceptance and the Android build 21 follow-up. Public API hosting still returns 402; production features have not been restored.
+
+The remaining encryption/erasure source merges are waiting for complete paired Android emulator acceptance. Emulator disappearance remains a failed check with continuous pre-failure diagnostic capture. No production activation is inferred.
+
+MOVO combines the audited owner/import/iOS safeguards, development-tool patches and selected wallet/workspace/outbox/QR encryption, while preserving account IDs, financial fields/math and the React/Supabase/Capacitor structure. Server erasure and retention default to disabled pending separately approved migrations and activation. [Source consolidation and validation](docs/engineering/updates/2026-11-21-combined-erasure-owner-encryption.md) records the owner-directed merge sequence; production hosting and signed-device/store evidence remain separate release gates.
 #330's audited owner/import/iOS/hosting-preparation fixes are merged into main (`c3e37d7c`). The owner-directed draft merge sequence is integrating the remaining development-tool, encryption and erasure branches with fresh combined checks. Production hosting, unapplied migrations and signed-device/store activation remain separately gated; merging source does not establish a live deployment.
 
 The [November 21 full audit](docs/audits/2026-11-21-full-movo-audit.md) reproduces and fixes account-switch backup restoration, import routing/cents/calendar errors, unsafe totals and adaptive control issues in #330. Local verification passes 1,704 tests; production hosting, remaining migrations, signed-device and store evidence still gate release. Existing architecture and financial structures are preserved.
@@ -17,6 +23,7 @@ The iOS candidate now connects Dynamic Type, semantic system surfaces and access
 
 The [PR #329 follow-up audit](docs/audits/2026-11-20-pr329-remediation-review.md) records owner-safe cleanup, financial-entry and localized-navigation fixes in #330, plus dependency hardening in #331. Current production returns HTTP 402 DEPLOYMENT_DISABLED; hosted acceptance and release remain blocked. Existing architecture and financial formats are preserved.
 Build-tool security remediation and its remaining release gates are recorded in [the November 20 engineering update](docs/engineering/updates/2026-11-20-build-tool-security.md). This candidate does not change application structures or production dependencies.
+The owner-directed draft source merge keeps #274's erasure and retention endpoints disabled by default. Their separately approved database rollout and explicit server activation remain necessary; merging source does not activate destructive production behavior or establish store acceptance. See [rollout safeguards](docs/engineering/updates/2026-11-21-inert-erasure-retention-rollout.md).
 
 MOVO is a financial-tracking web app prototype with a calm, iOS-inspired interface.
 

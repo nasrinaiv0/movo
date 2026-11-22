@@ -1,4 +1,4 @@
--- Run after applying 20261101120000_bills_payments.sql in a test project (as a superuser / SQL editor).
+-- Run after applying the repository migrations to a disposable test database.
 -- Everything runs inside one transaction and is rolled back.
 begin;
 do $$
@@ -22,10 +22,15 @@ begin
   end if;
 
   insert into auth.users (id, email) values (a, a || '@example.test'), (b, b || '@example.test');
+  perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  insert into public.movo_manual_plan_grants(user_id, tier, expires_at, reason)
+  values (a, 'pro', now() + interval '1 day', 'synthetic test'),
+         (b, 'pro', now() + interval '1 day', 'synthetic test');
   insert into public.financial_accounts (user_id, name, account_type, currency, opening_balance) values (a, 'Bank', 'bank', 'PHP', 10000) returning id into acct;
   insert into public.financial_accounts (user_id, name, account_type, currency, opening_balance) values (a, 'USD', 'bank', 'USD', 100) returning id into usd_acct;
   insert into public.financial_accounts (user_id, name, account_type, currency, opening_balance) values (b, 'B bank', 'bank', 'PHP', 500) returning id into card;
 
+  perform set_config('request.jwt.claim.sub', a::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   set local role authenticated;
   insert into public.financial_bills (user_id, name, category, amount, amount_type, currency, frequency, first_due_date)
@@ -76,6 +81,7 @@ begin
 
   -- User b sees none of a's bills and cannot pay them.
   reset role;
+  perform set_config('request.jwt.claim.sub', b::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
   set local role authenticated;
   if (select count(*) from public.financial_bills) <> 0 or (select count(*) from public.bill_occurrences) <> 0 or (select count(*) from public.bill_payments) <> 0 then

@@ -1,5 +1,9 @@
 # MOVO Master Change Ledger
 
+## 2026-11-21 — Combined source consolidation without destructive activation
+
+#330 (`c3e37d7c`) and #331 (`cfb83c51`) are merged. The final #274 candidate includes current #291 encryption/owner/restore and R8 safeguards, preserves selective cleanup and native/privacy declarations, and keeps server erasure/retention inert by default. Combined JavaScript regression: 267 suites / 1,766 tests, typecheck, 25 Node / 24 Python checks and strict original-only packaging pass. Run the five server activation tests explicitly in CI rather than changing frontend type exclusions. Require current-head hosted/native acceptance and #291-first source merge; production migrations and signed store/device/host activation remain separate. [Engineering](updates/2026-11-21-combined-erasure-owner-encryption.md).
+
 ## 2026-11-21 — #291 validates released build-tool/audit main
 
 Final integration includes main `cfb83c51`: fresh locked install, 265 suites / 1,746 tests, typecheck and 24 Node checks pass. Existing strict source-profile bundle and fresh browser encryption/migration/reload/key-loss checks pass; final clean-graph/hosted/native checks remain pending at this record. The owner-directed source merge leaves production host/migration/store activation separate. [Engineering](updates/2026-11-21-encryption-owner-integration.md).
@@ -55,6 +59,9 @@ Pinned patched development-only transitive packages without replacing Create Rea
 
 Node 26.13.1: clean install, full build (including offline-worker, localization and email checks), type checking and 252 suites / 1,644 tests pass. New compatibility regressions exercise actual serializer, UUID undersized buffers, SockJS and JSONPath contracts. Hosted checks remain pending; Vercel reports the account blocked. See [engineering record](updates/2026-11-20-build-tool-security.md).
 
+## 2026-11-21 — Source merge without destructive activation
+
+#274 now requires exact server-only activation for erasure and retention. Defaults return 503 before private storage, user freeze or database work, including with a valid cron secret. Fourteen focused regressions pass; retain production migration approval and validate the combined encryption/owner tree before merge. [Engineering](updates/2026-11-21-inert-erasure-retention-rollout.md). No production data, schema, settings or store action.
 
 ## 2026-11-09 — Vercel Sandbox access restored; PR #247 verification
 
@@ -715,4 +722,10 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 - PR #227 follow-up: native phone-automation API device key moved out of the mirrored general preferences JSON into device-only Keychain/Keystore, with write-before-delete migration, failed-vault protections, safe rotation and regression tests. Documentation: docs/engineering/updates/2026-11-06-native-session-hardening.md
 
 
-2026-11-21 — Preserve continuous pinned-device logcat, host kernel and disposable emulator crash evidence before the unresolved paired R8 failure; 25 host tests pass. No app runtime, production activation or acceptance relaxation. See [integration evidence](updates/2026-11-21-encryption-owner-integration.md).
+2026-11-21 — Carry identical continuous emulator/host crash diagnostics into the combined erasure/encryption candidate; 25 host tests pass. Source merge remains pending paired acceptance and released-main integration.
+
+2026-11-22 — Integrate released #291 main `b55429d8` into #274, preserving all 2,404 compared source/config/test fingerprints. New Android build 21 bug report and failed #274 paired emulator acceptance remain active work; public API 402 is independently confirmed.
+
+2026-11-22 — Android build 21 follow-up distinguishes disabled API hosting from device connectivity; correct device-copy UI and preserve server denials under stale offline hints. Fifty focused tests and typecheck pass; production service recovery and balance reproduction remain pending. [Evidence](updates/2026-11-22-android-build21-service-recovery.md).
+
+2026-11-22 — Isolate paired R8 compiler outputs in separately created, identically configured AVDs after both `65f63b83` attempts lose the candidate emulator. Preserve all acceptance and process-persistence gates; 27 host tests pass. Confirm signed build 21 source and missing project-level stock provider key in the [recovery handover](updates/2026-11-22-android-build21-service-recovery.md).

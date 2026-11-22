@@ -21,7 +21,7 @@ let providerError;
 
 beforeEach(() => {
   originalEnv = process.env;
-  process.env = { ...process.env, SUPABASE_URL: 'https://auth.example', SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'service' };
+  process.env = { ...process.env, SUPABASE_URL: 'https://auth.example', SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'service', MOVO_ACCOUNT_ERASURE_ENABLED: 'true' };
   work = [];
   failTable = '';
   providerError = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -34,10 +34,11 @@ beforeEach(() => {
       list: async prefix => ({ data: prefix === OWNER ? [{ name: `${bucket}.jpg`, id: 'file' }] : [] }),
       remove: async paths => { work.push(['storage', bucket, paths]); return {}; },
     }) },
-    from: table => ({ delete: () => ({ eq: async (column, value) => {
-      work.push([table, column, value]);
-      return failTable === table ? { error: { message: `Error for ${OWNER}/private.jpg` } } : {};
-    } }) }),
+    from: table => ({ upsert: async row => { work.push(['freeze', table, row.user_id]); return {}; } }),
+    rpc: async (name, args) => {
+      work.push(['rpc', name, args]);
+      return failTable === name ? { error: { message: `Error for ${OWNER}/private.jpg` } } : {};
+    },
     auth: { admin: { deleteUser: async owner => { work.push(['auth', owner]); return {}; } } },
   });
 });
@@ -47,28 +48,27 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-test('deletes only verified-owner storage and financial-account blockers before Auth deletion', async () => {
+test('deletes only verified-owner storage before the atomic owner-bound relational/Auth erasure', async () => {
   const res = response();
   await handler({ method: 'POST', headers: { authorization: 'Bearer valid-token' }, body: { confirm: 'DELETE', userId: OTHER_OWNER } }, res);
   expect(res.statusCode).toBe(200);
   expect(res.body).toEqual({ deleted: true });
   expect(work).toEqual([
+    ['freeze', 'movo_account_erasure_requests', OWNER],
     ['storage', 'movo-account-qrs', [`${OWNER}/movo-account-qrs.jpg`]],
     ['storage', 'movo-receipts', [`${OWNER}/movo-receipts.jpg`]],
-    ['scheduled_transactions', 'user_id', OWNER],
-    ['transactions', 'user_id', OWNER],
-    ['auth', OWNER],
+    ['rpc', 'movo_finish_account_erasure', { p_user_id: OWNER }],
   ]);
 });
 
 test('stops on an owner row cleanup failure and leaves provider details out of logs', async () => {
-  failTable = 'scheduled_transactions';
+  failTable = 'movo_finish_account_erasure';
   const res = response();
   await handler({ method: 'POST', headers: { authorization: 'Bearer valid-token' }, body: { confirm: 'DELETE' } }, res);
   expect(res.statusCode).toBe(500);
   expect(res.body).toEqual({ error: 'delete_failed' });
-  expect(work.map(([type]) => type)).toEqual(['storage', 'storage', 'scheduled_transactions']);
-  expect(providerError).toHaveBeenCalledWith('[movo-account] delete failed', { stage: 'delete_scheduled_transactions' });
+  expect(work.map(([type]) => type)).toEqual(['freeze', 'storage', 'storage', 'rpc']);
+  expect(providerError).toHaveBeenCalledWith('[movo-account] erasure failed', { stage: 'finish_account_erasure' });
 });
 
 test('never touches account records for an invalid token', async () => {

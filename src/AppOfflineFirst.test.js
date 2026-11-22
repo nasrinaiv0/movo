@@ -271,7 +271,7 @@ describe('offline-first with Cloud Sync on', () => {
     await click(container, 'Loans & debts');
     await waitFor(() => container.textContent.includes('Car loan'), 'the loan offline');
     expect(container.textContent).not.toContain('Sign in to manage your financial records');
-    expect(container.textContent).toContain('You’re offline. These are your records as last synced');
+    expect(container.textContent).toContain('Changes are kept on this device until safely reconciled.');
     expect(container.querySelector('.sub-header button[aria-label="Add"], header button[aria-label="Add"]')).toBeNull();
   });
 

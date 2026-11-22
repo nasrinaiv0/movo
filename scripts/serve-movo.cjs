@@ -10,6 +10,7 @@ const ROUTES = Object.freeze({
   '/api/log': 'log.js', '/api/crypto': 'crypto.js', '/api/stocks': 'stocks.js',
   '/api/download': 'download.js', '/api/friends': 'friends/index.js', '/api/owner': 'owner/index.js',
   '/api/social-links': 'social-links.js', '/api/account/delete': 'account/delete.js',
+  '/api/account/clear': 'account/clear.js', '/api/account/retention': 'account/retention.js',
   '/api/nasrinai/chat': 'nasrinai/chat.js', '/api/receipts/scan': 'receipts/scan.js',
   ...Object.fromEntries(['apple-notifications', 'google-notifications', 'config', 'entitlements',
     'retry-acknowledgements', 'trial', 'verify'].map(name => ['/api/purchases/' + name, 'purchases/' + name + '.js'])),

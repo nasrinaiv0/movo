@@ -43,5 +43,7 @@ jobs:
         run: npm test -- --runInBand src/lib/i18n.test.js
       - name: Full regression suite
         run: npm test -- --runInBand
+      - name: Server retention activation contracts
+        run: npm test -- --runInBand --roots api --testMatch '**/*.test.js' --runTestsByPath api/account/retention.test.js
       - name: Production build
         run: node scripts/validate-public-api-origin.cjs && CI=true npx react-scripts build && node scripts/build-offline-worker.cjs

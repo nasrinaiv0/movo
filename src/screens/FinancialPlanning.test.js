@@ -48,6 +48,17 @@ test('signed in: shows the position, opens a section from At a glance and record
   act(() => root.unmount()); el.remove();
 });
 
+test('an online device using saved records does not claim the internet is offline or enable cloud writes', async () => {
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  Object.defineProperty(window.navigator, 'onLine', { value: true, configurable: true });
+  await act(async () => root.render(<FinancialPlanning c={{ cloudMode: false, deviceCopyAccess: true, base: 'PHP', show: true, accountsView: accounts, toBase: (v) => v, go: jest.fn() }} />));
+  expect(el.querySelector('.fp-offline').textContent).toBe('Changes are kept on this device until safely reconciled.');
+  expect(el.textContent).not.toContain('You’re offline');
+  expect(el.querySelector('button[aria-label="Add"]')).toBeNull();
+  act(() => root.unmount()); el.remove();
+});
+
 test('signed out: shows the position from accounts and a sign-in prompt, without loading cloud records', async () => {
   const el = document.createElement('div'); document.body.appendChild(el);
   const root = createRoot(el);

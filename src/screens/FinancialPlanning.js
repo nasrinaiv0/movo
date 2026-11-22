@@ -154,7 +154,7 @@ export default function FinancialPlanning({ c }) {
     {hero}
     {plansAndLimits}
     <Chips items={TABS.map(([k, l]) => ({ key: k, label: tr(l), dot: k === 'bills' && bills.overdueCount > 0 }))} value={tab} onChange={pick} label={tr('Financial planning sections')} />
-    {p.offline && <p className="form-hint fp-offline" role="status">{tr('You’re offline. These are your records as last synced; changes are available again when you’re back online.')}</p>}
+    {p.offline && <p className="form-hint fp-offline" role="status">{tr('Changes are kept on this device until safely reconciled.')}</p>}
     {(error || p.error) && <div className="app-alert" role="alert"><span>{error || tr(p.error)}</span>{p.error && <button type="button" className="link-button" aria-label="↻" onClick={() => p.reload()}>↻</button>}</div>}
     {notice && <p className="form-note fp-notice" role="status">{notice}</p>}
 

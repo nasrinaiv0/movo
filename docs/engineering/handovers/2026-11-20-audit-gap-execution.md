@@ -2,6 +2,12 @@
 
 Execute against live repository and deployment state. The screenshot and original November 20 audit are historical evidence, not current PR or schema status. Preserve the original audit at `docs/audits/2026-11-20-full-movo-product-audit.md`.
 
+## Owner-directed source consolidation — November 21
+
+The owner explicitly requested merging all draft PRs. #330 merged as `c3e37d7c`; #331 as `cfb83c51` after applicable current-head checks passed. #291 now integrates the current owner/restore/selective-cleanup safeguards with encryption; the #274 candidate contains that combined source and must merge after #291 with a verified prospective merge tree. See [combined engineering and validation](../updates/2026-11-21-combined-erasure-owner-encryption.md). Current source passes combined 1,766 JavaScript tests, typecheck, 25 Node / 24 Python checks and strict original-only packaging; fresh published-head hosted/native checks remain mandatory.
+
+This newer source-merge instruction supersedes historical draft/source merge holds. It does not approve #274's production migrations, retention trigger/data pruning, storage freeze or erasure activation. Both new server features default to disabled; public retention/erasure endpoints return 503 before destructive work. Production history remains at #328 as catalog-verified after the source merges. Keep rollout switches off until separate approval, migration rehearsal/application and disposable-account acceptance. Hosting/provider and signed-device/store evidence gates remain separate. No production records, database, server settings, IAM/DNS or store record were changed here.
+
 ## Fresh full audit — November 21
 
 Start with the [new full audit](../../audits/2026-11-21-full-movo-audit.md) and [remediation record](../updates/2026-11-21-full-audit-remediation.md). #330 now also guards asynchronous backup restore against account/generation changes, fixes financial import routing/cents/calendar validation and unsafe totals, reflows text-sized settings choices and handles bounded verified-emulator ADB restart disconnects. Preserve these guards when integrating #330 into #291/#274. Local verification: 1,704 tests, typecheck, 24 Node / 23 Python checks, strict builds, 27 fresh browser observations and real-worker outage recovery. At `f2aa4587`, seven hosted workflows passed and paired R8 failed at ADB root before instrumentation; new-head hosted checks are required. Do not reuse old device/preview status as current acceptance.
