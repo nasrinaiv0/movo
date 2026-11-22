@@ -43,7 +43,8 @@ export default function AriesMascot({ state, pose = 'home', size = 120, classNam
     document.addEventListener('visibilitychange', update);
     update();
     return () => { observer?.disconnect(); document.removeEventListener('visibilitychange', update); };
-  }, []);
+    // The SVG remounts per expression (key), so observe the new node each time.
+  }, [resolvedState]);
 
   const markup = useMemo(() => ({ __html: ariesInner(resolvedState, {
     idPrefix: id, animated: motion, decorative: true, pose,
@@ -51,7 +52,8 @@ export default function AriesMascot({ state, pose = 'home', size = 120, classNam
   const classes = ['aries-mascot', `pose-${pose}`, 'aries', `aries--${resolvedState}`, motion ? 'is-animated' : '',
     walking ? 'aries--walking' : '', active ? '' : 'is-paused', className].filter(Boolean).join(' ');
 
-  return <svg ref={host} className={classes} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" fill="none"
+  // Keyed on the expression so each change replays the short settle-in motion.
+  return <svg key={resolvedState} ref={host} className={classes} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" fill="none"
     width={size} height={size} style={{ width: size, height: 'auto' }} data-state={resolvedState} data-motion={motion ? 'animated' : 'still'}
     role={label ? 'img' : undefined} aria-label={label ? tr(label) : undefined} aria-hidden={label ? undefined : true}
     focusable="false" dangerouslySetInnerHTML={markup} />;

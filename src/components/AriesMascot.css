@@ -67,3 +67,35 @@
 @media (prefers-reduced-motion:reduce) {
   .aries-mascot * { animation:none!important; transition:none!important; }
 }
+
+/* =====================================================================
+   Aries personality (2026-11-22). Calm, ease-out, no overshoot:
+   - every expression settles in when it changes (the SVG is keyed on state);
+   - idle "taunts" per mood move only the head and arms, so the Home feet
+     stay planted on the balance card;
+   - Home gets a one-time hero entrance (RamMascot adds .is-hero-in).
+   All of it stops under prefers-reduced-motion (rules above).
+   ===================================================================== */
+.aries-mascot.is-animated { animation: aries-settle .55s cubic-bezier(.22,1,.36,1) both; }
+.aries--welcome.is-animated .aries-head { animation: aries-look 7.5s cubic-bezier(.45,0,.25,1) .6s infinite; }
+.aries--happy.is-animated .aries-head { animation: aries-nod 2.8s cubic-bezier(.45,0,.25,1) .6s infinite; }
+.aries--sad.is-animated .aries-head { animation: aries-droop 5.6s cubic-bezier(.45,0,.25,1) .7s infinite; }
+.aries--angry.is-animated .aries-head { animation: aries-huff 4.4s cubic-bezier(.45,0,.25,1) .5s infinite; }
+.aries--angry.is-animated .aries-arm-left { animation: aries-pump-left 4.4s cubic-bezier(.45,0,.25,1) .5s infinite; }
+.aries--angry.is-animated .aries-arm-right { animation: aries-pump-right 4.4s cubic-bezier(.45,0,.25,1) .5s infinite; }
+.aries--sad.is-animated .aries-arm-left { animation: aries-sad-arm-left 5.6s cubic-bezier(.45,0,.25,1) .7s infinite; }
+.aries--sad.is-animated .aries-arm-right { animation: aries-sad-arm-right 5.6s cubic-bezier(.45,0,.25,1) .7s infinite; }
+@keyframes aries-settle { from { opacity: .4; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes aries-look { 0%,100% { transform: none; } 22%,40% { transform: rotate(-3.5deg) translateX(-1px); } 58%,76% { transform: rotate(3deg) translateX(1px); } }
+@keyframes aries-nod { 0%,100% { transform: rotate(-5deg); } 50% { transform: translateY(-3px) rotate(-3deg); } }
+@keyframes aries-droop { 0%,100% { transform: rotate(-4deg) translateY(3px); } 50% { transform: rotate(-1.5deg) translateY(5px); } }
+@keyframes aries-huff { 0%,76%,100% { transform: none; } 82% { transform: rotate(-3deg); } 88% { transform: rotate(2.5deg); } 94% { transform: rotate(-1deg); } }
+@keyframes aries-pump-left { 0%,76%,100% { transform: rotate(-38deg); } 84%,92% { transform: rotate(-28deg); } }
+@keyframes aries-pump-right { 0%,76%,100% { transform: rotate(38deg); } 84%,92% { transform: rotate(28deg); } }
+@keyframes aries-sad-arm-left { 0%,100% { transform: rotate(-20deg); } 50% { transform: rotate(-16deg); } }
+@keyframes aries-sad-arm-right { 0%,100% { transform: rotate(20deg); } 50% { transform: rotate(16deg); } }
+
+/* Home hero entrance: Aries rises onto the balance card once, then greets. */
+.ram-aries.is-hero-in .ram-stage { animation: aries-hero-in .7s cubic-bezier(.22,1,.36,1) both; transform-origin: 50% 100%; }
+@keyframes aries-hero-in { from { opacity: 0; transform: translateY(16px) scale(.94); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ram-aries.is-hero-in .ram-stage { animation: none !important; } }

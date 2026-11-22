@@ -1,3 +1,7 @@
+## 2026-11-22 — Aries motion and Home hero entrance
+
+- Aries settles in when an expression changes. Each mood has calm idle motion: look-around, nod, droop and sigh, or huff with an arm pump. On Home, Aries rises onto the balance card and waves once per session. All of it is off under reduced motion. [Details](engineering/updates/2026-11-22-aries-motion-hero.md).
+
 ## 2026-11-22 — Production API disabled (Vercel 402); Plans retry; tabletop foldables; Aries horns
 
 - Friends, Plans and balances that differ between devices share one cause: `movo.nasrinai.com/api` returns 402 `DEPLOYMENT_DISABLED` because the Vercel account is blocked. When the plan check fails, cloud sync falls back to each device's own copy. **Owner action:** restore the Vercel account, then redeploy `main`.
