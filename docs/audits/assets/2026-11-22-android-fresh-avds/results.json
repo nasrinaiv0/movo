@@ -1,0 +1,13 @@
+{
+  "sourceHead": "9a0d48d2b13da3d4d5c0dc694d6ca5ecbc74a3ac",
+  "sourceMerge": "ff9edc528c69a5f2e0bd0658c3335c3b788bd18b",
+  "workflowRun": 44987779244,
+  "baselineAcceptance": "success",
+  "candidateAcceptance": "success",
+  "separateFreshAvds": true,
+  "syntheticOnly": true,
+  "fixtureCreditBalance": -125.5,
+  "realAccountBalancesTested": false,
+  "realStorePurchasesTested": false,
+  "liveProvidersTested": false
+}

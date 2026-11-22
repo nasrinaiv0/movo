@@ -729,3 +729,6 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 2026-11-22 — Android build 21 follow-up distinguishes disabled API hosting from device connectivity; correct device-copy UI and preserve server denials under stale offline hints. Fifty focused tests and typecheck pass; production service recovery and balance reproduction remain pending. [Evidence](updates/2026-11-22-android-build21-service-recovery.md).
 
 2026-11-22 — Isolate paired R8 compiler outputs in separately created, identically configured AVDs after both `65f63b83` attempts lose the candidate emulator. Preserve all acceptance and process-persistence gates; 27 host tests pass. Confirm signed build 21 source and missing project-level stock provider key in the [recovery handover](updates/2026-11-22-android-build21-service-recovery.md).
+
+
+2026-11-22 — All four formerly open source PRs merged after current-head checks: #330 `c3e37d7c`, #331 `cfb83c51`, #291 `b55429d8`, #274 `ff9edc52`. Preserve exact Android fresh-AVD visual evidence and publish the [current handover](handovers/2026-11-22-source-merges-android-recovery.md). Live API recovery, licensed stock configuration, authenticated Google Cloud access and the user balance example remain open. Production migration history is unchanged; destructive switches remain off and no store upload occurred.
