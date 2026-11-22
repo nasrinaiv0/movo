@@ -1,6 +1,6 @@
 .auth-zodiac-row {
   display: grid;
-  grid-template-columns: .8fr .87fr .95fr 1.03fr 1.11fr 1.19fr 1.19fr 1.11fr 1.03fr .95fr .87fr .8fr;
+  grid-template-columns: .8fr .85fr .91fr .99fr 1.06fr 1.13fr 1.19fr 1.13fr 1.06fr .99fr .91fr .85fr .8fr;
   align-items: end;
   min-width: 0;
   margin: -7px 0 -5px;
@@ -8,104 +8,116 @@
 }
 
 .zodiac-mascot { display: block; min-width: 0; line-height: 0; }
-.zodiac-mascot > svg { display: block; width: 100%; height: auto; }
+.zodiac-portrait {
+  display: block;
+  aspect-ratio: 1;
+  background-image: url('../assets/movo-zodiac-guardians.webp');
+  background-size: 400% 300%;
+  background-repeat: no-repeat;
+  transform-origin: 50% 87%;
+}
 .auth-zodiac-row > .zodiac-mascot { margin-bottom: 3px; }
 .auth-zodiac-row > :is(:first-child, :last-child) { margin-bottom: 6px; }
-.auth-zodiac-row > :is(:nth-child(6), :nth-child(7)) { margin-bottom: 0; }
+.auth-zodiac-row > :is(:nth-child(6), :nth-child(7), :nth-child(8)) { margin-bottom: 0; }
+
 .auth-zodiac-row [data-zodiac="aries"] > svg { transform: scale(1.05); }
 
-.zodiac-mascot .zodiac-figure { transform-box: view-box; transform-origin: 50% 88%; }
-.zodiac-mascot .zodiac-eyes, .zodiac-mascot .zodiac-gesture { transform-box: fill-box; transform-origin: center; }
-.zodiac-mascot[data-zodiac="cancer"] .zodiac-gesture,
-.zodiac-mascot[data-zodiac="virgo"] .zodiac-gesture { transform-origin: center bottom; }
-.zodiac-mascot[data-zodiac="leo"] .zodiac-gesture { transform-origin: left bottom; }
-.zodiac-mascot[data-zodiac="capricorn"] .zodiac-gesture { transform-origin: left center; }
-
+.zodiac-mascot[data-zodiac="aries-guardian"] { --zodiac-action: zodiac-hop; }
 .zodiac-mascot[data-zodiac="taurus"] { --zodiac-action: zodiac-nod; }
 .zodiac-mascot[data-zodiac="gemini"] { --zodiac-action: zodiac-twin; }
-.zodiac-mascot[data-zodiac="cancer"] { --zodiac-action: zodiac-claw; }
-.zodiac-mascot[data-zodiac="leo"] { --zodiac-action: zodiac-tail; }
-.zodiac-mascot[data-zodiac="virgo"] { --zodiac-action: zodiac-frond; }
+.zodiac-mascot[data-zodiac="cancer"] { --zodiac-action: zodiac-salute; }
+.zodiac-mascot[data-zodiac="leo"] { --zodiac-action: zodiac-bounce; }
+.zodiac-mascot[data-zodiac="virgo"] { --zodiac-action: zodiac-read; }
 .zodiac-mascot[data-zodiac="libra"] { --zodiac-action: zodiac-balance; }
-.zodiac-mascot[data-zodiac="scorpio"] { --zodiac-action: zodiac-tail; }
-.zodiac-mascot[data-zodiac="sagittarius"] { --zodiac-action: zodiac-bow; }
-.zodiac-mascot[data-zodiac="capricorn"] { --zodiac-action: zodiac-tail; }
+.zodiac-mascot[data-zodiac="scorpio"] { --zodiac-action: zodiac-peek; }
+.zodiac-mascot[data-zodiac="sagittarius"] { --zodiac-action: zodiac-draw; }
+.zodiac-mascot[data-zodiac="capricorn"] { --zodiac-action: zodiac-swing; }
 .zodiac-mascot[data-zodiac="aquarius"] { --zodiac-action: zodiac-pour; }
-.zodiac-mascot[data-zodiac="pisces"] { --zodiac-action: zodiac-swim; }
+.zodiac-mascot[data-zodiac="pisces"] { --zodiac-action: zodiac-drift; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .zodiac-mascot :is(.zodiac-figure, .aries-figure) {
-    animation: zodiac-exhale 2.65s cubic-bezier(.22,.8,.35,1) var(--zodiac-delay, 0s);
-  }
-  .zodiac-mascot .aries-figure { animation-name: zodiac-hop; }
-  .zodiac-mascot .aries-arm-right { animation: aries-wave 2.65s ease-in-out var(--zodiac-delay, 0s); }
-  .zodiac-mascot :is(.zodiac-eyes, .aries-eye) { animation: zodiac-blink 2.65s ease-in-out var(--zodiac-delay, 0s); }
-  .zodiac-mascot .zodiac-gesture { animation: var(--zodiac-action) 2.65s ease-in-out var(--zodiac-delay, 0s); }
-  .zodiac-mascot .zodiac-gesture--second { animation-direction: reverse; }
-
   .auth-zodiac-row > :nth-child(3n+1) { --zodiac-delay: .18s; }
   .auth-zodiac-row > :nth-child(3n+2) { --zodiac-delay: .35s; }
   .auth-zodiac-row > :nth-child(3n) { --zodiac-delay: .52s; }
+  .zodiac-mascot[data-zodiac="aries"] .aries-figure { animation: zodiac-original-hop 2.65s cubic-bezier(.22,.8,.35,1) var(--zodiac-delay, 0s); }
+  .zodiac-mascot[data-zodiac="aries"] .aries-arm-right { animation: aries-wave 2.65s ease-in-out var(--zodiac-delay, 0s); }
+  .zodiac-mascot[data-zodiac="aries"] .aries-eye { animation: zodiac-original-blink 2.65s ease-in-out var(--zodiac-delay, 0s); }
+  .zodiac-portrait { animation: var(--zodiac-action) 2.88s ease-in-out var(--zodiac-delay, 0s); }
 }
+.ios-reduce-motion .zodiac-mascot :is(.zodiac-portrait, .aries-figure, .aries-arm-right, .aries-eye) { animation: none !important; }
 
-@keyframes zodiac-exhale {
-  0%, 100% { transform: translateY(0) scale(1); }
-  42% { transform: translateY(-3px) scale(1.012, 1.02); }
-}
-@keyframes zodiac-hop {
+@keyframes zodiac-original-hop {
   0%, 26%, 80%, 100% { transform: translateY(0); }
   17% { transform: scale(1.026, .97); }
   45% { transform: translateY(-16px) scale(.985, 1.035); }
   68% { transform: scale(1.017, .98); }
 }
-@keyframes zodiac-blink {
+@keyframes zodiac-original-blink {
   0%, 22%, 32%, 100% { transform: scaleY(1); }
   27% { transform: scaleY(.1); }
 }
+@keyframes zodiac-hop {
+  0%, 100% { transform: none; }
+  23% { transform: scale(1.035, .955); }
+  44% { transform: translateY(-8%) rotate(-4deg) scale(.985, 1.02); }
+  66% { transform: scale(1.025, .98); }
+}
 @keyframes zodiac-nod {
   0%, 100% { transform: none; }
-  40% { transform: translateY(6px) rotate(-5deg); }
-  70% { transform: rotate(2deg); }
+  33% { transform: translateY(1%) rotate(-5deg) scale(1.013, .975); }
+  66% { transform: rotate(2deg); }
 }
 @keyframes zodiac-twin {
   0%, 100% { transform: none; }
-  25% { transform: translateY(-9px) rotate(-3deg); }
-  65% { transform: translateY(3px) rotate(3deg); }
+  32% { transform: translateY(-3%) rotate(-5deg); }
+  68% { transform: translateY(-1%) rotate(5deg); }
 }
-@keyframes zodiac-claw {
+@keyframes zodiac-salute {
   0%, 100% { transform: none; }
-  24%, 51% { transform: rotate(-10deg) translateY(-5px); }
-  36%, 64% { transform: rotate(4deg); }
+  27% { transform: translateY(-4%) rotate(5deg); }
+  53% { transform: rotate(-4deg); }
+  77% { transform: rotate(2deg); }
 }
-@keyframes zodiac-tail {
+@keyframes zodiac-bounce {
   0%, 100% { transform: none; }
-  32% { transform: rotate(-9deg); }
-  64% { transform: rotate(7deg); }
+  30% { transform: translateY(-5%) scale(1, 1.03); }
+  50% { transform: scale(1.028, .97); }
+  72% { transform: translateY(-2%) rotate(3deg); }
 }
-@keyframes zodiac-frond {
+@keyframes zodiac-read {
   0%, 100% { transform: none; }
-  34% { transform: rotate(10deg); }
-  69% { transform: rotate(-8deg); }
+  44% { transform: rotate(-6deg) scale(1.012, .992); }
+  73% { transform: rotate(-2deg); }
 }
 @keyframes zodiac-balance {
   0%, 100% { transform: none; }
-  29% { transform: rotate(-10deg); }
-  64% { transform: rotate(6deg); }
+  30% { transform: rotate(-6deg); }
+  67% { transform: rotate(6deg); }
 }
-@keyframes zodiac-bow {
+@keyframes zodiac-peek {
   0%, 100% { transform: none; }
-  45% { transform: rotate(-13deg) translateY(-6px); }
-  70% { transform: rotate(4deg); }
+  30% { transform: translateX(3%) rotate(5deg); }
+  55% { transform: translateY(-4%) rotate(-5deg); }
+  77% { transform: translateX(-1%) rotate(2deg); }
+}
+@keyframes zodiac-draw {
+  0%, 100% { transform: none; }
+  34% { transform: translateX(-3%) rotate(-6deg); }
+  61% { transform: translateX(3%) translateY(-4%) rotate(4deg); }
+  77% { transform: rotate(-1deg); }
+}
+@keyframes zodiac-swing {
+  0%, 100% { transform: none; }
+  36% { transform: translateY(-4%) rotate(7deg); }
+  69% { transform: rotate(-4deg); }
 }
 @keyframes zodiac-pour {
   0%, 100% { transform: none; }
-  42% { transform: translate(-2px, 4px) scaleY(1.23); }
-  65% { transform: translate(-1px, -1px) scaleY(.82); }
+  46% { transform: translateX(1%) rotate(7deg); }
+  70% { transform: translateY(-1%) rotate(2deg); }
 }
-@keyframes zodiac-swim {
+@keyframes zodiac-drift {
   0%, 100% { transform: none; }
-  25% { transform: translate(10px, -5px) rotate(-8deg); }
-  70% { transform: translate(-4px, 7px) rotate(5deg); }
+  29% { transform: translateX(2%) translateY(-5%) rotate(4deg); }
+  70% { transform: translateX(-2%) translateY(-3%) rotate(-5deg); }
 }
-
-.ios-reduce-motion .zodiac-mascot * { animation: none !important; }

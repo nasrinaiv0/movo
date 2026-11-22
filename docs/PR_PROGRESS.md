@@ -1,3 +1,7 @@
+## 2026-11-23 — Keep both Aries mascots in the zodiac lineup (#337)
+
+The sign-in card keeps MOVO's original Aries alongside twelve new reference-based chibi guardians, including a gold-horned Aries. Bundled transparent artwork and short, reduced-motion-aware animations run in the existing decorative row. The animation pack and 13-character contact sheet were verified. Node 26 type checking, all 1,772 tests, production bundling and precaching of the sprite passed locally. [Engineering update](engineering/updates/2026-11-23-zodiac-chibi-guardians.md).
+
 ## 2026-11-23 — MOVO zodiac sign-in mascots
 
 Added a monochrome sign-in row with the existing Aries and eleven original zodiac designs. Each character plays one short entrance motion, with reduced-motion support and no new sign-in actions or data changes. Local Node 26 verification covers all 266 Jest suites / 1,772 tests, type checking and the production build. Hosted and physical-device verification remain separate. [Engineering update](engineering/updates/2026-11-23-zodiac-sign-in-mascots.md).

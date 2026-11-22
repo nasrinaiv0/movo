@@ -41,16 +41,22 @@ describe('MOVO Google OAuth sign-in', () => {
     jest.restoreAllMocks();
   });
 
-  test('shows each zodiac mascot once in a decorative row at the bottom of sign-in', () => {
+  test('shows the original Aries and twelve new guardians in one decorative sign-in row', () => {
     const row = container.querySelector('.auth-zodiac-row');
     expect(row).toBe(container.querySelector('.auth-card').lastElementChild);
     expect(row.getAttribute('aria-hidden')).toBe('true');
     expect([...row.querySelectorAll('[data-zodiac]')].map(mascot => mascot.dataset.zodiac)).toEqual([
-      'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
+      'aries', 'aries-guardian', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
       'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
     ]);
-    expect(row.querySelectorAll('svg')).toHaveLength(12);
+    const portraits = [...row.querySelectorAll('[data-zodiac-portrait]')];
+    expect(portraits).toHaveLength(12);
+    expect(new Set(portraits.map(node => node.style.backgroundPosition)).size).toBe(12);
+    expect(row.querySelector('[data-zodiac="aries-guardian"] [data-zodiac-portrait]')).toBe(portraits[0]);
+    expect(portraits[0].style.backgroundPosition).toBe('0% 0%');
+    expect(portraits[11].style.backgroundPosition).toBe('100% 100%');
     expect(row.querySelector('[data-zodiac="aries"] .aries-mascot')).not.toBeNull();
+    expect(container.querySelector('.auth-head .aries-mascot')).not.toBeNull();
     expect(row.querySelector('a, button, input, [tabindex]')).toBeNull();
   });
 
