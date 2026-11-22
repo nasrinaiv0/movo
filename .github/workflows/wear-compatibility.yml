@@ -1,0 +1,74 @@
+name: MOVO Wear OS adaptive acceptance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'android/wear/**'
+      - 'android/variables.gradle'
+      - '.github/workflows/wear-compatibility.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: movo-wear-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  round-watch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [wearos_small_round, wearos_large_round]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install locked native dependency sources
+        run: npx --yes npm@11.19.1 ci
+      - name: Install Android compile SDK
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
+          test -e /dev/kvm
+          sudo chmod a+rw /dev/kvm
+      - name: Compile wearable app and native acceptance tests
+        working-directory: android
+        run: bash gradlew :wear:assembleDebug :wear:assembleDebugAndroidTest --no-daemon
+      - name: Run round-screen and enlarged-font acceptance on Wear OS
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 34
+          target: android-wear
+          arch: x86_64
+          profile: ${{ matrix.profile }}
+          avd-name: movo-wear
+          force-avd-creation: true
+          ram-size: 2048M
+          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
+          script: |
+            mkdir -p "$RUNNER_TEMP/wear-evidence"
+            adb shell settings put system font_scale 1.0
+            bash android/gradlew -p android :wear:connectedDebugAndroidTest --no-daemon
+            adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png "$RUNNER_TEMP/wear-evidence/default-font.png"
+            adb shell settings put system font_scale 2.0
+            adb shell am force-stop com.nasrinai.movo
+            bash android/gradlew -p android :wear:connectedDebugAndroidTest --no-daemon --rerun-tasks
+            adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png "$RUNNER_TEMP/wear-evidence/enlarged-font.png"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: movo-${{ matrix.profile }}-acceptance
+          path: |
+            ${{ runner.temp }}/wear-evidence/
+            android/wear/build/reports/androidTests/
+          if-no-files-found: warn
+          retention-days: 7

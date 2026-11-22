@@ -31,6 +31,8 @@ import { AccountOptions } from './components/AccountPicker';
 import { flushSync } from 'react-dom';
 import './App.css';
 import './AdaptiveLayout.css';
+import './DeviceLayout.css';
+import { appScrollTop, scrollAppTo } from './lib/appScroll';
 import './screens/Settings.css';
 import AuthPanel from './components/AuthPanel';
 import Icon, { NasrinMark } from './components/Icon';
@@ -411,8 +413,8 @@ function App() {
   const systemDark = useSystemDark();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 6);
-    window.addEventListener('scroll', onScroll, { passive: true }); return () => window.removeEventListener('scroll', onScroll);
+    const onScroll = () => setScrolled(appScrollTop() > 6);
+    window.addEventListener('scroll', onScroll, { passive: true, capture: true }); return () => window.removeEventListener('scroll', onScroll, true);
   }, []);
   const setPref = useCallback((key, value) => {
     const capturedOwner = preferenceOwner;
@@ -1369,7 +1371,7 @@ function App() {
     // A return to the page below (device Back, swipe, or an on-screen back arrow to the previous page).
     const isBack = prev !== next && (backMoveRef.current || swipeBackRef.current || screenTrailRef.current.peek() === next);
     if (prev !== next) {
-      const memo = scrollMemoRef.current; memo.delete(prev); memo.set(prev, window.scrollY || 0);
+      const memo = scrollMemoRef.current; memo.delete(prev); memo.set(prev, appScrollTop());
       while (memo.size > 20) memo.delete(memo.keys().next().value);
     }
     setMotion(dNext > dPrev ? 'push' : dNext < dPrev ? 'pop' : (ORDER[next] ?? 0) > (ORDER[prev] ?? 0) ? 'tab-right' : (ORDER[next] ?? 0) < (ORDER[prev] ?? 0) ? 'tab-left' : 'fade');
@@ -1378,7 +1380,7 @@ function App() {
       const snaps = pageSnapsRef.current; const main = document.querySelector('main.screen');
       if (main) {
         snaps.delete(prev);
-        snaps.set(prev, { node: main.cloneNode(true), className: main.className.replace(/\benter-\S+/g, '').trim(), scroll: window.scrollY || 0 });
+        snaps.set(prev, { node: main.cloneNode(true), className: main.className.replace(/\benter-\S+/g, '').trim(), scroll: appScrollTop() });
         while (snaps.size > 6) snaps.delete(snaps.keys().next().value);
       }
     }
@@ -1390,7 +1392,7 @@ function App() {
     viewRef.current = next;
     setSheet(null); setError(''); setView(next);
     if (next !== 'Settings') setQuery('');
-    try { window.scrollTo?.(0, 0); } catch { /* jsdom */ }
+    scrollAppTo(0);
   }, []);
   // An on-screen back arrow that returns to the screen the person came from (e.g. Profile opened from Settings goes back
   // to Settings), or to `fallback` when there is no earlier screen. go() treats the trail's top as a return.
@@ -1427,7 +1429,7 @@ function App() {
           if (timing && timing.iterations !== Infinity && a.playState !== 'finished') a.finish();
         });
       } catch { /* older engines: the short entrance plays */ }
-      if (back.scroll && Math.abs((window.scrollY || 0) - back.scroll) > 2) { try { window.scrollTo(0, back.scroll); } catch { /* jsdom */ } }
+      if (back.scroll && Math.abs(appScrollTop() - back.scroll) > 2) { scrollAppTo(back.scroll); }
     };
     settle();
     const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame(settle) : null;
@@ -2961,11 +2963,11 @@ function App() {
     // Let the touch-down marking paint first, then render the screen in one go (no slower concurrent render).
     requestAnimationFrame(() => setTimeout(() => go(target), 0));
   };
-  const rootStyle = { ...glassVars, colorScheme: resolved, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), '--on-accent': contrastTextForAccent(accentHex), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
+  const rootStyle = { ...(layout.pane ? { '--pane-x': layout.pane.x + 'px', '--pane-y': layout.pane.y + 'px', '--pane-width': layout.pane.width + 'px', '--pane-height': layout.pane.height + 'px' } : {}), ...glassVars, colorScheme: resolved, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), '--on-accent': contrastTextForAccent(accentHex), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
   // Bottom navigation accent (owner, 2026-11-11): Pro+ shows platinum and Pro gold by default; Settings → Appearance
   // can switch it back to the app accent. Only a server-verified paid plan counts; the free month keeps the app accent.
   const navTier = prefs.navAccent !== 'app' && entitlement?.source !== 'trial' ? ({ pro_plus: 'platinum', pro: 'gold' }[subscriptionPlan] || '') : '';
-  const rootClass = `movo-app plan-${plan}${navTier ? ` nav-tier-${navTier}` : ''} theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${prefs.iconColors === false ? ' no-icon-colors' : ''}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}${nativePlatform() === 'android' ? ' platform-android' : ''}`;
+  const rootClass = `movo-app plan-${plan}${navTier ? ` nav-tier-${navTier}` : ''} theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${prefs.iconColors === false ? ' no-icon-colors' : ''}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.pane ? ' layout-pane' : layout.dual ? ' layout-dual' : ''}${nativePlatform() === 'android' ? ' platform-android' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
   if (navIdx !== 2 && navIdx >= 0) lastTab.current = navIdx;
@@ -3062,7 +3064,7 @@ function App() {
         <span className="side-brand"><MovoMark size={30} /><span>Movo</span></span>
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
-          return <button type="button" key={label} className={`side-item${active ? ' active' : ''}`} disabled={!setupDone} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={tr(label)} title={tr(label)}>
+          return <button type="button" key={label} data-nav-target={target} className={`side-item${active ? ' active' : ''}`} disabled={!setupDone} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={tr(label)} title={tr(label)}>
             <span className="side-icon">{center ? <NasrinMark size={20} /> : <Icon name={icon} size={22} strokeWidth={1.8} filled={active} />}{target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}</span>
             <span className="side-label">{tr(label)}</span>
           </button>;

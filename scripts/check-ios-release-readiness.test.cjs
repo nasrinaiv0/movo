@@ -21,6 +21,15 @@ test('current source-controlled native packaging contract is complete', () => {
   assert.equal(checkRepository(root), true);
 });
 
+test('rejects phone-only targets and a portrait-only native interface', () => {
+  const phoneOnly = fixture();
+  phoneOnly.project = phoneOnly.project.replace('TARGETED_DEVICE_FAMILY = "1,2";', 'TARGETED_DEVICE_FAMILY = 1;');
+  assert.throws(() => checkReleaseContract(phoneOnly), /both iPhone and iPad/);
+  const portraitOnly = fixture();
+  portraitOnly.info = portraitOnly.info.replace('<string>UIInterfaceOrientationLandscapeLeft</string>', '');
+  assert.throws(() => checkReleaseContract(portraitOnly), /Portrait and landscape/);
+});
+
 test('rejects remote-web wrappers and accidental bundle ID changes', () => {
   const remote = fixture();
   remote.capacitor.server = { url: 'https://movo.nasrinai.com' };

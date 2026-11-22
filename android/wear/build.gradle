@@ -9,6 +9,7 @@ android {
     defaultConfig {
         applicationId 'com.nasrinai.movo'
         minSdk 28
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         targetSdk rootProject.ext.targetSdkVersion
         // Wear and phone artifacts must have distinct Play version codes.
         // This default is for unsigned CI only; release staff override it.
@@ -31,6 +32,10 @@ android {
 }
 
 dependencies {
+    implementation 'androidx.wear:wear:1.3.0'
     // Stable Wear OS remote-interaction library; no financial records or tokens leave the phone.
     implementation 'androidx.wear:wear-remote-interactions:1.2.0'
+    androidTestImplementation 'androidx.test:core:1.7.0'
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
 }

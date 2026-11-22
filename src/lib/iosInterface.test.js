@@ -15,10 +15,11 @@ afterEach(() => { stop?.(); stop = null; platform.mockRestore(); native.mockRest
 
 test('device text scale and accessibility changes update shared presentation without changing stored preferences', () => {
   const before = localStorage.length;
-  applyIosInterface({ textScale: 1.65, topBarHeight: 88, supportsSystemAppearance: true, colors: { panel: 'rgba(28, 28, 30, 1)', separator: 'invalid' }, reduceMotion: true, reduceTransparency: true, boldText: true, increaseContrast: true });
+  applyIosInterface({ textScale: 1.65, topBarHeight: 88, railWidth: 76, supportsSystemAppearance: true, colors: { panel: 'rgba(28, 28, 30, 1)', separator: 'invalid' }, reduceMotion: true, reduceTransparency: true, boldText: true, increaseContrast: true });
   const root = document.documentElement;
   expect(root.style.getPropertyValue('--ios-text-scale')).toBe('1.65');
   expect(root.style.getPropertyValue('--native-top-height')).toBe('88px');
+  expect(root.style.getPropertyValue('--native-rail-width')).toBe('76px');
   expect(root.style.getPropertyValue('--ios-panel-bg')).toBe('rgba(28, 28, 30, 1)');
   expect(root.style.getPropertyValue('--ios-separator')).toBe('');
   expect(root.classList.contains('ios-reduce-motion')).toBe(true);

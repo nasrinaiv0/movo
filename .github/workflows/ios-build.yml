@@ -4,6 +4,11 @@ name: MOVO iOS build
 # checked on every PR without a Mac. Signing, TestFlight and App Store uploads are a separate, later workflow.
 on:
   workflow_dispatch:
+    inputs:
+      require_duo:
+        description: Require Xcode 27.1+ and an actual iPhone Duo simulator (fails if unavailable)
+        type: boolean
+        default: false
   pull_request:
     branches: [main]
     # The bundled web application shares business, auth and billing code with iOS.
@@ -61,6 +66,13 @@ jobs:
         run: npm run build:app-store
       - name: Copy the web app into the iOS project
         run: npx cap sync ios
+      - name: Select newest installed stable Xcode and report Duo toolchain availability
+        env:
+          REQUIRE_DUO: ${{ inputs.require_duo && 'true' || 'false' }}
+        run: |
+          args=()
+          if [[ "$REQUIRE_DUO" == "true" ]]; then args+=(--require-duo); fi
+          python3 scripts/select-ios-toolchain.py "${args[@]}"
       - name: Show Xcode version
         run: xcodebuild -version
       - name: Compile Apple Watch companion for watchOS Simulator (unsigned)
@@ -102,7 +114,9 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build | tail -n 200
       - name: Verify simulator smoke orchestration on the host
-        run: python3 scripts/test-ios-simulator-smoke.py
+        run: |
+          python3 scripts/test-ios-simulator-smoke.py
+          python3 scripts/test-ios-toolchain.py
       - name: Boot iPhone Simulator and launch MOVO
         run: |
           set -euo pipefail
@@ -115,5 +129,28 @@ jobs:
         with:
           name: movo-iphone-simulator-smoke
           path: ${{ runner.temp }}/movo-ios-smoke/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Install and launch on iPad Simulator
+        run: |
+          python3 scripts/ios-simulator-smoke.py \
+            --device-family ipad \
+            --app "$RUNNER_TEMP/movo-derived-data/Build/Products/Debug-iphonesimulator/App.app" \
+            --screenshot "$RUNNER_TEMP/movo-ipad-smoke/ipad-simulator-smoke.png"
+      - name: Install and launch on actual iPhone Duo Simulator when explicitly required
+        if: inputs.require_duo
+        run: |
+          python3 scripts/ios-simulator-smoke.py \
+            --device-family duo \
+            --app "$RUNNER_TEMP/movo-derived-data/Build/Products/Debug-iphonesimulator/App.app" \
+            --screenshot "$RUNNER_TEMP/movo-duo-smoke/duo-simulator-smoke.png"
+      - name: Upload additional device smoke screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: movo-ipad-duo-simulator-smoke
+          path: |
+            ${{ runner.temp }}/movo-ipad-smoke/
+            ${{ runner.temp }}/movo-duo-smoke/
           if-no-files-found: ignore
           retention-days: 7

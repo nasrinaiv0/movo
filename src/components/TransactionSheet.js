@@ -92,7 +92,7 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
     document.addEventListener('keydown', onKey); return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const label = editing ? 'Edit transaction' : 'Add transaction';
+  const label = tr(editing ? 'Edit transaction' : 'Add transaction');
   const cats = CATEGORY_ICONS;
   const current = categoryOf(form.category);
   const canSave = !busy && Number.isFinite(value) && value > 0 && form.merchant.trim();

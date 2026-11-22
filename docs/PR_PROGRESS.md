@@ -1,3 +1,7 @@
+## 2026-11-22 — Adaptive phone, foldable and wearable interfaces
+
+Implement read-only fold geometry and safe panes without remounting transaction forms, adaptive native iOS navigation with iPad/landscape packaging, and round-screen/scalable-text watch companions. Preserve all finance, account, purchase and storage paths. Local full JavaScript run: 267 suites / 1,786 tests; typecheck and strict original-only build pass. English/default and Arabic/largest-text browser runs pass 56 checks; native CI acceptance is tracked in the [implementation handover](engineering/updates/2026-11-22-adaptive-device-compatibility.md); physical devices, Duo SDK/poses, signed pairing and live hosting remain separate release gates.
+
 ## 2026-11-22 — Approved tester billing migration deployed
 
 #333 is merged as `73524d1f` after all six current-head workflows passed. After explicit owner approval, production migration `verified_store_tester_subscriptions` applied as `20261122064410` (source `20261122055847`). Exact deployed body, service-only execution, tester RLS and no new security advisories verified. No existing financial/purchase rows rewritten; all three #274 migrations remain held. API still returns 402, so live tester acceptance remains blocked by hosting. [Rollout record](engineering/updates/2026-11-22-verified-tester-subscriptions.md#approved-production-migration--2026-11-22).

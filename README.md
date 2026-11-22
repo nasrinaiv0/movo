@@ -1,5 +1,7 @@
 # MOVO
 
+[Adaptive device compatibility](docs/engineering/updates/2026-11-22-adaptive-device-compatibility.md) adds fold-aware window handling, adaptive UIKit navigation, iPad/landscape packaging and accessible Apple Watch/Wear OS companions. Source and browser checks do not certify physical devices or store releases; native CI and device acceptance are tracked in that handover.
+
 [Verified tester subscriptions](docs/engineering/updates/2026-11-22-verified-tester-subscriptions.md) are merged in #333 with six passing workflows. The owner-approved billing migration is deployed in production as `20261122064410`, with exact function/permission/RLS verification. Genuine store verification, account binding, expiry/refunds and zero paid-referral rewards remain mandatory. Live API recovery is still required: the billing endpoint returns HTTP 402, so real tester purchase and second-device acceptance remain unverified.
 
 MOVO is a financial-tracking web app prototype with a calm, iOS-inspired interface.

@@ -10,7 +10,7 @@
         android:usesCleartextTraffic="false"
         android:icon="@drawable/ic_wear"
         android:label="MOVO"
-        android:theme="@android:style/Theme.Material.NoActionBar">
+        android:theme="@style/MovoWearTheme">
         <!-- No secrets or ledger data on the watch; the Android phone remains required. -->
         <meta-data android:name="com.google.android.wearable.standalone" android:value="false" />
         <activity
