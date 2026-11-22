@@ -1,3 +1,7 @@
+## 2026-11-23 — MOVO zodiac sign-in mascots
+
+Added a monochrome sign-in row with the existing Aries and eleven original zodiac designs. Each character plays one short entrance motion, with reduced-motion support and no new sign-in actions or data changes. Local Node 26 verification covers all 266 Jest suites / 1,772 tests, type checking and the production build. Hosted and physical-device verification remain separate. [Engineering update](engineering/updates/2026-11-23-zodiac-sign-in-mascots.md).
+
 ## 2026-11-22 — Approved tester billing migration deployed
 
 #333 is merged as `73524d1f` after all six current-head workflows passed. After explicit owner approval, production migration `verified_store_tester_subscriptions` applied as `20261122064410` (source `20261122055847`). Exact deployed body, service-only execution, tester RLS and no new security advisories verified. No existing financial/purchase rows rewritten; all three #274 migrations remain held. API still returns 402, so live tester acceptance remains blocked by hosting. [Rollout record](engineering/updates/2026-11-22-verified-tester-subscriptions.md#approved-production-migration--2026-11-22).
