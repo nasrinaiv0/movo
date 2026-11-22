@@ -92,3 +92,9 @@ test('Zod 4 validates Pub/Sub attributes without throwing and rejects invalid va
  expect(S.pubsubSchema.safeParse({ ...valid, message: { ...valid.message, attributes: { source: 123 } } }).success).toBe(false);
  expect(S.pubsubSchema.safeParse({ ...valid, message: { ...valid.message, attributes: { source: 'x'.repeat(4097) } } }).success).toBe(false);
 });
+
+test('client cannot declare receipt environment or tester status',()=>{
+ for(const extra of [{environment:'sandbox'},{tester:true},{paidVerified:true}]) {
+  expect(()=>S.body(S.purchaseSchema,{body:{platform:'google',purchaseToken:'token',productIdentifier:'product',...extra}})).toThrow();
+ }
+});

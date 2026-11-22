@@ -13,6 +13,8 @@ const {
     expiresDate: Date.now() + 86400000,
   };
   const encode = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  for (const environment of ["Production", "Sandbox"]) {
+  payload.environment = environment;
   for (const header of [
     { alg: "none" },
     { alg: "ES256", x5c: [] },
@@ -26,6 +28,7 @@ const {
       Buffer.from("forged").toString("base64url");
     await assert.rejects(decodeAppleTransaction(forged));
     await assert.rejects(verifyAppleNotification(forged));
+  }
   }
   console.log(
     "PASS: real Apple verifier rejects unsigned, missing-chain and substituted-algorithm payloads",

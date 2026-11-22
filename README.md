@@ -1,5 +1,7 @@
 # MOVO
 
+[Verified tester subscriptions](docs/engineering/updates/2026-11-22-verified-tester-subscriptions.md) are being prepared for Apple TestFlight/Sandbox and Google Play license testers. Genuine store verification, account binding, expiry/refunds and zero paid-referral rewards remain mandatory. Local tests pass; hosted validation, targeted billing migration and live API recovery remain rollout requirements.
+
 MOVO is a financial-tracking web app prototype with a calm, iOS-inspired interface.
 
 2026-11-22: #330, #331, #291 and #274 are merged after their applicable checks passed. The [current source-merge and Android recovery handover](docs/engineering/handovers/2026-11-22-source-merges-android-recovery.md) records exact commits, 1,767 JavaScript tests and complete fresh-emulator acceptance. React/CRA, Supabase, Capacitor/UIKit, account identifiers and financial history are preserved.
