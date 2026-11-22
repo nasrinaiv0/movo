@@ -183,6 +183,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--disposable-emulator", action="store_true", help="Permit deleting only synthetic data on a verified emulator")
+    parser.add_argument("--variant", choices=("baseline", "candidate"),
+                        help="Run one compiler output on its own fresh disposable AVD; default runs both")
     args = parser.parse_args()
     require_disposable_emulator(args.disposable_emulator)
     output = args.output.resolve()
@@ -202,7 +204,7 @@ def main():
     # Require the same financial storage representation in both compiler outputs.
     fixture = {**legal, "encryptedFinance":
                (Path(__file__).resolve().parents[2] / "src/lib/financeVault.js").is_file()}
-    for label in ("baseline", "candidate"):
+    for label in ((args.variant,) if args.variant else ("baseline", "candidate")):
         print("Starting minified release acceptance: " + label, flush=True)
         built = output / "default" / label
         folder = built / "device"

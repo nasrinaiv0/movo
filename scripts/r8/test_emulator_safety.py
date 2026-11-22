@@ -1,4 +1,5 @@
 import tempfile
+from contextlib import nullcontext
 import subprocess
 from pathlib import Path
 import unittest
@@ -173,6 +174,42 @@ class EmulatorSafetyTests(unittest.TestCase):
             recorder.terminate.assert_called_once()
             recorder.kill.assert_called_once()
             self.assertEqual(recorder.wait.call_count, 2)
+
+    def test_fresh_variant_selection_keeps_all_acceptance_and_restart_phases(self):
+        for variant in (None, 'baseline', 'candidate'):
+            with self.subTest(variant=variant), tempfile.TemporaryDirectory() as directory:
+                argv = ['emulator_smoke.py', '--output', directory, '--disposable-emulator']
+                if variant:
+                    argv += ['--variant', variant]
+                with patch('sys.argv', argv), patch.object(smoke, 'require_disposable_emulator') as verify, \
+                        patch.object(smoke, 'establish_emulator_root'), patch.object(smoke, 'disable_pixel_launcher'), \
+                        patch.object(smoke, 'adb', return_value='Status: ok'), patch.object(smoke, 'capture'), \
+                        patch.object(smoke, 'stream_device_log', side_effect=lambda folder: nullcontext()), \
+                        patch.object(smoke, 'instrument') as instrument:
+                    smoke.main()
+                    verify.assert_called_once_with(True)
+                    labels = [variant] if variant else ['baseline', 'candidate']
+                    for label in labels:
+                        calls = [c for c in instrument.call_args_list if c.args[0].parent.name == label]
+                        self.assertEqual([c.args[1] for c in calls], ['seedOfflineWallet',
+                            'bridgeVaultPersistsAcrossActivityRecreation',
+                            'offlineWalletLogoStyleAndSyntheticOAuthCallback',
+                            'processPersistencePhase', 'processPersistencePhase'])
+                        self.assertEqual([c.args[3] for c in calls[-2:]], ['seed', 'verify'])
+                    self.assertEqual(instrument.call_count, 5 * len(labels))
+
+    def test_acceptance_failure_still_fails_the_selected_fresh_variant(self):
+        with tempfile.TemporaryDirectory() as directory:
+            argv = ['emulator_smoke.py', '--output', directory, '--disposable-emulator', '--variant', 'candidate']
+            with patch('sys.argv', argv), patch.object(smoke, 'require_disposable_emulator'), \
+                    patch.object(smoke, 'establish_emulator_root'), patch.object(smoke, 'disable_pixel_launcher'), \
+                    patch.object(smoke, 'adb', return_value='Status: ok'), patch.object(smoke, 'capture') as capture, \
+                    patch.object(smoke, 'stream_device_log', side_effect=lambda folder: nullcontext()), \
+                    patch.object(smoke, 'instrument', side_effect=AssertionError('acceptance failed')):
+                with self.assertRaisesRegex(AssertionError, 'acceptance failed'):
+                    smoke.main()
+                capture.assert_called_once()
+                self.assertFalse((Path(directory) / 'default/candidate/device/passed.txt').exists())
 
 
 if __name__ == '__main__':

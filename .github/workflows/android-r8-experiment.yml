@@ -84,7 +84,8 @@ jobs:
           test -e /dev/kvm
           sudo chmod a+rw /dev/kvm
       # Verified v2 annotated tag -> commit a421e438; Google skill is pinned in experiment.py.
-      - name: Offline emulator acceptance on DEFAULT release baseline and candidate
+      - name: Offline emulator acceptance on DEFAULT release baseline
+        id: baseline-acceptance
         timeout-minutes: 25
         if: always() && steps.default-build.outcome == 'success'
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
@@ -93,10 +94,27 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
+          avd-name: movo-r8-baseline
+          force-avd-creation: true
           ram-size: 2048M
           disable-linux-hw-accel: false
           emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
-          script: python3 scripts/r8/emulator_smoke.py --disposable-emulator --output "$R8_OUTPUT"
+          script: python3 scripts/r8/emulator_smoke.py --disposable-emulator --variant baseline --output "$R8_OUTPUT"
+      - name: Offline emulator acceptance on DEFAULT release candidate
+        if: always() && steps.default-build.outcome == 'success' && steps.baseline-acceptance.outcome == 'success'
+        timeout-minutes: 25
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          avd-name: movo-r8-candidate
+          force-avd-creation: true
+          ram-size: 2048M
+          disable-linux-hw-accel: false
+          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: python3 scripts/r8/emulator_smoke.py --disposable-emulator --variant candidate --output "$R8_OUTPUT"
       - name: Record runner resources after emulator failure
         if: failure() && steps.default-build.outcome == 'success'
         run: |

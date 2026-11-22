@@ -727,3 +727,5 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 2026-11-22 — Integrate released #291 main `b55429d8` into #274, preserving all 2,404 compared source/config/test fingerprints. New Android build 21 bug report and failed #274 paired emulator acceptance remain active work; public API 402 is independently confirmed.
 
 2026-11-22 — Android build 21 follow-up distinguishes disabled API hosting from device connectivity; correct device-copy UI and preserve server denials under stale offline hints. Fifty focused tests and typecheck pass; production service recovery and balance reproduction remain pending. [Evidence](updates/2026-11-22-android-build21-service-recovery.md).
+
+2026-11-22 — Isolate paired R8 compiler outputs in separately created, identically configured AVDs after both `65f63b83` attempts lose the candidate emulator. Preserve all acceptance and process-persistence gates; 27 host tests pass. Confirm signed build 21 source and missing project-level stock provider key in the [recovery handover](updates/2026-11-22-android-build21-service-recovery.md).

@@ -1,3 +1,7 @@
+## 2026-11-22 — Separate paired emulator state after two failed attempts
+
+At `65f63b83`, all seven non-R8 workflows pass, including 1,767 JavaScript tests. Both R8 attempts lose the candidate emulator after full baseline acceptance and candidate startup/vault checks. Run each compiler output on an identically configured fresh AVD, requiring both full acceptance sequences. All 27 host tests pass; application code, assertions and isolation are unchanged. New-head checks remain mandatory. Build 21 is traced to `cfb83c51`; stock-provider key is missing from project settings. [Current handover](engineering/updates/2026-11-22-android-build21-service-recovery.md).
+
 ## 2026-11-22 — Android build 21 service recovery
 
 Confirmed API 402 DEPLOYMENT_DISABLED separately from device connectivity. Correct Planning/plan storage labels and prevent completed HTTP/database denials from becoming offline retries under stale WebView status. Focused 50 tests and typecheck pass; full/new-head validation is pending. Cross-device entitlement, markets and friends need restored API hosting. Await actual Cloud Run project/region and a fictional balance reproduction. Preserve financial records and all activation gates. [Handover](engineering/updates/2026-11-22-android-build21-service-recovery.md).
