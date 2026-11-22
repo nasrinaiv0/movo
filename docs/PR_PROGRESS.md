@@ -1,3 +1,7 @@
+## 2026-11-23 — Sync gold-horned Aries' SVG motion with the original Aries (#337)
+
+The two Aries designs share the 2.65-second hop, blink and wave timing in the sign-in row. The new layered SVG keeps the gold-horned portrait and uses its free hand for the wave. Both SVG and animation preview were decoded and checked. All 1,772 tests and the production build passed locally. [Engineering update](engineering/updates/2026-11-23-guardian-aries-svg-motion.md).
+
 ## 2026-11-23 — Keep both Aries mascots in the zodiac lineup (#337)
 
 The sign-in card keeps MOVO's original Aries alongside twelve new reference-based chibi guardians, including a gold-horned Aries. Bundled transparent artwork and short, reduced-motion-aware animations run in the existing decorative row. The animation pack and 13-character contact sheet were verified. Node 26 type checking, all 1,772 tests, production bundling and precaching of the sprite passed locally. [Engineering update](engineering/updates/2026-11-23-zodiac-chibi-guardians.md).

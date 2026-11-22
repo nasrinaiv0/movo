@@ -50,11 +50,12 @@ describe('MOVO Google OAuth sign-in', () => {
       'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
     ]);
     const portraits = [...row.querySelectorAll('[data-zodiac-portrait]')];
-    expect(portraits).toHaveLength(12);
-    expect(new Set(portraits.map(node => node.style.backgroundPosition)).size).toBe(12);
-    expect(row.querySelector('[data-zodiac="aries-guardian"] [data-zodiac-portrait]')).toBe(portraits[0]);
-    expect(portraits[0].style.backgroundPosition).toBe('0% 0%');
-    expect(portraits[11].style.backgroundPosition).toBe('100% 100%');
+    expect(portraits).toHaveLength(11);
+    expect(new Set(portraits.map(node => node.style.backgroundPosition)).size).toBe(11);
+    const guardian = row.querySelector('[data-zodiac="aries-guardian"] svg.guardian-aries');
+    expect(guardian.querySelectorAll('.aries-eye')).toHaveLength(2);
+    expect(guardian.querySelector('.aries-arm-right')).not.toBeNull();
+    expect(portraits[10].style.backgroundPosition).toBe('100% 100%');
     expect(row.querySelector('[data-zodiac="aries"] .aries-mascot')).not.toBeNull();
     expect(container.querySelector('.auth-head .aries-mascot')).not.toBeNull();
     expect(row.querySelector('a, button, input, [tabindex]')).toBeNull();
