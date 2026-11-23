@@ -197,6 +197,8 @@ def main():
             "discoverable usernames, recipient approval, snapshot revocation and avatar isolation")
         sql((ROOT / "supabase/tests/friend_chat.test.sql").read_text(),
             "private friend chats: cross-user denial, projected cards, idempotency and block deletion")
+        sql((ROOT / "supabase/tests/friend_transaction_import.test.sql").read_text(),
+            "accepted-friend recipient consent, immutable import receipt, account mapping and cascade")
         sql((ROOT / "supabase/tests/loan_payment_accounts.test.sql").read_text(),
             "loan payment account isolation, currency and single-ledger posting")
         print("PASS isolated finance authorization: no customer database accessed")

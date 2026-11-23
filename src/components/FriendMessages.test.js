@@ -92,3 +92,64 @@ test('inbox polls status without retransferring cached profile photos', async ()
     close();
   } finally { jest.useRealTimers(); }
 });
+
+
+test('recipient must accept and map a same-currency account before opening the normal Save review', async () => {
+  const message = {
+    id: 'd48c0401-90ee-43c4-9b0e-bac4fbaca001',
+    kind: 'transaction', senderId: 'mika-owner', createdAt: '2026-11-23T09:30:00Z',
+    card: { type: 'expense', amount: 99.5, currency: 'PHP', date: '2026-11-23', description: 'Lunch' },
+  };
+  chatRequest.mockImplementation(async (_, action) => {
+    if (action === 'open') return { name:'Mika',photo:'',messages:[message] };
+    if (action === 'decisions') return { decisions: [] };
+    if (action === 'accept_share') return { ok:true,status:'accepted',messageId:message.id };
+    if (action === 'decline_share') return { ok:true,status:'declined',messageId:message.id };
+    return { ok:true };
+  });
+  const onReviewImport=jest.fn();
+  const accounts=[{id:'bank-php',account_type:'bank',currency:'PHP',name:'My bank'},
+    {id:'bank-usd',account_type:'bank',currency:'USD',name:'Other bank'}];
+  const {el,close}=await mount(<FriendConversation session={session} friend={connection}
+    accounts={accounts} ownedTransactions={[]} onReviewImport={onReviewImport} />);
+  expect(el.textContent).toContain('Accept for review');
+  expect(el.textContent).toContain('Decline');
+  expect(onReviewImport).not.toHaveBeenCalled();
+  expect(chatRequest.mock.calls.some(c => c[1] === 'confirm_share_import')).toBe(false);
+  await click([...el.querySelectorAll('button')].find(button => button.textContent.includes('Accept for review')));
+  expect(el.textContent).toContain('Accepted for review. No transaction has been added yet.');
+  const picker=el.querySelector('.friend-chat-import-form select');
+  expect(picker.textContent).toContain('My bank');
+  expect(picker.textContent).not.toContain('Other bank');
+  const button=[...el.querySelectorAll('button')].find(b => b.textContent.includes('Review and import'));
+  expect(button.disabled).toBe(true);
+  change(picker,'bank-php');
+  expect(button.disabled).toBe(false);
+  await click(button);
+  expect(onReviewImport).toHaveBeenCalledWith({
+    message:expect.objectContaining({id:message.id}),accountId:'bank-php',
+    transferToAccountId:'',connectionId:connection.id,
+  });
+  // No ledger operation occurs in the chat UI; the normal save sheet owns the write.
+  expect(chatRequest.mock.calls.some(c=>c[1]==='confirm_share_import')).toBe(false);
+  close();
+});
+
+test('decline leaves finances untouched and a previously imported message cannot be accepted twice', async () => {
+  const message={ id:'d48c0401-90ee-43c4-9b0e-bac4fbaca001',
+    senderId:'mika-owner',kind:'transaction',card:{type:'income',amount:20,currency:'PHP',date:'2026-11-23'} };
+  chatRequest.mockImplementation(async (_, action) => {
+    if(action==='open')return {name:'Mika',photo:'',messages:[message]};
+    if(action==='decisions')return {decisions:[]};
+    if(action==='decline_share')return {ok:true,status:'declined'};
+    if(action==='accept_share')return {ok:true,status:'accepted'};
+    return {ok:true};
+  });
+  const onReviewImport=jest.fn();
+  const {el,close}=await mount(<FriendConversation session={session} friend={connection}
+    onReviewImport={onReviewImport} />);
+  await click([...el.querySelectorAll('button')].find(b=>b.textContent==='Decline'));
+  expect(el.textContent).toContain('You declined this transaction.');
+  expect(onReviewImport).not.toHaveBeenCalled();
+  close();
+});

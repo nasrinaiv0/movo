@@ -40,3 +40,26 @@
   @keyframes friend-bubble-in { from { opacity:.6; transform:translateY(5px) scale(.98); } to { opacity:1; transform:none; } }
 }
 @media(max-width:430px){.friend-chat-messages{max-height:44dvh}.friend-chat-bubble{max-width:90%}}
+
+
+/* Two-step recipient import remains a secondary surface inside the received bubble. */
+.friend-chat-recipient-review { display:grid; gap:10px; min-width:0; margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
+.friend-chat-choice { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.friend-chat-choice button,.friend-chat-decline-after { min-height:44px; padding:0 14px; border:0; border-radius:12px; background:var(--field); color:var(--text); font:inherit; font-size:13px; font-weight:650; }
+.friend-chat-choice .friend-import-accept { display:flex; align-items:center; gap:6px; background:var(--accent); color:var(--on-accent,#fff); }
+.friend-chat-import-form { display:grid; gap:10px; min-width:0; }
+.friend-chat-import-form > label { display:grid; gap:5px; font-size:12px; font-weight:650; }
+.friend-chat-import-form select { width:100%; max-width:100%; min-height:44px; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:var(--surface,var(--card)); color:var(--text); font:inherit; }
+.friend-chat-import-form .primary-button { display:flex; align-items:center; justify-content:center; gap:8px; min-height:44px; }
+.friend-chat-import-form button:disabled,.friend-chat-choice button:disabled { opacity:.42; cursor:not-allowed; }
+.friend-import-success { display:flex; align-items:center; gap:7px; font-weight:650; font-size:12px; color:var(--accent); }
+.friend-chat-import-form .friends-note { margin:0; font-size:11px; line-height:1.5; }
+.friend-chat-recipient-review button:focus-visible,.friend-chat-import-form select:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+@media (prefers-reduced-motion:no-preference) {
+  .friend-chat-import-form { animation:friend-review-in 180ms cubic-bezier(.22,.75,.27,1) both; }
+  @keyframes friend-review-in { from { opacity:.7; transform:translateY(4px) } to { opacity:1; transform:none } }
+}
+@media (max-width:430px) {
+  .friend-chat-bubble { max-width:94%; }
+  .friend-chat-recipient-review { width:100%; }
+}
