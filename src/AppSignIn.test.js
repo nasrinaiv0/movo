@@ -32,7 +32,7 @@ jest.mock('./lib/financeRepository', () => ({
   getCurrentSession: jest.fn(), deleteMyAccount: jest.fn(), signOut: jest.fn(),
   listAccounts: async () => [], listTransactions: async () => [],
   listBudgets: async () => [], listAutomationInbox: async () => [],
-  loadPreferences: async () => null, savePreferences: async () => null,
+  loadPreferences: async () => null, savePreferences: async () => null, savePreferencesIfUnchanged: async () => ({ updated_at: 'saved' }),
   purgeArchivedAutomations: async () => null, listArchivedAutomations: async () => [],
 }));
 jest.mock('./lib/localAttachments', () => ({

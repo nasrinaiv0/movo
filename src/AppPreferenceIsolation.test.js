@@ -46,6 +46,7 @@ jest.mock('./lib/financeRepository', () => ({
   listAccounts: async () => [], listTransactions: async () => [],
   listBudgets: async () => [], listAutomationInbox: async () => [],
   loadPreferences: (...args) => mockLoadPreferences(...args), savePreferences: (...args) => mockSavePreferences(...args),
+  savePreferencesIfUnchanged: (...args) => Promise.resolve(mockSavePreferences(...args)).then(row => row || { updated_at: 'saved' }),
   deleteAllCloudData: (...args) => mockClearCloud(...args),
   deleteMyAccount: (...args) => mockDeleteAccount(...args),
   purgeArchivedAutomations: async () => null, listArchivedAutomations: async () => [],
