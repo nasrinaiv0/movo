@@ -1,3 +1,9 @@
+## 2026-11-23 — PR #339 main integration (feature branch only; no merge to main)
+
+- **Before-change rationale:** main advanced by Android AGP 9.5.1 changes and two progress entries from PR #340. PR #339 only conflicts with main in this progress document; its 17 non-document code paths do not overlap main's changes.
+- **Proposed resolution:** preserve both sets of progress entries exactly; inherit Android build/tooling files verbatim from latest main, and preserve every existing friend-chat code blob verbatim. Integrate main into the feature branch without merging PR #339 or changing main/production.
+- **Verification gates:** rerun all workflows on this new exact head (especially iOS and Android if triggered), check Vercel preview, and keep PR #341 stacked on the updated parent. This integration is not a release approval.
+
 ## 2026-11-23 — Friend chats and transaction-card sharing (staging PR)
 
 - **Scope:** Dedicated accepted-friend Chats under Friends; friend profile photos, unread inbox counts, private text, selected expense/income/transfer snapshot cards. No bank transfer, linked-account disclosure or ledger writes.
@@ -6,6 +12,24 @@
 - **Progress:** Implementation and targeted tests committed on `feat/friend-chat-transaction-cards-20261123`; no migration applied to production and no main/production/store changes.
 - **Acceptance gates:** Exact-head Node CI, SQL apply/isolation test in disposable Supabase, Vercel preview, Android/iOS device tests, privacy disclosure/legal review, production API availability. Keep PR unmerged until evidence clears each gate.
 - **Detail:** [2026-11-23 friend chat rollout](engineering/updates/2026-11-23-friend-chat-transaction-sharing.md).
+
+## 2026-11-23 — PR #340 Android emulator infrastructure triage
+
+- **Evidence before change:** AGP 9.5.1's native app/Wear builds and other CI passed; the R8 acceptance lost the entire emulator while executing the *baseline* offline WebView smoke (after two PASS markers), as it also did on AGP 8.13 in PR #335. The diagnostic ZIP showed netsim shutdown; host still had ~14.9 GiB free, so no host OOM is established.
+- **Narrow mitigation under test:** raise RAM for **both** disposable baseline and candidate AVDs from 2 to 4 GiB; keep isolation, native test cases, exact PASS assertions, and fail-closed behavior. This is a controlled guest-memory hypothesis, not a proven fix.
+- **Acceptance:** require the full R8 comparison and fresh exact-head CI green before considering merge; real-device native plugins and store report remain separate gates. No main/production/migration/store changes.
+- **Details:** [AGP 9.5 engineering update](engineering/updates/2026-11-23-agp-9-5-upgrade.md).
+
+## 2026-11-23 — Android Gradle Plugin 9.5.1 and Gradle 9.6.0
+
+- **Upgrade.** Play Console asked for AGP 9 ("Upgrade to AGP version 9.0 to get the best performance"). AGP goes 8.13.0 → 9.5.1 and Gradle 8.14.3 → 9.6.0.
+- **Build file fixes.** The `clean` task uses `layout.buildDirectory`; `aaptOptions` becomes `androidResources`.
+- **Wear.** The Wear release is now minified and resource-shrunk.
+- **Compatibility switches.** Capacitor 8.6 modules still use the old DSL and the Kotlin plugin, so `android.newDsl=false` and `android.builtInKotlin=false` are set. `android.r8.strictFullModeForKeepRules=false` keeps Capacitor/Cordova reflective constructors safe in release.
+- **Keep rules.** Unchanged, as the paired R8 workflow requires.
+- **Score limit.** 100% is not reachable while Capacitor's bridge needs its plugin classes kept by name.
+- **Validation.** Android builds run only in GitHub CI; this container cannot reach Google Maven.
+- **Details.** [update](engineering/updates/2026-11-23-agp-9-5-upgrade.md).
 
 ## 2026-11-23 — Audit fixes: cross-device sync, same-currency transfers, unconvertible totals, net worth
 
