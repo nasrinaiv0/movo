@@ -1,3 +1,10 @@
+## 2026-11-23 — PR #340 Android emulator infrastructure triage
+
+- **Evidence before change:** AGP 9.5.1's native app/Wear builds and other CI passed; the R8 acceptance lost the entire emulator while executing the *baseline* offline WebView smoke (after two PASS markers), as it also did on AGP 8.13 in PR #335. The diagnostic ZIP showed netsim shutdown; host still had ~14.9 GiB free, so no host OOM is established.
+- **Narrow mitigation under test:** raise RAM for **both** disposable baseline and candidate AVDs from 2 to 4 GiB; keep isolation, native test cases, exact PASS assertions, and fail-closed behavior. This is a controlled guest-memory hypothesis, not a proven fix.
+- **Acceptance:** require the full R8 comparison and fresh exact-head CI green before considering merge; real-device native plugins and store report remain separate gates. No main/production/migration/store changes.
+- **Details:** [AGP 9.5 engineering update](engineering/updates/2026-11-23-agp-9-5-upgrade.md).
+
 ## 2026-11-23 — Android Gradle Plugin 9.5.1 and Gradle 9.6.0
 
 - **Upgrade.** Play Console asked for AGP 9 ("Upgrade to AGP version 9.0 to get the best performance"). AGP goes 8.13.0 → 9.5.1 and Gradle 8.14.3 → 9.6.0.
