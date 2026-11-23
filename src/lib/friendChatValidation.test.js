@@ -31,5 +31,6 @@ test('a transaction is an explicit, strictly projected immutable share card, not
 
 test('inbox is a read-only action and unknown operations are rejected', () => {
   expect(chatPayload('inbox', { ownerId: 'forged' })).toEqual({});
+  expect(chatPayload('inbox_brief', { ownerId: 'forged' })).toEqual({});
   expect(chatPayload('transfer_money', { connectionId, clientId })).toEqual({ error: 'invalid_action' });
 });

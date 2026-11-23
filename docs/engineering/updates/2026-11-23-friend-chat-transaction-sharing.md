@@ -30,3 +30,9 @@ No merge or live migration before all CI + preview + privacy review + live hosti
 
 ## Isolated SQL CI discovery (second pass)
 - The server-side migration file accidentally contains repeated trailing SQL after its first successful COMMIT, causing psql to parse an orphaned conditional and fail. Remove only this stray post-COMMIT content; retain the complete RLS/service-only function definition and run the existing isolated PostgreSQL regression harness again.
+
+## Avatar bandwidth optimization — 2026-11-23
+- The first accepted-friend inbox load and foreground return fetch avatars. The authenticated `inbox_brief` action supplies the same membership-filtered names, unread counts and message previews, but omits profile-photo data on subsequent 30-second foreground checks.
+- React preserves last-known photos only within the mounted account's connection IDs, fetches full photos on return for updates/removals, and drops entries for removed friends.
+- Worst-case before this change: 100 contacts × 90 KB × 120 checks/hour ≈ 1.08 GB/hour while foregrounded. The brief path avoids retransmitting those photo bytes; this is a theoretical cap, not typical usage.
+- The change is covered by endpoint validation, component polling and the same isolated SQL migration checks. Staging only; CI/preview/device verification remains mandatory.

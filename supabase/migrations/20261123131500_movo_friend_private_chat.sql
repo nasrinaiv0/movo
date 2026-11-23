@@ -51,9 +51,9 @@ begin
   if p_actor is null or current_user <> 'service_role' then
     raise exception 'service_role_required' using errcode = '42501';
   end if;
-  if p_action = 'inbox' then
+  if p_action in ('inbox','inbox_brief') then
     select coalesce(jsonb_agg(jsonb_build_object(
-      'id', recent.id, 'name', recent.name, 'photo', coalesce(recent.photo, ''),
+      'id', recent.id, 'name', recent.name, 'photo', case when p_action='inbox' then coalesce(recent.photo, '') else '' end,
       'lastMessage', coalesce(recent.last_message, ''), 'updatedAt', recent.updated_at,
       'unread', recent.unread
     ) order by recent.updated_at desc, recent.id), '[]'::jsonb) into output_rows
@@ -71,6 +71,7 @@ begin
       from public.movo_friend_connections f
       left join public.movo_profile_avatars avatar
         on avatar.owner_id=case when f.member_low=p_actor then f.member_high else f.member_low end
+        and p_action='inbox'
       left join public.movo_friend_message_reads reads on reads.connection_id=f.id and reads.owner_id=p_actor
       where f.member_low=p_actor or f.member_high=p_actor
       order by updated_at desc,f.id limit 100

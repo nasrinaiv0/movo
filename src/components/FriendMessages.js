@@ -48,16 +48,24 @@ function SharedCard({ card }) {
 export function FriendChatsDirectory({ session, onSelect }) {
   const [friends, setFriends] = useState(null);
   const [error, setError] = useState('');
-  const load = useCallback((signal) => {
+  const photosFetched = useRef(false);
+  const load = useCallback((signal, refreshPhotos = false) => {
     if (typeof document !== 'undefined' && document.hidden) return;
-    chatRequest(session, 'inbox', {}, signal).then(result => {
-      if (!signal?.aborted) { setFriends(result.friends || []); setError(''); }
+    const full = refreshPhotos || !photosFetched.current;
+    chatRequest(session, full ? 'inbox' : 'inbox_brief', {}, signal).then(result => {
+      if (signal?.aborted) return;
+      if (full) photosFetched.current = true;
+      setFriends(previous => (result.friends || []).map(friend => ({
+        ...friend, photo: full ? friend.photo : previous?.find(item => item.id === friend.id)?.photo || '',
+      })));
+      setError('');
     }).catch(cause => { if (!signal?.aborted && cause.name !== 'AbortError') setError(statusMessage(cause)); });
   }, [session]);
   useEffect(() => {
     const controller = new AbortController();
+    photosFetched.current = false;
     load(controller.signal);
-    const onReturn = () => { if (!document.hidden) load(controller.signal); };
+    const onReturn = () => { if (!document.hidden) load(controller.signal, true); };
     document.addEventListener('visibilitychange', onReturn);
     const timer = window.setInterval(() => { if (!document.hidden) load(controller.signal); }, 30000);
     return () => { controller.abort(); window.clearInterval(timer); document.removeEventListener('visibilitychange', onReturn); };

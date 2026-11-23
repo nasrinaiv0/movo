@@ -2,7 +2,7 @@
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const CONTROL = /[\p{Cc}\u202A-\u202E\u2066-\u2069]/u;
-const ACTIONS = new Set(['inbox', 'open', 'read', 'send']);
+const ACTIONS = new Set(['inbox', 'inbox_brief', 'open', 'read', 'send']);
 const KINDS = new Set(['expense', 'income', 'transfer']);
 
 function cleanText(value, limit) {
@@ -28,7 +28,7 @@ function cardPayload(input) {
 
 function chatPayload(action, input) {
   if (!ACTIONS.has(action)) return { error: 'invalid_action' };
-  if (action === 'inbox') return {};
+  if (action === 'inbox' || action === 'inbox_brief') return {};
   if (typeof input.connectionId !== 'string' || !UUID.test(input.connectionId)) return { error: 'friend_connection_required' };
   const connectionId = input.connectionId.toLowerCase();
   if (action !== 'send') return { connectionId };

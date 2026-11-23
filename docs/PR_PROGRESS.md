@@ -2,6 +2,7 @@
 
 - **Scope:** Dedicated accepted-friend Chats under Friends; friend profile photos, unread inbox counts, private text, selected expense/income/transfer snapshot cards. No bank transfer, linked-account disclosure or ledger writes.
 - **Backend:** Verified bearer-token actor, service-only conversation SQL, friends-only membership on read/send, RLS + revoked public grants, idempotent message nonce, 30/min send rate cap, cascading history deletion when friends remove/block.
+- **Inbox efficiency:** The first/foreground request includes friend photos, while ongoing unread checks reuse cached images and fetch only text/counts. Before optimization, the theoretical maximum was 9 MB per 100-friend poll with 90 KB photos.
 - **Progress:** Implementation and targeted tests committed on `feat/friend-chat-transaction-cards-20261123`; no migration applied to production and no main/production/store changes.
 - **Acceptance gates:** Exact-head Node CI, SQL apply/isolation test in disposable Supabase, Vercel preview, Android/iOS device tests, privacy disclosure/legal review, production API availability. Keep PR unmerged until evidence clears each gate.
 - **Detail:** [2026-11-23 friend chat rollout](engineering/updates/2026-11-23-friend-chat-transaction-sharing.md).

@@ -74,3 +74,21 @@ test('transaction sharing is opt-in and excludes hidden account fields', async (
   expect(JSON.stringify(sent[2])).not.toMatch(/accountName|cardNumber|receipt_path|Secret/);
   close();
 });
+
+test('inbox polls status without retransferring cached profile photos', async () => {
+  jest.useFakeTimers();
+  try {
+    chatRequest.mockImplementation(async (_, action) => {
+      if (action === 'inbox') return { friends: [{ ...connection, photo: 'data:image/jpeg;base64,/9j/2Q==', unread: 0 }] };
+      if (action === 'inbox_brief') return { friends: [{ ...connection, photo: '', lastMessage: 'Hi', unread: 1 }] };
+      return { ok: true };
+    });
+    const { el, close } = await mount(<FriendChatsDirectory session={session} onSelect={() => {}} />);
+    expect(el.querySelector('.friend-chat-avatar img')).not.toBeNull();
+    await act(async () => { jest.advanceTimersByTime(30000); });
+    expect(chatRequest.mock.calls.some(call => call[1] === 'inbox_brief')).toBe(true);
+    expect(el.querySelector('.friend-chat-avatar img')).not.toBeNull();
+    expect(el.querySelector('.friend-chat-unread').textContent).toBe('1');
+    close();
+  } finally { jest.useRealTimers(); }
+});
