@@ -1,3 +1,9 @@
+## 2026-11-23 — PR #341 exact-head iOS workflow trigger (staging only)
+
+- **Evidence:** workflow `ios-build.yml` listens to `pull_request` against `main` and only runs on matching source changes. While PR #341 targeted the stacked feature base, its iOS check was `pending` with **zero jobs**, which is not a simulator build.
+- **Before-commit plan:** temporarily retarget the unmerged PR to main, commit documentation only to trigger a real `synchronize` event, record workflow IDs, then retarget to updated PR #339 before any merges. No production, database, signing, store upload or application-code changes. Keep iOS acceptance gated on the actual job outcome.
+- **Checked:** all 18 feature/test blob IDs remain identical after integration with #339's newer Android build tooling, and prior exact-head Phase 1/SQL/hybrid/IAP/container checks passed at `0967d7fb`. Fresh checks on the new documentation head must pass again.
+
 ## 2026-11-23 — PR #341 stacked-head integration (staging only)
 
 - **Before-change evidence:** #341's previous source head `0967d7fb30b0` passed Phase 1, finance tenant isolation, IAP, hybrid sync, container and Vercel READY. iOS remained pending with no jobs after retargeting to the feature base; this is not a simulator pass.

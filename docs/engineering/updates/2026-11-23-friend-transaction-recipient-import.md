@@ -45,3 +45,7 @@ Revert the feature PR before deployment, or remove the new decision route/UI and
 - Hosted preview at prior exact head `0967d7fb30b0056d65382b7e75c840983f383835` was Vercel READY and its signed-out HTML shell served HTTP 200 with CSP, HSTS, noindex and nosniff. This does **not** verify a signed-in recipient import; the required private chat/decision migrations were not applied.
 - The iOS PR workflow was pending with zero jobs (path/base-filtered), so no current-head iOS build acceptance was proven. A Vercel cloud sandbox smoke attempt returned HTTP 402 payment_required; no sandbox, billing change, hosted setting or production mutation was made.
 - PR #339 and #341 remain unmerged. Confirm new-head CI, Vercel preview, iOS, real two-user and offline→cloud acceptance before recommending any rollout.
+
+## 2026-11-23 — Real iOS workflow rerun plan (staging only)
+- The PR branch-filtered iOS check was pending with no jobs while #341 targeted #339. Repointing the PR base to main alone sent an edited event, not the required synchronize event. This documentation-only source commit intentionally forces fresh full CI and macOS/iOS runs on the exact current head; restore #341 base to #339 after jobs exist.
+- No feature/SQL/native changes in this commit. Do not claim an iOS success without an executed Apple simulator job. Keep both PRs unmerged, with no production or store changes.
