@@ -9502,3 +9502,10 @@ html.ios-interface.native-chrome .movo-app.movo-app.movo-app.movo-app .screen > 
   .movo-app.layout-dual .sheet { max-height: calc(100vh - env(viewport-segment-top 0 1, 50vh)); border-radius: 22px 22px 0 0; }
   .movo-app.layout-dual .toast { bottom: calc(100vh - env(viewport-segment-bottom 0 0, 50vh) + 16px); }
 }
+
+/* Home net worth never cut (audit 2026-11-23): at large text sizes the amount read "₱167,74". The net worth keeps its
+   full amount on one line; when it no longer fits beside Assets/Liabilities, those move to the next line. */
+.movo-app .fp-home-top { flex-wrap: wrap; row-gap: 8px; }
+.movo-app .fp-home-top > span:first-child { flex: 1 0 auto; max-width: 100%; }
+.movo-app .fp-home-top strong { overflow: visible; text-overflow: clip; }
+.movo-app .fp-home-top .fp-home-split { margin-inline-start: auto; }

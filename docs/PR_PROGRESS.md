@@ -1,3 +1,17 @@
+## 2026-11-23 — Audit fixes: cross-device sync, same-currency transfers, unconvertible totals, net worth
+
+- **Cross-device sync.** Preferences that change balances (recorded card payments, card kind and credit limit, card–bank links) now sync with a three-way merge. Saves are refused when someone else wrote first (`savePreferencesIfUnchanged`), and MOVO pulls the account copy on returning to the foreground. A device with an older copy can no longer erase another device's card payments or flip a card's type.
+- **Transfers.** Transfers are limited to accounts in the same currency.
+- **Totals.** A record with no exchange rate adds 0 to totals instead of blanking them, and still shows its own currency.
+- **Display.** Home net worth wraps instead of being cut off at the Largest text size.
+- **Startup.** The store plugin loads on first use.
+- **Validation.** 271 suites, 1,789 tests; `tsc` clean; strict build compiled.
+- **Owner gates.**
+  - Restore Vercel and redeploy.
+  - Approve the `account_erasure` and `enforce_archive_and_billing_retention` production migrations (checked against production; the first attempt waited on an unanswered approval prompt), then enable `MOVO_ACCOUNT_ERASURE_ENABLED`.
+  - Finish the Play Console subscription setup.
+- **Details.** [update](engineering/updates/2026-11-23-audit-fixes-sync-transfers-totals.md).
+
 ## 2026-11-22 — Aries motion and Home hero entrance
 
 - Aries settles in when an expression changes. Each mood has calm idle motion: look-around, nod, droop and sigh, or huff with an arm pump. On Home, Aries rises onto the balance card and waves once per session. All of it is off under reduced motion. [Details](engineering/updates/2026-11-22-aries-motion-hero.md).

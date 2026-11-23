@@ -64,6 +64,7 @@ jest.mock('./lib/financeRepository', () => {
     updateAccount: async () => { throw mockOffline(); },
     loadPreferences: async () => null,
     savePreferences: async () => null,
+    savePreferencesIfUnchanged: async () => ({ updated_at: 'saved' }),
     purgeArchivedAutomations: async () => null,
     listArchivedAutomations: async () => [],
     signOut: async () => { mockCalls.signOut += 1; return { localOnly: mockNet.down }; },

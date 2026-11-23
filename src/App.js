@@ -61,7 +61,8 @@ import { buildChatChart, chartSummary, CHART_PROMPTS } from './lib/chatCharts';
 import { updateStreak, newlyEarned } from './lib/streak';
 import { MovoMark } from './components/MovoLogo';
 import { findDuplicate, refOf } from './lib/duplicates';
-import { mergePreferences, unionById, cloudSafePreferences } from './lib/prefsMerge';
+import { mergePreferences, mergePreferencesThreeWay, sameValue, stableJson, unionById, cloudSafePreferences } from './lib/prefsMerge';
+import { sameTransferCurrency } from './lib/transferCurrency';
 import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification, pushGranted } from './lib/alerts';
 import { lockState } from './lib/appLock';
 import { buildBriefing } from './lib/insights';
@@ -93,7 +94,7 @@ import { spendingLimitProgress } from './lib/spendingLimits';
 import { accountBalance, accountAvailableBalance, savingsBalance } from './lib/financeCalculations';
 import { buildTransactionRunningBalances } from './lib/transactionRunningBalances';
 import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent, listLoans, listReceivables, createLoan, createReceivable } from './lib/obligationsRepository';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferencesIfUnchanged, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
 import { listenForAndroidBack, listenForAppUrls, listenForWearActions } from './lib/native';
 import { startNativeChrome } from './lib/nativeChrome';
@@ -1187,7 +1188,11 @@ function App() {
       currency: base, amount: convert(Number(t.amount), t.currency || base, base, rates),
       accountName: t.source_account_id ? (accountsById.get(t.source_account_id)?.name || tr('Account')) : tr('Accounting event'),
     }));
-    return [...regular, ...accounting].filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date));
+    // A record whose currency has no exchange rate keeps its own amount on screen but adds 0 to home-currency totals,
+    // so one such record can no longer blank a whole month's income, expenses and charts (audit 2026-11-23).
+    return [...regular, ...accounting].filter(t => Number.isFinite(new Date(t.date).getTime()))
+      .map(t => (Number.isFinite(t.amount) ? t : { ...t, amount: 0, unconvertible: true }))
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [rawTxs, useOwnerAccounting, cloudActivities, baseAccounts, base, rates]);
   const accountsView = useMemo(() => {
     const ledger = [...txs, ...visiblePostings];
@@ -1500,6 +1505,9 @@ function App() {
     if (!formAccounts.length) { setError(tr('Add an account or card in Wallet first, then log this transaction.')); return false; }
     if (!draft.account_id) { setError(tr('Choose an account before saving this transaction.')); return false; }
     if (type === 'transfer' && (!draft.account_id || !draft.transfer_to_account_id || draft.transfer_to_account_id === draft.account_id)) { setError(tr('Choose two different accounts for a transfer.')); return false; }
+    // A transfer stores one amount, so both accounts must use the same currency; otherwise the receiving account's
+    // balance would be re-converted at each day's rate (audit 2026-11-23).
+    if (type === 'transfer' && !sameTransferCurrency(formAccounts, draft.account_id, draft.transfer_to_account_id)) { setError(tr('Transfers move money between accounts in the same currency. For another currency, record an expense from one account and an income in the other.')); return false; }
     const category = type === 'income' ? 'Income' : type === 'transfer' ? 'Transfer' : draft.category;
     // Time is recorded automatically (hour, minute, second) at the moment of saving unless one was set.
     const clock = /^\d{2}:\d{2}(:\d{2})?$/.test(draft.time || '') ? (draft.time.length === 5 ? `${draft.time}:00` : draft.time) : new Date().toTimeString().slice(0, 8);
@@ -2177,6 +2185,7 @@ function App() {
       const card = accountsView.find(a => a.id === cardId);
       const from = accountsView.find(a => a.id === fromAccountId && !a.is_archived && a.id !== cardId);
       if (!card || !from) throw new Error(tr('Choose the account you paid from.'));
+      if ((from.currency || 'PHP') !== (card.currency || 'PHP')) throw new Error(tr('Transfers move money between accounts in the same currency. For another currency, record an expense from one account and an income in the other.'));
       const id = newRecordId();
       const payload = { merchant: `${tr('Card payment')} · ${card.institution_name || card.name}`.slice(0, 160), amount: value, currency: from.currency || base, transaction_type: 'transfer', category: 'Transfer', account_id: from.id, transfer_to_account_id: card.id, occurred_at: loggedAt(day), note: '' };
       const written = cloudMode ? await createLocalFirst({ ...payload, id }) : { offline: true };
@@ -2345,6 +2354,9 @@ function App() {
         setPrefs(cur => preferenceOwnerRef.current === userId ? mergePreferences(DEFAULTS, cur, cloudSafePreferences(row.prefs)) : cur);
         if (Array.isArray(row.stickers) && row.stickers.length) replaceCustomStickers(unionById(row.stickers, getCustomStickers(), 40));
       }
+      // The account's copy as read: later saves apply only what this device changed on top of the latest copy.
+      sync.base = row?.prefs && typeof row.prefs === 'object' && !Array.isArray(row.prefs) ? cloudSafePreferences(row.prefs) : null;
+      sync.updatedAt = row?.updated_at || null;
       sync.ready = true;
       setStickerTick(t => t + 1); // upload the merged copy (or this device's on a first sign-in)
     }).catch(() => { /* table unavailable: stay device-only */ });
@@ -2399,10 +2411,59 @@ function App() {
       const stickers = getCustomStickers().filter(st => (size += (st.src || '').length + 200) < 3_800_000);
       const shared = cloudSafePreferences(prefs);
       if ((shared.mascot || '').length > 120_000) delete shared.mascot;
-      savePreferences(userId, shared, stickers).catch(() => { /* retried on the next change */ });
+      const stickerKey = stableJson(stickers.map(st => st.id));
+      if (sync.base && sameValue(shared, sync.base) && sync.stickerKey === stickerKey) return; // nothing new to send
+      if (sync.busy) { sync.again = true; return; }
+      const stillOwner = () => sync.user === userId && preferenceEpochRef.current === preferenceEpoch && preferenceOwnerRef.current === userId && cloudAuthUserRef.current === userId;
+      // Read the account's latest copy, apply this device's changes on top (three-way), and save only if nobody
+      // wrote in between; otherwise read again. A device with an older copy can no longer erase another device's
+      // card payments, card types or card-bank links, or the server's own subscription updates.
+      const push = async () => {
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+          const row = await loadPreferences(userId);
+          if (!stillOwner()) return;
+          const remote = row?.prefs && typeof row.prefs === 'object' && !Array.isArray(row.prefs) ? cloudSafePreferences(row.prefs) : null;
+          const merged = remote ? mergePreferencesThreeWay(sync.base || remote, shared, remote) : shared;
+          const saved = remote && sameValue(merged, remote) && sync.stickerKey === stickerKey
+            ? row : await savePreferencesIfUnchanged(userId, merged, stickers, row?.updated_at || null);
+          if (!saved) continue; // another device or the server saved first: merge with that copy and try again
+          if (!stillOwner()) return;
+          sync.base = merged; sync.updatedAt = saved.updated_at || row?.updated_at || null; sync.stickerKey = stickerKey;
+          if (!sameValue(merged, shared)) setPrefs(cur => preferenceOwnerRef.current === userId ? { ...cur, ...mergePreferencesThreeWay(shared, cloudSafePreferences(cur), merged) } : cur);
+          return;
+        }
+      };
+      sync.busy = true;
+      push().catch(() => { /* retried on the next change */ }).finally(() => {
+        sync.busy = false;
+        if (sync.again) { sync.again = false; setStickerTick(t => t + 1); }
+      });
     }, 1500);
     return () => clearTimeout(sync.timer);
   }, [userId, prefs, stickerTick, entitlement, cloudMode, preferenceOwner, preferenceEpoch]);
+  // Bring in what other devices saved when MOVO comes back to the foreground (and every minute while it is open),
+  // keeping this device's unsaved changes on top.
+  useEffect(() => {
+    if (!userId || !cloudMode) return undefined;
+    const pull = () => {
+      const sync = prefsSync.current;
+      if (document.visibilityState !== 'visible' || !sync.ready || sync.user !== userId || sync.busy || preferenceBlockedRef.current.has(userId)) return;
+      const epoch = preferenceEpochRef.current;
+      loadPreferences(userId).then(row => {
+        if (!row?.prefs || typeof row.prefs !== 'object' || Array.isArray(row.prefs) || row.updated_at === sync.updatedAt || sync.busy) return;
+        if (sync.user !== userId || preferenceEpochRef.current !== epoch || preferenceOwnerRef.current !== userId || cloudAuthUserRef.current !== userId) return;
+        const remote = cloudSafePreferences(row.prefs);
+        const base = sync.base || remote;
+        setPrefs(cur => preferenceOwnerRef.current === userId ? { ...cur, ...mergePreferencesThreeWay(base, cloudSafePreferences(cur), remote) } : cur);
+        sync.base = remote; sync.updatedAt = row.updated_at;
+        if (Array.isArray(row.stickers) && row.stickers.length) replaceCustomStickers(unionById(row.stickers, getCustomStickers(), 40));
+      }).catch(() => { /* offline: try again later */ });
+    };
+    document.addEventListener('visibilitychange', pull);
+    window.addEventListener('focus', pull);
+    const timer = setInterval(pull, 60000);
+    return () => { document.removeEventListener('visibilitychange', pull); window.removeEventListener('focus', pull); clearInterval(timer); };
+  }, [userId, cloudMode, setPrefs]);
 
   /* ---------- alerts delivered by the browser (Push Notifications), held during quiet hours ---------- */
   useEffect(() => {

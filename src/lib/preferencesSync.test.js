@@ -1,14 +1,14 @@
 const calls = [];
 const chain = (result) => {
   const q = {};
-  ['select', 'eq', 'upsert'].forEach(m => { q[m] = (...args) => { calls.push([m, ...args]); return q; }; });
+  ['select', 'eq', 'upsert', 'insert', 'update'].forEach(m => { q[m] = (...args) => { calls.push([m, ...args]); return q; }; });
   q.maybeSingle = async () => result; q.single = async () => result;
   return q;
 };
 const mockTables = [];
 const mockFrom = (table) => { mockTables.push(table); return chain({ data: { prefs: { theme: 'dark' }, stickers: [], updated_at: 'now' }, error: null }); };
 jest.mock('./supabaseClient', () => ({ supabase: { from: (...a) => mockFrom(...a) } }));
-const { loadPreferences, savePreferences } = require('./financeRepository');
+const { loadPreferences, savePreferences, savePreferencesIfUnchanged } = require('./financeRepository');
 const { replaceCustomStickers, getCustomStickers } = require('./stickers');
 
 beforeEach(() => { calls.length = 0; mockTables.length = 0; });
@@ -23,6 +23,17 @@ test('loads and saves only the signed-in user\'s preferences row', async () => {
   const upsert = calls.find(c => c[0] === 'upsert');
   expect(upsert[1]).toMatchObject({ user_id: 'user-1', prefs: { theme: 'light' }, stickers: [{ id: 's' }] });
   expect(upsert[2]).toEqual({ onConflict: 'user_id' });
+});
+
+test('saves only when the account copy is still the one this device read', async () => {
+  await savePreferencesIfUnchanged('user-1', { theme: 'light' }, undefined, '2026-11-23T01:00:00.123456+00:00');
+  expect(calls.find(c => c[0] === 'update')[1]).toMatchObject({ prefs: { theme: 'light' } });
+  expect(calls).toContainEqual(['eq', 'user_id', 'user-1']);
+  expect(calls).toContainEqual(['eq', 'updated_at', '2026-11-23T01:00:00.123456+00:00']);
+  calls.length = 0;
+  await savePreferencesIfUnchanged('user-1', { theme: 'light' }, [], null);
+  expect(calls.find(c => c[0] === 'insert')[1]).toMatchObject({ user_id: 'user-1', prefs: { theme: 'light' }, stickers: [] });
+  expect(calls.some(c => c[0] === 'upsert')).toBe(false);
 });
 
 test('cloud sticker lists are validated before replacing the device list', () => {
