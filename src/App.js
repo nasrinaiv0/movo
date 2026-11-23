@@ -3060,7 +3060,7 @@ function App() {
       case 'Profile': return <Profile c={c} />;
       case 'Friends': return <>
         <SubHeader title={tr('Friends')} onBack={() => goBack('Profile')} />
-        <div className="friends-page"><FriendsContent key={friendIdentity} session={session} onSignIn={() => go('Sign in')}
+        <div className="friends-page"><FriendsContent key={friendIdentity} session={session} transactions={txs} onSignIn={() => go('Sign in')}
           onOpenSummary={openFriendSummary} /></div>
       </>;
       case 'FriendSummary': return !locked && selectedFriend?.owner === friendIdentity && session?.access_token
@@ -3203,7 +3203,7 @@ function App() {
         </div>
       </Sheet>}
 
-      {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session}
+      {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session} transactions={txs}
         inviteToken={sheet.invite} onClose={() => { clearFriendInvite(); setSheet(null); }}
         onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite}
         onOpenSummary={friend => { clearFriendInvite(); openFriendSummary(friend); }} />}
