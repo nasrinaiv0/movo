@@ -1,3 +1,14 @@
+## 2026-11-23 — Android Gradle Plugin 9.5.1 and Gradle 9.6.0
+
+- **Upgrade.** Play Console asked for AGP 9 ("Upgrade to AGP version 9.0 to get the best performance"). AGP goes 8.13.0 → 9.5.1 and Gradle 8.14.3 → 9.6.0.
+- **Build file fixes.** The `clean` task uses `layout.buildDirectory`; `aaptOptions` becomes `androidResources`.
+- **Wear.** The Wear release is now minified and resource-shrunk.
+- **Compatibility switches.** Capacitor 8.6 modules still use the old DSL and the Kotlin plugin, so `android.newDsl=false` and `android.builtInKotlin=false` are set. `android.r8.strictFullModeForKeepRules=false` keeps Capacitor/Cordova reflective constructors safe in release.
+- **Keep rules.** Unchanged, as the paired R8 workflow requires.
+- **Score limit.** 100% is not reachable while Capacitor's bridge needs its plugin classes kept by name.
+- **Validation.** Android builds run only in GitHub CI; this container cannot reach Google Maven.
+- **Details.** [update](engineering/updates/2026-11-23-agp-9-5-upgrade.md).
+
 ## 2026-11-23 — Audit fixes: cross-device sync, same-currency transfers, unconvertible totals, net worth
 
 - **Cross-device sync.** Preferences that change balances (recorded card payments, card kind and credit limit, card–bank links) now sync with a three-way merge. Saves are refused when someone else wrote first (`savePreferencesIfUnchanged`), and MOVO pulls the account copy on returning to the foreground. A device with an older copy can no longer erase another device's card payments or flip a card's type.

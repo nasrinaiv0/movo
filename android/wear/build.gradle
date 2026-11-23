@@ -21,7 +21,10 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
+            // Shrink, optimize and obfuscate the watch app too (R8 full mode, AGP 9).
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
         }
     }
     compileOptions {
