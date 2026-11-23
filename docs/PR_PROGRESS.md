@@ -1,3 +1,11 @@
+## 2026-11-23 — Friend chats and transaction-card sharing (staging PR)
+
+- **Scope:** Dedicated accepted-friend Chats under Friends; friend profile photos, unread inbox counts, private text, selected expense/income/transfer snapshot cards. No bank transfer, linked-account disclosure or ledger writes.
+- **Backend:** Verified bearer-token actor, service-only conversation SQL, friends-only membership on read/send, RLS + revoked public grants, idempotent message nonce, 30/min send rate cap, cascading history deletion when friends remove/block.
+- **Progress:** Implementation and targeted tests committed on `feat/friend-chat-transaction-cards-20261123`; no migration applied to production and no main/production/store changes.
+- **Acceptance gates:** Exact-head Node CI, SQL apply/isolation test in disposable Supabase, Vercel preview, Android/iOS device tests, privacy disclosure/legal review, production API availability. Keep PR unmerged until evidence clears each gate.
+- **Detail:** [2026-11-23 friend chat rollout](engineering/updates/2026-11-23-friend-chat-transaction-sharing.md).
+
 ## 2026-11-23 — Audit fixes: cross-device sync, same-currency transfers, unconvertible totals, net worth
 
 - **Cross-device sync.** Preferences that change balances (recorded card payments, card kind and credit limit, card–bank links) now sync with a three-way merge. Saves are refused when someone else wrote first (`savePreferencesIfUnchanged`), and MOVO pulls the account copy on returning to the foreground. A device with an older copy can no longer erase another device's card payments or flip a card's type.
