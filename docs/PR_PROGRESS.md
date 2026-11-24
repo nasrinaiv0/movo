@@ -1,3 +1,7 @@
+## 2026-11-24 — #343 browser evidence and shared native visual gate
+
+Exact 7c4c1bdc Chromium run 45321986274 passed 8/8 real-component checks; artifact 14888800582 contains 8 original screenshots and results.json with zero page errors or horizontal overflow. Receiving selection enables initial proceeds, payment preference remains independent, opt-out clears receiving selection. Integrate #342's shared XCTest-only native guest acceptance and browser gate; preserve all atomic SQL/accounting blobs. Revalidate the new head. No remote migrations or merge.
+
 ## 2026-11-24 — #343 Chromium parse failure and migration release gate
 
 Downloaded current-head diagnostic: blank document, browser `Unexpected token ':'` before heading render. Remove webpack eval-based devtool, use structured DefinePlugin env definitions (no remote credentials), and validate generated JS syntax before launching Chromium; record full error stack. This addresses the likely fixture bundling cause without changing application behavior or weakening assertions. Re-run required. Add separate migration approval checklist; production metadata previously confirmed RPC/table absent. No remote migrations or merge authorized.
@@ -21,6 +25,10 @@ First isolated SQL workflow passed. Add two simultaneous independent authenticat
 ## 2026-11-24 — Atomic loan disbursement (staging)
 
 One database RPC creates the loan, initial event and accounting posting, with an owner-scoped digest receipt and stable per-draft UUID. Added replay, validation, rollback, historical liability and retry tests. Existing edit and repayment paths unchanged. No remote migrations or production changes. Exact-head acceptance pending.
+
+## 2026-11-24 — #342 actual browser and native visual gate
+
+Prior exact head passed 1,806 tests and all four CI workflows; iOS artifact only showed the OS confirmation. Add the same real-component isolated Chromium loan fixture as #343, with syntax validation and failure screenshots, and an XCTest-only target/scheme that asserts the actual guest Planning UI and native URL entitlement response without signing in, modifying app code or logging any payment. Retain original simulator smoke and native physical compilation. Export XCTest attachments, fail on missing evidence. All exact-head CI/preview/visual checks must pass before merge. No migration or production write.
 
 ## 2026-11-24 — #342 integrate latest main before release review
 

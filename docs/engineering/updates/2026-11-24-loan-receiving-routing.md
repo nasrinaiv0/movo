@@ -14,3 +14,6 @@ Selection wiring and both regression suites are implemented. Initial CI rejected
 
 ## Latest main integration
 Tree comparison shows only the progress register overlaps the mascot merge. Preserve all original routing and accounting regression blobs and both documentation histories. Exact-head revalidation required before requested merge.
+
+## Actual visual release gate
+Previous simulator screenshot was an OS prompt. Real browser fixture and UI-only XCTest target added. Guest native planning/sign-in restriction and free automation gate must be proven by accessibility assertions; signed-in loan form is covered by isolated real-component browser fixtures, not a live account. Physical-device and store testing remain separate. No production changes.

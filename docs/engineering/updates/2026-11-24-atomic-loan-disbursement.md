@@ -22,3 +22,6 @@ Integrate #342's updated head and preserve original SQL and accounting changes. 
 
 ## Browser parse remediation and database gate
 Current browser artifact confirms a pre-render SyntaxError, not an Add selector defect. Remove eval wrappers, use structured compile-time environment definitions, run node --check over emitted JavaScript, preserve full stack and all acceptance assertions. Root fix requires rerun. See [migration approval checklist](2026-11-24-atomic-loan-migration-approval.md). No remote changes.
+
+## Verified browser acceptance and native gate
+Exact 7c4c1bdc run 45321986274 passed all eight combinations, 320/390/768/1280 widths in light/dark; original artifact 14888800582 inspected. No runtime errors or overflow. Integrate shared #342 visual acceptance target without changing SQL. New exact-head verification required; keep migration and merge blocked.
