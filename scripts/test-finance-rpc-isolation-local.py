@@ -143,6 +143,7 @@ def verify_atomic_loan_concurrency():
     sql(f"""
       select set_config('request.jwt.claims','{{"role":"service_role"}}',false);
       insert into auth.users(id) values ('{owner}');
+      insert into public.movo_manual_plan_grants(user_id,tier,expires_at,reason) values ('{owner}','pro',now()+interval '1 day','isolated concurrent test');
       insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance)
       values ('{bank}','{owner}','Concurrent synthetic bank','bank','PHP',1000);
     """, "seed concurrent synthetic loan owner")
@@ -152,6 +153,7 @@ def verify_atomic_loan_concurrency():
         result = command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE, stdin=f"""
           begin;
           set local role authenticated;
+          set local request.jwt.claims = '{{"role":"authenticated"}}';
           set local request.jwt.claim.sub = '{owner}';
           select (public.create_loan_atomic('{request}','{owner}','Concurrent debt','debt',500,'PHP',true,'{bank}',null,null,0,'[]',null,null)).id;
           select pg_sleep(0.5);

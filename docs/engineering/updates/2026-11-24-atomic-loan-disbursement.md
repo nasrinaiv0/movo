@@ -13,3 +13,6 @@ First exact-head disposable finance run succeeded. Add two independent authentic
 
 ## Concurrent seed correction
 Disposable account creation failed with sign_in_required before racing requests. Seed synthetic data with the existing service-role fixture claim only; the two actual request sessions remain authenticated and owner-bound. No production change or guard bypass.
+
+## Concurrent entitlement fixture
+Both concurrent calls correctly rejected the synthetic owner without cloud write entitlement. Add the same short-lived manual plan grant used by the existing disposable hybrid tests and explicit authenticated claims in both sessions; do not weaken server guards. New exact-head CI required.

@@ -1,3 +1,7 @@
+## 2026-11-24 — Atomic loan concurrency entitlement fixture
+
+The two-session RPC attempts correctly denied the synthetic free owner with cloud_read_only_upgrade_required. Seed a short-lived synthetic Pro grant using the existing hybrid-sync fixture pattern; set explicit authenticated claims in both worker sessions. No authorization guard changes. Sequential SQL still passed; concurrent rerun required.
+
 ## 2026-11-24 — Concurrent loan fixture authorization repair
 
 The sequential SQL regression passed again. Two-session test failed at synthetic account setup with sign_in_required before either RPC ran. Set the existing disposable fixture service-role JWT claim during seed only, as in the repository's SQL fixtures. Both racing callers still use authenticated role and owner-bound sub. Do not weaken the live guard. Exact-head rerun required.
