@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 40
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         profile: [wearos_small_round, wearos_large_round]
     steps:
@@ -29,6 +30,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          cache: gradle
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -48,7 +50,15 @@ jobs:
           test -f android/capacitor-cordova-android-plugins/cordova.variables.gradle
       - name: Compile wearable app and native acceptance tests
         working-directory: android
-        run: bash gradlew :wear:assembleDebug :wear:assembleDebugAndroidTest --no-daemon
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            log="$RUNNER_TEMP/wear-gradle-compile-$attempt.log"
+            if bash gradlew :wear:assembleDebug :wear:assembleDebugAndroidTest --no-daemon 2>&1 | tee "$log"; then exit 0; fi
+            if [ "$attempt" -eq 3 ] || ! grep -Eq 'Received status code 429|HTTP 429' "$log"; then exit 1; fi
+            sleep "$((attempt * 45))"
+          done
+          exit 1
       - name: Run round-screen and enlarged-font acceptance on Wear OS
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
@@ -75,16 +85,20 @@ jobs:
             adb shell input keyevent KEYCODE_WAKEUP
             adb shell wm dismiss-keyguard
             adb shell settings put system font_scale 1.0
-            bash android/gradlew -p android :wear:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon || { adb shell dumpsys window | grep -E "mCurrentFocus|mFocusedApp"; cat android/wear/build/outputs/androidTest-results/connected/debug/*.xml; exit 1; }
+            bash android/gradlew -p android :wear:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon || { adb shell dumpsys window > "$RUNNER_TEMP/wear-evidence/default-failure-focus.txt" || true; adb exec-out screencap -p > "$RUNNER_TEMP/wear-evidence/default-failure.png" || true; cat android/wear/build/outputs/androidTest-results/connected/debug/*.xml || true; exit 1; }
             adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png "$RUNNER_TEMP/wear-evidence/default-font.png"
+            test -s "$RUNNER_TEMP/wear-evidence/default-font.png"
+            adb shell rm -f /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png
             adb shell settings put system font_scale 2.0
             adb shell am force-stop com.nasrinai.movo
             adb shell dumpsys battery unplug
             adb shell input keyevent KEYCODE_WAKEUP
-            adb shell input keyevent KEYCODE_HOME
             adb shell wm dismiss-keyguard
-            bash android/gradlew -p android :wear:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --rerun-tasks || { adb shell dumpsys window | grep -E "mCurrentFocus|mFocusedApp"; cat android/wear/build/outputs/androidTest-results/connected/debug/*.xml; exit 1; }
+            adb shell am start -W -n com.nasrinai.movo/com.nasrinai.movo.wear.WearActivity
+            timeout 30s sh -c 'until adb shell dumpsys window | grep -Eq "mCurrentFocus=.*com\.nasrinai\.movo/"; do sleep 1; done' || { adb shell dumpsys window > "$RUNNER_TEMP/wear-evidence/enlarged-focus.txt"; adb exec-out screencap -p > "$RUNNER_TEMP/wear-evidence/enlarged-foreground-failure.png"; exit 1; }
+            bash android/gradlew -p android :wear:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --rerun-tasks || { adb shell dumpsys window > "$RUNNER_TEMP/wear-evidence/enlarged-failure-focus.txt" || true; adb exec-out screencap -p > "$RUNNER_TEMP/wear-evidence/enlarged-failure.png" || true; cat android/wear/build/outputs/androidTest-results/connected/debug/*.xml || true; exit 1; }
             adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png "$RUNNER_TEMP/wear-evidence/enlarged-font.png"
+            test -s "$RUNNER_TEMP/wear-evidence/enlarged-font.png"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
