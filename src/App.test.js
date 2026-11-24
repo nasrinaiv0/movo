@@ -982,12 +982,21 @@ describe('MOVO finance frontend', () => {
     expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent.includes('Save records') && button.disabled)).toBe(true);
   });
 
-  test('Menu groups plans and limits under financial planning, and a subscription can be added', () => {
+  test('Menu restores combined plans and limits, retains financial planning, and a subscription can be added', () => {
     nav(container, 'Menu');
     expect(container.querySelector('h1').textContent).toBe('Menu');
     const tiles = Array.from(container.querySelectorAll('.menu-tile strong')).map(n => n.textContent);
-    expect(tiles).toEqual(['Friends', 'Subscriptions', 'Cashback', 'Scheduled', 'Financial planning', 'Exchange rates', 'Crypto market', 'Stocks market', 'Archive']);
+    expect(tiles).toEqual(['Friends', 'Subscriptions', 'Cashback', 'Scheduled', 'Financial planning', 'Plans & limits', 'Exchange rates', 'Crypto market', 'Stocks market', 'Archive']);
     expect(tiles).not.toContain('Profile');
+    act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.querySelector('strong')?.textContent === 'Plans & limits').click());
+    const combined = container.querySelector('[role="dialog"][aria-label="Budgets and plans"]');
+    expect(combined).not.toBeNull();
+    expect(combined.querySelector('button[aria-pressed="true"]').textContent).toBe('Plans');
+    clickButton(container, 'Limits');
+    expect(combined.textContent).toContain('Account & merchant limits');
+    clickButton(container, 'Close Budgets and plans');
+    expect(container.querySelector('[role="dialog"][aria-label="Budgets and plans"]')).toBeNull();
+    expect(container.querySelector('h1').textContent).toBe('Menu');
     act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.querySelector('strong')?.textContent === 'Friends').click());
     expect(container.querySelector('h1').textContent).toBe('Friends');
     expect(container.querySelector('.friends-page')).not.toBeNull();
