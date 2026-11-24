@@ -186,7 +186,7 @@ begin
   perform id from public.financial_accounts where user_id=uid and not is_archived and currency=tx_currency
     and (id=p_account_id or id=p_transfer_to_account_id) order by id for share;
   get diagnostics account_count = row_count;
-  if account_count <> case when tx_type='transfer' then 2 else 1 end then
+  if account_count <> (case when tx_type='transfer' then 2 else 1 end) then
     raise exception 'share_account_unavailable' using errcode='42501';
   end if;
   ack:=public.apply_movo_sync_operation(m.id,'transactions','create',m.id,payload,null,0);
