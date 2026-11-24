@@ -13,6 +13,13 @@ Compared trees against the previous main SHA. Only the append-only progress regi
 ## 2026-11-24 — Loan/debt receiving-account routing (#342)
 
 Selection automatically enables proceeds; clearing or opting out disables it. Preserve historical liabilities and repayment preferences. Existing accounting RPC posts proceeds; no extra balance write. Added UI and isolated SQL regressions. Initial CI flagged fixture dollar quoting and per-commit documentation; fixed both in a documented consolidated implementation commit. Exact-head acceptance pending; no production change.
+## 2026-11-24 — PR #345 CI repair
+
+Original head `bdff6446`: GitHub per-commit documentation gate rejected two code-only commits; Vercel reported 1,804 passing tests and one failing legacy exact Menu tile expectation in App.test.js. Consolidate only this PR's three original commits into one documented commit, retain the direct shortcut and its unit test, update the full-app assertion and verify tab switch/close. No guard changes. No production or data changes. CI and actual visual acceptance pending. [Engineering update](engineering/updates/2026-11-24-menu-plans-limits.md).
+
+## 2026-11-24 — Restore direct Menu access to Plans & limits
+
+Owner request: restore one combined Plans & limits tile in Menu, using the existing `c.openBudgets('plans')` handler and centered Plans & limits sheet (Plans and Limits tabs, including account and merchant limits). Preserve Financial planning, existing data, offline behavior, subscription entitlements, translations and styling. No new routes, accounting logic, migrations or production changes. Acceptance: one tile, correct initial tab, both tabs accessible, close returns to Menu; exact-head CI and visual acceptance remain required.
 
 ## 2026-11-24 — #337 integration with current main
 
