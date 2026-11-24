@@ -178,6 +178,51 @@ def verify_atomic_loan_concurrency():
     """, "two independent authenticated SQL sessions: exactly one disbursement")
 
 
+def verify_friend_import_concurrency():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    sender = "00000000-0000-0000-0000-00000000f301"
+    owner = "00000000-0000-0000-0000-00000000f302"
+    bank = "10000000-0000-0000-0000-00000000f302"
+    connection = "20000000-0000-0000-0000-00000000f302"
+    message = "30000000-0000-0000-0000-00000000f302"
+    sql(f"""
+      select set_config('request.jwt.claims','{{"role":"service_role"}}',false);
+      insert into auth.users(id) values ('{sender}'),('{owner}');
+      insert into public.movo_manual_plan_grants(user_id,tier,expires_at,reason) values ('{owner}','pro',now()+interval '1 day','isolated concurrent import');
+      insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance) values ('{bank}','{owner}','Synthetic bank','bank','PHP',1000);
+      insert into public.movo_friend_connections(id,member_low,member_high,name_low,name_high) values ('{connection}','{sender}','{owner}','Sender','Recipient');
+      insert into public.movo_friend_messages(id,connection_id,sender_id,client_id,kind,body,card) values ('{message}','{connection}','{sender}',gen_random_uuid(),'transaction','','{{"type":"expense","currency":"PHP","amount":42.25,"date":"2026-11-23"}}');
+      insert into public.movo_friend_transaction_decisions(message_id,recipient_id,status) values ('{message}','{owner}','accepted');
+    """, "seed concurrent synthetic friend import")
+    gate = Barrier(2, timeout=10)
+    def worker():
+        gate.wait()
+        result = command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE, stdin=f"""
+          begin;
+          set local role authenticated;
+          set local request.jwt.claims = '{{"role":"authenticated"}}';
+          set local request.jwt.claim.sub = '{owner}';
+          select public.movo_import_friend_transaction('{owner}','{connection}','{message}','{bank}',null,'2026-11-23');
+          select pg_sleep(0.5);
+          commit;
+        """)
+        return result.stdout.strip()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(worker) for _ in range(2)]
+        receipts = [future.result(timeout=65) for future in futures]
+    if not receipts[0] or receipts[0] != receipts[1]:
+        raise RuntimeError("Concurrent imports did not return the same receipt")
+    sql(f"""
+      do $race$ begin
+        if (select count(*) from public.transactions where id='{message}' and user_id='{owner}' and amount=42.25)<>1
+           or (select count(*) from public.movo_sync_operations where operation_id='{message}' and user_id='{owner}')<>1
+           or (select status from public.movo_friend_transaction_decisions where message_id='{message}') is distinct from 'imported'
+        then raise exception 'atomic share duplicated or incomplete'; end if;
+      end $race$;
+    """, "two independent authenticated SQL sessions: exactly one share import")
+
+
 def main():
     command("createdb", *CONN, DATABASE)
     try:
@@ -265,6 +310,7 @@ def main():
         sql((ROOT / "supabase/tests/atomic_loan_disbursement.test.sql").read_text(),
             "atomic loan disbursement, payload replay, rollback and account isolation")
         verify_atomic_loan_concurrency()
+        verify_friend_import_concurrency()
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_") or not RESTORE_DATABASE.startswith("movo_rollback_test_"):

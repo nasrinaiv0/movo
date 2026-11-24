@@ -15,3 +15,6 @@ The recipient-import feature does not establish a debt, proof of payment, escrow
 - Confirm no false statement of end-to-end encryption or bank linking.
 - Review data-safety and privacy notices for shared financial information and recipient import metadata.
 - Review translations for all supported territories. This draft does not modify MOVO's published Terms/Privacy or legal acceptance version.
+
+## Atomic implementation review amendment
+The proposed server RPC posts only after a fresh owner-bound consent and explicit account mapping, with one canonical transaction and receipt. Offline drafts do not change balances before authorized reconciliation. The shared date is a calendar label stored at noon UTC; UI date presentation and international disclosure require review. After removal, private decision data is deleted; retry fails closed and the recipient retains their previously imported ledger record. This remains an unpublished draft, not effective legal text.
