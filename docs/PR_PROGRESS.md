@@ -1,3 +1,22 @@
+## 2026-11-24 — #342 iOS acceptance Keychain signing
+
+After the compile fix the XCTest reached the app, but it showed MOVO's fail-closed "Saved financial records are locked" screen: the acceptance build was unsigned, so the simulator app could not use the Keychain that holds the finance vault key. The XCTest step now builds with an ad hoc local signature for the simulator only. Assertions and vault behaviour are unchanged; workflow-only change.
+
+## 2026-11-24 — #342 iOS acceptance compile fix
+
+`build-ios` failed to compile the new XCTest target: `XCUIApplication.open(_:)` needs iOS 16.4 and the target deploys to iOS 15.0. The deep-link step is now behind an availability guard that fails (never skips) on older simulators. Test-only change; no app, accounting or database change.
+
+## 2026-11-24 — #342 actual browser and native visual gate
+
+Prior exact head passed 1,806 tests and all four CI workflows; iOS artifact only showed the OS confirmation. Add the same real-component isolated Chromium loan fixture as #343, with syntax validation and failure screenshots, and an XCTest-only target/scheme that asserts the actual guest Planning UI and native URL entitlement response without signing in, modifying app code or logging any payment. Retain original simulator smoke and native physical compilation. Export XCTest attachments, fail on missing evidence. All exact-head CI/preview/visual checks must pass before merge. No migration or production write.
+
+## 2026-11-24 — #342 integrate latest main before release review
+
+Compared trees against the previous main SHA. Only the append-only progress register overlaps; retain both histories and every existing loan routing/test blob. Inherit mascot integration and all other main files verbatim. Re-run exact-head CI and Vercel preview before any merge. No remote migration or production deployment initiated by this commit.
+
+## 2026-11-24 — Loan/debt receiving-account routing (#342)
+
+Selection automatically enables proceeds; clearing or opting out disables it. Preserve historical liabilities and repayment preferences. Existing accounting RPC posts proceeds; no extra balance write. Added UI and isolated SQL regressions. Initial CI flagged fixture dollar quoting and per-commit documentation; fixed both in a documented consolidated implementation commit. Exact-head acceptance pending; no production change.
 ## 2026-11-24 — PR #345 CI repair
 
 Original head `bdff6446`: GitHub per-commit documentation gate rejected two code-only commits; Vercel reported 1,804 passing tests and one failing legacy exact Menu tile expectation in App.test.js. Consolidate only this PR's three original commits into one documented commit, retain the direct shortcut and its unit test, update the full-app assertion and verify tab switch/close. No guard changes. No production or data changes. CI and actual visual acceptance pending. [Engineering update](engineering/updates/2026-11-24-menu-plans-limits.md).

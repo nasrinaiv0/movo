@@ -23,6 +23,7 @@
 		A1B2C3D4E5F6071829304005 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304015 /* PrivacyInfo.xcprivacy */; };
 		B00000000000000000000002 /* MOVOWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000001 /* MOVOWatchApp.swift */; };
 		B00000000000000000000004 /* MOVOWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B00000000000000000000003 /* MOVOWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C00000000000000000000002 /* MOVOAcceptance.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000001; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,6 +34,7 @@
 			remoteGlobalIDString = B0000000000000000000000A;
 			remoteInfo = MOVOWatch;
 		};
+		C0000000000000000000000C = {isa = PBXContainerItemProxy; containerPortal = 504EC2FC1FED79650016851F; proxyType = 1; remoteGlobalIDString = 504EC3031FED79650016851F; remoteInfo = App; };
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -66,6 +68,8 @@
 		A1B2C3D4E5F6071829304015 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		B00000000000000000000001 /* MOVOWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MOVOWatchApp.swift; sourceTree = "<group>"; };
 		B00000000000000000000003 /* MOVOWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MOVOWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C00000000000000000000001 /* MOVOAcceptance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UITests/MOVOAcceptance.swift"; sourceTree = SOURCE_ROOT; };
+		C00000000000000000000003 /* MOVOVisualAcceptance.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MOVOVisualAcceptance.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +82,7 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B00000000000000000000006 /* Watch Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		C00000000000000000000005 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -87,6 +92,7 @@
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				B00000000000000000000005 /* MOVOWatch */,
+				C00000000000000000000001 /* MOVOAcceptance.swift */,
 				504EC3051FED79650016851F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -96,6 +102,7 @@
 			children = (
 				504EC3041FED79650016851F /* App.app */,
 				B00000000000000000000003 /* MOVOWatch.app */,
+				C00000000000000000000003 /* MOVOVisualAcceptance.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -167,6 +174,7 @@
 			productReference = B00000000000000000000003 /* MOVOWatch.app */;
 			productType = "com.apple.product-type.application";
 		};
+		C00000000000000000000007 /* MOVOVisualAcceptance */ = {isa = PBXNativeTarget; buildConfigurationList = C0000000000000000000000a; buildPhases = (C00000000000000000000004,C00000000000000000000005,C00000000000000000000006,); buildRules = (); dependencies = (C0000000000000000000000b,); name = MOVOVisualAcceptance; productName = MOVOVisualAcceptance; productReference = C00000000000000000000003; productType = "com.apple.product-type.bundle.ui-testing"; };
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -182,6 +190,7 @@
 						ProvisioningStyle = Automatic;
 					};
 					B0000000000000000000000A = { ProvisioningStyle = Automatic; };
+					C00000000000000000000007 = { TestTargetID = 504EC3031FED79650016851F; };
 				};
 			};
 			buildConfigurationList = 504EC2FF1FED79650016851F /* Build configuration list for PBXProject "App" */;
@@ -202,6 +211,7 @@
 			targets = (
 				504EC3031FED79650016851F /* App */,
 				B0000000000000000000000A /* MOVOWatch */,
+				C00000000000000000000007 /* MOVOVisualAcceptance */,
 			);
 		};
 /* End PBXProject section */
@@ -223,6 +233,7 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B00000000000000000000008 /* Watch Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		C00000000000000000000006 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -240,10 +251,12 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B00000000000000000000007 /* Watch Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B00000000000000000000002 /* MOVOWatchApp.swift in Sources */, ); runOnlyForDeploymentPostprocessing = 0; };
+		C00000000000000000000004 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (C00000000000000000000002,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
 		B0000000000000000000000B /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = B0000000000000000000000A /* MOVOWatch */; targetProxy = B0000000000000000000000C /* PBXContainerItemProxy */; };
+		C0000000000000000000000b = {isa = PBXTargetDependency; target = 504EC3031FED79650016851F; targetProxy = C0000000000000000000000C; };
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
@@ -464,6 +477,8 @@
 			};
 			name = Release;
 		};
+		C00000000000000000000008 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 15.0; PRODUCT_BUNDLE_IDENTIFIER = com.nasrinai.movo.visualacceptance; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphonesimulator"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; TEST_TARGET_NAME = App;}; name = Debug; };
+		C00000000000000000000009 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 15.0; PRODUCT_BUNDLE_IDENTIFIER = com.nasrinai.movo.visualacceptance; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphonesimulator"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; TEST_TARGET_NAME = App;}; name = Release; };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -491,6 +506,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		C0000000000000000000000a = {isa = XCConfigurationList; buildConfigurations = (C00000000000000000000008,C00000000000000000000009,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */

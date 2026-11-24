@@ -43,7 +43,7 @@ concurrency:
 jobs:
   build-ios:
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -109,6 +109,24 @@ jobs:
           python3 scripts/ios-simulator-smoke.py \
             --app "$RUNNER_TEMP/movo-derived-data/Build/Products/Debug-iphonesimulator/App.app" \
             --screenshot "$RUNNER_TEMP/movo-ios-smoke/iphone-simulator-smoke.png"
+      - name: Assert actual MOVO native screens with XCTest
+        # Sign to Run Locally (ad hoc, simulator only): an unsigned app cannot use the
+        # Keychain, so the finance vault stays locked and the guest UI never appears.
+        run: |
+          set -euo pipefail
+          DEVICE=$(python3 -c 'import importlib.util,subprocess; s=importlib.util.spec_from_file_location("smoke","scripts/ios-simulator-smoke.py"); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); print(m.choose_iphone(subprocess.check_output(["xcrun","simctl","list","devices","available","--json"],text=True))["udid"])')
+          mkdir -p "$RUNNER_TEMP/movo-ios-smoke"
+          RESULT="$RUNNER_TEMP/movo-native-visual.xcresult"
+          set +e
+          xcodebuild -project ios/App/App.xcodeproj -scheme MOVOVisualAcceptance -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE" -derivedDataPath "$RUNNER_TEMP/movo-derived-data" -resultBundlePath "$RESULT" -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= test > "$RUNNER_TEMP/movo-ios-smoke/native-visual.log" 2>&1
+          STATUS=$?
+          set -e
+          tail -n 120 "$RUNNER_TEMP/movo-ios-smoke/native-visual.log"
+          if [ -d "$RESULT" ]; then
+            xcrun xcresulttool export attachments --path "$RESULT" --output-path "$RUNNER_TEMP/movo-ios-smoke/native-attachments"
+          fi
+          test "$STATUS" -eq 0
+          test -n "$(find "$RUNNER_TEMP/movo-ios-smoke/native-attachments" -type f -name '*.png' -print -quit)"
       - name: Upload simulator smoke-test screenshot
         if: always()
         uses: actions/upload-artifact@v4
