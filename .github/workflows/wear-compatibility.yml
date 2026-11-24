@@ -40,10 +40,11 @@ jobs:
           "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
           test -e /dev/kvm
           sudo chmod a+rw /dev/kvm
-      - name: Generate Capacitor Android native dependencies
+      - name: Build real web assets for native dependency generation
+        run: CI=true npm run build
+      - name: Synchronize Capacitor Android project
         run: |
-          mkdir -p android/app/src/main/assets
-          npx cap update android
+          npx cap sync android
           test -f android/capacitor-cordova-android-plugins/cordova.variables.gradle
       - name: Compile wearable app and native acceptance tests
         working-directory: android

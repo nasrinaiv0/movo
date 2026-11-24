@@ -1,3 +1,7 @@
+## 2026-11-24 — Wear clean checkout full sync (#335)
+
+Latest runner failed during Capacitor copy because ./build is absent. Match the existing Android native-security workflow: build real web assets and run cap sync android before the Wear Gradle task. Retain generated file assertion and all native tests. No fake build folder or reduced acceptance. No production change.
+
 ## 2026-11-24 — Wear acceptance clean-checkout repair (#335)
 
 The updated Wear runner reached Capacitor but failed with ENOENT writing capacitor.plugins.json. Create the generated app assets directory before dependency generation, preserving the Cordova Gradle assertion and native acceptance gates. Exact-head checks pending; no production change.

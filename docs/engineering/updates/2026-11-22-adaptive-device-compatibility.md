@@ -34,3 +34,6 @@ Before a device/store release, verify real cover↔inner and book/tabletop trans
 
 ## 2026-11-24 clean-checkout Wear generation
 The generated app assets directory must exist before Capacitor's native update writes plugin metadata. Create it before update, retain the Cordova file check and all emulator assertions. New head acceptance pending.
+
+## 2026-11-24 complete Capacitor sync
+Latest Wear failure is missing real web assets during plugin update. Run the standard strict web build and cap sync used by the passing native-security workflow, not a dummy assets directory. Native acceptance remains mandatory.
