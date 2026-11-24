@@ -133,6 +133,48 @@ ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 """
 
 
+
+def verify_atomic_loan_concurrency():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    owner = "00000000-0000-0000-0000-00000000d201"
+    bank = "10000000-0000-0000-0000-00000000d201"
+    request = "50000000-0000-0000-0000-00000000d201"
+    sql(f"""
+      insert into auth.users(id) values ('{owner}');
+      insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance)
+      values ('{bank}','{owner}','Concurrent synthetic bank','bank','PHP',1000);
+    """, "seed concurrent synthetic loan owner")
+    gate = Barrier(2, timeout=10)
+    def worker():
+        gate.wait()
+        result = command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE, stdin=f"""
+          begin;
+          set local role authenticated;
+          set local request.jwt.claim.sub = '{owner}';
+          select (public.create_loan_atomic('{request}','{owner}','Concurrent debt','debt',500,'PHP',true,'{bank}',null,null,0,'[]',null,null)).id;
+          select pg_sleep(0.5);
+          commit;
+        """)
+        return result.stdout.strip()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(worker) for _ in range(2)]
+        ids = [future.result(timeout=65) for future in futures]
+    if not ids[0] or ids[0] != ids[1]:
+        raise RuntimeError("Concurrent identical requests did not return the same liability")
+    sql(f"""
+      do $race$ begin
+        if (select count(*) from public.financial_loans where user_id='{owner}') <> 1
+          or (select count(*) from public.loan_creation_requests where user_id='{owner}') <> 1
+          or (select count(*) from public.loan_events where user_id='{owner}') <> 1
+          or (select count(*) from public.accounting_postings where user_id='{owner}') <> 1
+          or (select sum(signed_amount) from public.accounting_postings where account_id='{bank}') is distinct from 500
+          or (select outstanding_principal from public.financial_loans where user_id='{owner}') is distinct from 500
+        then raise exception 'concurrent loan duplicated or incomplete'; end if;
+      end $race$;
+    """, "two independent authenticated SQL sessions: exactly one disbursement")
+
+
 def main():
     command("createdb", *CONN, DATABASE)
     try:
@@ -201,6 +243,7 @@ def main():
             "loan payment account isolation, currency and single-ledger posting")
         sql((ROOT / "supabase/tests/atomic_loan_disbursement.test.sql").read_text(),
             "atomic loan disbursement, payload replay, rollback and account isolation")
+        verify_atomic_loan_concurrency()
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_") or not RESTORE_DATABASE.startswith("movo_rollback_test_"):

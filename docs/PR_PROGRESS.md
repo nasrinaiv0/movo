@@ -1,3 +1,7 @@
+## 2026-11-24 — Atomic loan parallel replay and rendered fixture acceptance
+
+First isolated SQL workflow passed. Add two simultaneous independent authenticated sessions using the same UUID and assert one liability, event, receipt and cash posting. Add isolated Chromium actual-component rendering for 320/390/768/1280px light/dark with external requests blocked, screenshot artifacts, receiving and repayment selection assertions and overflow checks. No production connection, no paid resource, no release. Exact-head evidence pending.
+
 ## 2026-11-24 — Atomic loan disbursement (staging)
 
 One database RPC creates the loan, initial event and accounting posting, with an owner-scoped digest receipt and stable per-draft UUID. Added replay, validation, rollback, historical liability and retry tests. Existing edit and repayment paths unchanged. No remote migrations or production changes. Exact-head acceptance pending.

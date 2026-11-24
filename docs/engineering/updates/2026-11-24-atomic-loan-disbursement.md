@@ -7,3 +7,6 @@ The screen creates a stable request UUID per open draft and reuses it for retrie
 
 ## Implementation
 Added the proposed RPC, protected request receipt, stable per-draft UUID and disposable SQL/UI tests. Exact-head tests pending. The local environment does not expose Supabase CLI; migration is a checked-in additive SQL candidate following existing repository ordering, not an applied migration. No persistent cross-restart retry queue or live acceptance claimed.
+
+## Parallel and visual acceptance plan
+First exact-head disposable finance run succeeded. Add two independent authenticated SQL sessions and exact-count assertions, plus real-component Chromium rendering using synthetic data and blocked external traffic. Browser screenshots are component evidence, not authenticated hosted financial acceptance. CI results pending.
