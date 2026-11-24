@@ -4,6 +4,8 @@ import argparse
 import hashlib
 import json
 import re
+import os
+import signal
 from pathlib import Path
 import shutil
 import subprocess
@@ -22,14 +24,35 @@ RULES = ANDROID / "app/proguard-rules.pro"
 SETTINGS = ANDROID / "settings.gradle"
 
 
+def interrupt_experiment(signum, _frame):
+    # GitHub sends SIGTERM when cancelling a step; allow finally to restore
+    # temporary settings and rules instead of dying with a dirty checkout.
+    raise KeyboardInterrupt(f"experiment interrupted by signal {signum}")
+
+
 def command(args, log, cwd=ANDROID):
     with Path(log).open("w") as output:
-        process = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        for line in process.stdout:
-            print(line, end="", flush=True)
-            output.write(line)
-        if process.wait():
-            raise subprocess.CalledProcessError(process.returncode, args)
+        process = subprocess.Popen(args, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   text=True, start_new_session=True)
+        try:
+            for line in process.stdout:
+                print(line, end="", flush=True)
+                output.write(line)
+            if process.wait():
+                raise subprocess.CalledProcessError(process.returncode, args)
+        except BaseException:
+            if process.poll() is None:
+                try:
+                    os.killpg(process.pid, signal.SIGTERM)
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    os.killpg(process.pid, signal.SIGKILL)
+                    process.wait()
+                except ProcessLookupError:
+                    process.wait()
+            raise
+        finally:
+            process.stdout.close()
 
 
 MAVEN_CENTRAL_RATE_LIMIT = re.compile(
@@ -142,4 +165,5 @@ def main():
 
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, interrupt_experiment)
     main()
