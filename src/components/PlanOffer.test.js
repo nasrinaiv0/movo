@@ -130,3 +130,27 @@ test('the current plan cannot be bought again and Terms open from the fine print
   expect(handlers.onOpenTerms).toHaveBeenCalled();
   cleanup();
 });
+
+test('a phone whose store returns no subscriptions explains why and can ask again, instead of a grey button', async () => {
+  isNativePurchasePlatform.mockReturnValue(true);
+  getStoreProducts.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+  const entitlement = { plan: 'pro', source: 'trial', trialEligible: false, expiresAt: future };
+  const { el, cleanup } = await render({ session, entitlement, feature: 'automation' });
+  const cta = el.querySelector('.plan-cta');
+  expect(cta.disabled).toBe(false);
+  expect(cta.textContent).toBe('Try again');
+  expect(el.textContent).toContain('The store has no MOVO subscriptions for this account yet.');
+  await act(async () => { cta.click(); await Promise.resolve(); });
+  expect(getStoreProducts).toHaveBeenCalledTimes(2);
+  cleanup();
+});
+
+test('a store that fails to load says so and offers a retry', async () => {
+  isNativePurchasePlatform.mockReturnValue(true);
+  getStoreProducts.mockRejectedValueOnce(new Error('BillingUnavailable'));
+  const entitlement = { plan: 'free', source: 'none', trialEligible: false };
+  const { el, cleanup } = await render({ session, entitlement, feature: 'automation' });
+  expect(el.querySelector('.plan-cta').textContent).toBe('Try again');
+  expect(el.textContent).toContain('The store could not load MOVO subscriptions.');
+  cleanup();
+});

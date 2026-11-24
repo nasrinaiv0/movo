@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import FriendsDiscovery from './FriendsDiscovery';
+import { FriendChatsDirectory, FriendConversation } from './FriendMessages';
 import Icon from './Icon';
 import { MovoMark } from './MovoLogo';
 import { friendCardImage } from '../lib/friendCardImage';
@@ -39,10 +40,11 @@ export default function FriendsSheet({ onClose, ...props }) {
   return <Sheet title={tr('Friends')} className="friends-sheet" onClose={onClose}><FriendsContent {...props} /></Sheet>;
 }
 
-export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled, onOpenSummary }) {
+export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled, onOpenSummary, transactions = [] }) {
   const socialAvailable = Boolean(onOpenSummary);
   const signedIn = Boolean(session?.user?.id && session.access_token);
   const [friends, setFriends] = useState(null);
+  const [chatFriend, setChatFriend] = useState(null);
   const [directory, setDirectory] = useState(null);
   const [directoryError, setDirectoryError] = useState('');
   const reload = () => setRefresh(value => value + 1);
@@ -224,9 +226,12 @@ export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled
       </div> : <>
         <nav className="friends-tabs" aria-label={tr('Friends')}>
           <button type="button" disabled={busy} aria-pressed={mode === 'list'} onClick={() => showMode('list')}>{tr('Friends')}</button>
+          <button type="button" disabled={busy} aria-pressed={mode === 'chats' || mode === 'chat'} onClick={() => showMode('chats')}>{tr('Chats')}</button>
           <button type="button" disabled={busy} aria-pressed={mode === 'search' || mode === 'join'} onClick={() => showMode('search')}>{tr('Add friend')}</button>
           <button type="button" disabled={busy} aria-pressed={mode === 'invite'} onClick={() => showMode('invite')}>{tr('Share profile')}</button>
         </nav>
+        {mode === 'chats' && <FriendChatsDirectory session={session} onSelect={friend => { setChatFriend(friend); showMode('chat'); }} />}
+        {mode === 'chat' && chatFriend && <FriendConversation key={chatFriend.id} session={session} friend={chatFriend} transactions={transactions} onBack={() => showMode('chats')} />}
         {mode === 'search' && connectMethods}
         {mode === 'search' && socialAvailable && (directory ? <FriendsDiscovery directory={directory} busy={busy} run={run} reload={reload} /> :
           <><p className="friends-note" role={directoryError ? 'alert' : 'status'}>{directoryError || tr('Loading…')}</p>
@@ -259,6 +264,7 @@ export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled
                 <b dir="auto">{friend.name}</b><Icon name="chevron" size={16} />
               </button> : <><span aria-hidden="true" className="friends-initial">{Array.from(friend.name)[0]?.toLocaleUpperCase()}</span>
                 <b dir="auto">{friend.name}</b></>}
+              <button type="button" className="friends-chat-action" disabled={busy} onClick={() => { setChatFriend(friend); showMode('chat'); }} aria-label={tr('Chat with {name}', { name: friend.name })}><Icon name="message" size={18} />{tr('Chat')}</button>
               <button type="button" disabled={busy} onClick={() => removeFriend(friend)} aria-label={tr('Remove {name}', { name: friend.name })}><Icon name="close" size={18} /></button>
             </li>)}
           </ul>}

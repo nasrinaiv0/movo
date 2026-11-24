@@ -36,6 +36,7 @@ jest.mock('./lib/financeRepository', () => ({
   signOut: jest.fn(),
   loadPreferences: jest.fn().mockResolvedValue(null),
   savePreferences: jest.fn().mockResolvedValue(null),
+  savePreferencesIfUnchanged: jest.fn().mockResolvedValue({ updated_at: 'saved' }),
 }));
 import App from './App';
 import { seedLocalRecords } from './testFixtures';

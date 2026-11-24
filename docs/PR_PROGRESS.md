@@ -1,3 +1,7 @@
+## 2026-11-24 — #335 integration and Wear CI preparation
+
+Preserve current main AGP 9, transfer currency and preference sync safeguards, plus the existing adaptive-device changes. Generate the required Capacitor Android dependency project before Wear Gradle. Native and hosted validation pending; no production change.
+
 ## 2026-11-22 — Verify the window bridge in minified Android releases
 
 Expand the mandatory paired R8 contract to call the reflected window bridge before and after activity recreation, validate positive viewport dimensions and reject unexpected non-geometry fields. Native compile and both emulator variants must pass on this head; no application, finance or production behavior changed. [Acceptance handover](engineering/updates/2026-11-22-adaptive-device-compatibility.md).
@@ -5,6 +9,62 @@ Expand the mandatory paired R8 contract to call the reflected window bridge befo
 ## 2026-11-22 — Adaptive phone, foldable and wearable interfaces
 
 Implement read-only fold geometry and safe panes without remounting transaction forms, adaptive native iOS navigation with iPad/landscape packaging, and round-screen/scalable-text watch companions. Preserve all finance, account, purchase and storage paths. Local full JavaScript run: 267 suites / 1,786 tests; typecheck and strict original-only build pass. English/default and Arabic/largest-text browser runs pass 56 checks; native CI acceptance is tracked in the [implementation handover](engineering/updates/2026-11-22-adaptive-device-compatibility.md); physical devices, Duo SDK/poses, signed pairing and live hosting remain separate release gates.
+
+## 2026-11-23 — PR #339 main integration (feature branch only; no merge to main)
+
+- **Before-change rationale:** main advanced by Android AGP 9.5.1 changes and two progress entries from PR #340. PR #339 only conflicts with main in this progress document; its 17 non-document code paths do not overlap main's changes.
+- **Proposed resolution:** preserve both sets of progress entries exactly; inherit Android build/tooling files verbatim from latest main, and preserve every existing friend-chat code blob verbatim. Integrate main into the feature branch without merging PR #339 or changing main/production.
+- **Verification gates:** rerun all workflows on this new exact head (especially iOS and Android if triggered), check Vercel preview, and keep PR #341 stacked on the updated parent. This integration is not a release approval.
+
+## 2026-11-23 — Friend chats and transaction-card sharing (staging PR)
+
+- **Scope:** Dedicated accepted-friend Chats under Friends; friend profile photos, unread inbox counts, private text, selected expense/income/transfer snapshot cards. No bank transfer, linked-account disclosure or ledger writes.
+- **Backend:** Verified bearer-token actor, service-only conversation SQL, friends-only membership on read/send, RLS + revoked public grants, idempotent message nonce, 30/min send rate cap, cascading history deletion when friends remove/block.
+- **Inbox efficiency:** The first/foreground request includes friend photos, while ongoing unread checks reuse cached images and fetch only text/counts. Before optimization, the theoretical maximum was 9 MB per 100-friend poll with 90 KB photos.
+- **Progress:** Implementation and targeted tests committed on `feat/friend-chat-transaction-cards-20261123`; no migration applied to production and no main/production/store changes.
+- **Acceptance gates:** Exact-head Node CI, SQL apply/isolation test in disposable Supabase, Vercel preview, Android/iOS device tests, privacy disclosure/legal review, production API availability. Keep PR unmerged until evidence clears each gate.
+- **Detail:** [2026-11-23 friend chat rollout](engineering/updates/2026-11-23-friend-chat-transaction-sharing.md).
+
+## 2026-11-23 — PR #340 Android emulator infrastructure triage
+
+- **Evidence before change:** AGP 9.5.1's native app/Wear builds and other CI passed; the R8 acceptance lost the entire emulator while executing the *baseline* offline WebView smoke (after two PASS markers), as it also did on AGP 8.13 in PR #335. The diagnostic ZIP showed netsim shutdown; host still had ~14.9 GiB free, so no host OOM is established.
+- **Narrow mitigation under test:** raise RAM for **both** disposable baseline and candidate AVDs from 2 to 4 GiB; keep isolation, native test cases, exact PASS assertions, and fail-closed behavior. This is a controlled guest-memory hypothesis, not a proven fix.
+- **Acceptance:** require the full R8 comparison and fresh exact-head CI green before considering merge; real-device native plugins and store report remain separate gates. No main/production/migration/store changes.
+- **Details:** [AGP 9.5 engineering update](engineering/updates/2026-11-23-agp-9-5-upgrade.md).
+
+## 2026-11-23 — Android Gradle Plugin 9.5.1 and Gradle 9.6.0
+
+- **Upgrade.** Play Console asked for AGP 9 ("Upgrade to AGP version 9.0 to get the best performance"). AGP goes 8.13.0 → 9.5.1 and Gradle 8.14.3 → 9.6.0.
+- **Build file fixes.** The `clean` task uses `layout.buildDirectory`; `aaptOptions` becomes `androidResources`.
+- **Wear.** The Wear release is now minified and resource-shrunk.
+- **Compatibility switches.** Capacitor 8.6 modules still use the old DSL and the Kotlin plugin, so `android.newDsl=false` and `android.builtInKotlin=false` are set. `android.r8.strictFullModeForKeepRules=false` keeps Capacitor/Cordova reflective constructors safe in release.
+- **Keep rules.** Unchanged, as the paired R8 workflow requires.
+- **Score limit.** 100% is not reachable while Capacitor's bridge needs its plugin classes kept by name.
+- **Validation.** Android builds run only in GitHub CI; this container cannot reach Google Maven.
+- **Details.** [update](engineering/updates/2026-11-23-agp-9-5-upgrade.md).
+
+## 2026-11-23 — Audit fixes: cross-device sync, same-currency transfers, unconvertible totals, net worth
+
+- **Cross-device sync.** Preferences that change balances (recorded card payments, card kind and credit limit, card–bank links) now sync with a three-way merge. Saves are refused when someone else wrote first (`savePreferencesIfUnchanged`), and MOVO pulls the account copy on returning to the foreground. A device with an older copy can no longer erase another device's card payments or flip a card's type.
+- **Transfers.** Transfers are limited to accounts in the same currency.
+- **Totals.** A record with no exchange rate adds 0 to totals instead of blanking them, and still shows its own currency.
+- **Display.** Home net worth wraps instead of being cut off at the Largest text size.
+- **Startup.** The store plugin loads on first use.
+- **Validation.** 271 suites, 1,789 tests; `tsc` clean; strict build compiled.
+- **Owner gates.**
+  - Restore Vercel and redeploy.
+  - Approve the `account_erasure` and `enforce_archive_and_billing_retention` production migrations (checked against production; the first attempt waited on an unanswered approval prompt), then enable `MOVO_ACCOUNT_ERASURE_ENABLED`.
+  - Finish the Play Console subscription setup.
+- **Details.** [update](engineering/updates/2026-11-23-audit-fixes-sync-transfers-totals.md).
+
+## 2026-11-22 — Aries motion and Home hero entrance
+
+- Aries settles in when an expression changes. Each mood has calm idle motion: look-around, nod, droop and sigh, or huff with an arm pump. On Home, Aries rises onto the balance card and waves once per session. All of it is off under reduced motion. [Details](engineering/updates/2026-11-22-aries-motion-hero.md).
+
+## 2026-11-22 — Production API disabled (Vercel 402); Plans retry; tabletop foldables; Aries horns
+
+- Friends, Plans and balances that differ between devices share one cause: `movo.nasrinai.com/api` returns 402 `DEPLOYMENT_DISABLED` because the Vercel account is blocked. When the plan check fails, cloud sync falls back to each device's own copy. **Owner action:** restore the Vercel account, then redeploy `main`.
+- The Plans panel on phones now explains an empty or failed store query and offers Try again, instead of a grey button. Half-folded foldables keep sheets off the hinge. Aries has new ridged, curled ram horns. [Details](engineering/updates/2026-11-22-outage-diagnosis-plans-foldables-aries.md).
 
 ## 2026-11-22 — Approved tester billing migration deployed
 
