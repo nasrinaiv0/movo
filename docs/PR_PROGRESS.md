@@ -5,6 +5,33 @@ After the compile fix the XCTest reached the app, but it showed MOVO's fail-clos
 ## 2026-11-24 — #342 iOS acceptance compile fix
 
 `build-ios` failed to compile the new XCTest target: `XCUIApplication.open(_:)` needs iOS 16.4 and the target deploys to iOS 15.0. The deep-link step is now behind an availability guard that fails (never skips) on older simulators. Test-only change; no app, accounting or database change.
+## 2026-11-24 — #343 browser evidence and shared native visual gate
+
+Exact 7c4c1bdc Chromium run 45321986274 passed 8/8 real-component checks; artifact 14888800582 contains 8 original screenshots and results.json with zero page errors or horizontal overflow. Receiving selection enables initial proceeds, payment preference remains independent, opt-out clears receiving selection. Integrate #342's shared XCTest-only native guest acceptance and browser gate; preserve all atomic SQL/accounting blobs. Revalidate the new head. No remote migrations or merge.
+
+## 2026-11-24 — #343 Chromium parse failure and migration release gate
+
+Downloaded current-head diagnostic: blank document, browser `Unexpected token ':'` before heading render. Remove webpack eval-based devtool, use structured DefinePlugin env definitions (no remote credentials), and validate generated JS syntax before launching Chromium; record full error stack. This addresses the likely fixture bundling cause without changing application behavior or weakening assertions. Re-run required. Add separate migration approval checklist; production metadata previously confirmed RPC/table absent. No remote migrations or merge authorized.
+
+## 2026-11-24 — #343 integrate #342 and diagnose Chromium fixture
+
+Both prior browser jobs timed out locating Add before any form interaction and published no screenshots. Isolate the real FinancialPlanning component in its own fixture entry, use explicit English and realistic synthetic props, capture sanitized page errors, screenshot and DOM diagnostics on failure; require the actual heading and Add action. Preserve receiving/payment and overflow assertions, plus responsive layout classes used by the existing panel harness. No skipped tests or financial behavior changes. Integrate #342's new head with current main, preserving all original atomic RPC and SQL fixtures. Re-run exact-head CI; release sequencing requires the atomic RPC to exist before new clients use it.
+
+## 2026-11-24 — Atomic loan concurrency entitlement fixture
+
+The two-session RPC attempts correctly denied the synthetic free owner with cloud_read_only_upgrade_required. Seed a short-lived synthetic Pro grant using the existing hybrid-sync fixture pattern; set explicit authenticated claims in both worker sessions. No authorization guard changes. Sequential SQL still passed; concurrent rerun required.
+
+## 2026-11-24 — Concurrent loan fixture authorization repair
+
+The sequential SQL regression passed again. Two-session test failed at synthetic account setup with sign_in_required before either RPC ran. Set the existing disposable fixture service-role JWT claim during seed only, as in the repository's SQL fixtures. Both racing callers still use authenticated role and owner-bound sub. Do not weaken the live guard. Exact-head rerun required.
+
+## 2026-11-24 — Atomic loan parallel replay and rendered fixture acceptance
+
+First isolated SQL workflow passed. Add two simultaneous independent authenticated sessions using the same UUID and assert one liability, event, receipt and cash posting. Add isolated Chromium actual-component rendering for 320/390/768/1280px light/dark with external requests blocked, screenshot artifacts, receiving and repayment selection assertions and overflow checks. No production connection, no paid resource, no release. Exact-head evidence pending.
+
+## 2026-11-24 — Atomic loan disbursement (staging)
+
+One database RPC creates the loan, initial event and accounting posting, with an owner-scoped digest receipt and stable per-draft UUID. Added replay, validation, rollback, historical liability and retry tests. Existing edit and repayment paths unchanged. No remote migrations or production changes. Exact-head acceptance pending.
 
 ## 2026-11-24 — #342 actual browser and native visual gate
 

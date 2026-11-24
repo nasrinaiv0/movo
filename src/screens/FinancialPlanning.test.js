@@ -503,3 +503,36 @@ test.each(['loan', 'debt'])('selecting a receiving account posts new %s proceeds
     act(() => root.unmount()); el.remove();
   }
 });
+
+test('loan retries retain the same idempotency request UUID', async () => {
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  obligations.createLoan.mockClear();
+  obligations.createLoan.mockRejectedValueOnce(new Error('Connection lost')).mockResolvedValueOnce({ id: 'loan-ok' });
+  try {
+    await act(async () => root.render(<FinancialPlanning c={{
+      cloudMode: true, base: 'PHP', show: true, accountsView: accounts,
+      toBase: value => value, go: jest.fn(), session: { user: { id: 'u' } },
+    }} />));
+    await act(async () => el.querySelector('button[aria-label="Add"]').click());
+    await act(async () => Array.from(document.querySelectorAll('[role="dialog"] button')).find(b => b.textContent.includes('Add a loan or debt')).click());
+    const dialog = document.querySelector('[role="dialog"]');
+    const receiving = dialog.querySelector('#loan-receiving-account');
+    act(() => { receiving.value = 'bank'; receiving.dispatchEvent(new Event('change', { bubbles: true })); });
+    const change = (input, value) => act(() => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    change(dialog.querySelector('input[maxlength="120"]'), 'Retry loan');
+    change(dialog.querySelector('input[type="number"]'), '500');
+    await act(async () => dialog.querySelector('button.primary-button').click());
+    expect(dialog.textContent).toContain('Connection lost');
+    await act(async () => dialog.querySelector('button.primary-button').click());
+    expect(obligations.createLoan).toHaveBeenCalledTimes(2);
+    const [first,second] = obligations.createLoan.mock.calls;
+    expect(first[0].request_id).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(second[0].request_id).toBe(first[0].request_id);
+  } finally {
+    act(() => root.unmount()); el.remove();
+  }
+});
