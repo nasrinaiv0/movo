@@ -58,3 +58,21 @@ test('fails closed during a pending database migration', async () => {
   expect(res.json).toHaveBeenCalledWith({ error: 'chat_update_pending' });
   expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'private, no-store');
 });
+
+
+test('recipient decisions use the verified actor and never pass caller-supplied bank information to SQL', async () => {
+  const messageId='d721116c-f90b-429d-871a-e7f0dd444444';
+  rpc.mockResolvedValueOnce({ data: { ok: true, status: 'accepted', messageId } });
+  const result=await call('POST', { action: 'accept_share', connectionId: cid, messageId,
+    p_actor: 'outsider', recipientId: 'forged', destinationAccountId: 'secret', amount: 9000 });
+  expect(result.status).toHaveBeenCalledWith(200);
+  expect(rpc).toHaveBeenCalledWith('movo_friend_transaction_decision', {
+    p_actor: id, p_action: 'accept_share', p_data: { connectionId: cid, messageId },
+  });
+  rpc.mockResolvedValueOnce({ data: { error: 'share_import_not_confirmed' } });
+  const denied=await call('POST', { action: 'confirm_share_import', connectionId: cid, messageId });
+  expect(denied.status).toHaveBeenCalledWith(409);
+  expect(denied.json).toHaveBeenCalledWith({ error: 'share_import_not_confirmed' });
+  expect((await call('POST', { action: 'decline_share', connectionId: cid, messageId: 'bad' })).status)
+    .toHaveBeenCalledWith(404);
+});

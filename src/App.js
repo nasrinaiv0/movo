@@ -4,6 +4,8 @@ import FriendsSheet, { FriendsContent } from './components/FriendsSheet';
 import FriendFinanceSummary from './components/FriendFinanceSummary';
 import NavTierDefs from './components/NavTierDefs';
 import { captureFriendInvite, saveFriendInvite } from './lib/friends';
+import { chatRequest } from './lib/friendChat';
+import { prepareFriendImport, friendImportReference, friendImportAlreadySaved, sameImportedCard, eligibleFriendImportAccounts } from './lib/friendTransactionImport';
 import { recoverHybridWorkspace, persistHybridLocalRows, persistHybridLocalImport } from './lib/hybridWorkspaceRecovery';
 import { listOwnerSyncOperations, acknowledgeReconciledWorkspace, approveHybridOperations } from './lib/hybridLocalStore';
 import FinanceBackupSheet from './components/FinanceBackupSheet';
@@ -1495,6 +1497,15 @@ function App() {
     setSheet({ name: 'transaction', id: t.id });
   };
 
+  const openFriendImport = ({ message, connectionId, accountId, transferToAccountId = '' }) => {
+    const result = prepareFriendImport({ message, connectionId, accountId, transferToAccountId, accounts: accountsView });
+    if (!result) { notify(tr('Choose eligible accounts in the shared currency.')); return; }
+    if (friendImportAlreadySaved(rawTxs, result.messageId)) { notify(tr('This shared transaction is already saved.')); return; }
+    setForm(result.draft);
+    setError('');
+    setSheet({ name: 'transaction', friendImport: { messageId: result.messageId, connectionId: result.connectionId, shared: result.shared } });
+  };
+
   const saveTransaction = async (e, receiptDraft = null) => {
     const draft = receiptDraft || form;
     e.preventDefault(); setError('');
@@ -1516,6 +1527,25 @@ function App() {
     const occurred_at = stamp.toISOString();
     const txCurrency = formAccounts.find(a => a.id === draft.account_id)?.currency || base;
     const editingId = sheet?.name === 'transaction' ? sheet.id : null;
+    const friendImport = sheet?.name === 'transaction' ? sheet.friendImport : null;
+    if (friendImport) {
+      if (!sameImportedCard(draft, friendImport.shared, txCurrency)) {
+        setError(tr('Shared amount, type, date and currency cannot change during import.')); return false;
+      }
+      if (friendImportAlreadySaved(rawTxs, friendImport.messageId)) {
+        setError(tr('This shared transaction is already saved.')); return false;
+      }
+      // Recheck the decision immediately before writing: a removed friend or
+      // declined share cannot initiate a ledger mutation from a stale sheet.
+      try {
+        const current = await chatRequest(session, 'decisions', { connectionId: friendImport.connectionId });
+        if (!current.decisions?.some(d => d.messageId === friendImport.messageId && d.status === 'accepted')) {
+          setError(tr('Accept this shared transaction before importing it.')); return false;
+        }
+      } catch {
+        setError(tr('Could not verify sharing consent. Connect and try again.')); return false;
+      }
+    }
     // Duplicate guard (receipts, notifications, chat and manual entries): warn once, a second Save logs it anyway.
     const dup = editingId ? null : findDuplicate({ merchant: draft.merchant, amount, type, date: occurred_at, account_id: draft.account_id, ref: draft.ref || '' }, rawTxs);
     const sig = `${type}|${amount}|${draft.merchant.trim().toLowerCase()}|${draft.occurred_at}|${draft.account_id}`;
@@ -1528,7 +1558,7 @@ function App() {
     // account's device copy and uploads automatically on reconnect.
     let online = cloudMode;
     // A new record gets its UUID here, so the cloud save and any device fallback describe the same record.
-    const newId = editingId ? null : newRecordId();
+    const newId = editingId ? null : (friendImport ? friendImport.messageId : newRecordId());
     try {
       let receiptPath = draft.receipt_path || null;
       if (draft.receipt_file) {
@@ -1576,7 +1606,7 @@ function App() {
       let backgroundUpload = null;
       if (online) {
         const auto = !editingId && AUTOMATION_SOURCES.includes(draft.source) ? { source: draft.source, external_reference: draft.ref || undefined } : {};
-        const payload = { id: newId || undefined, merchant: draft.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: draft.account_id, transfer_to_account_id: type === 'transfer' ? draft.transfer_to_account_id : undefined, occurred_at, note: draft.note, payment_reference: draft.payment_reference, receipt_note: draft.receipt_note, receipt_path: receiptPath, external_reference: subscriptionReference };
+        const payload = { id: newId || undefined, merchant: draft.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: draft.account_id, transfer_to_account_id: type === 'transfer' ? draft.transfer_to_account_id : undefined, occurred_at, note: draft.note, payment_reference: draft.payment_reference, receipt_note: draft.receipt_note, receipt_path: receiptPath, external_reference: friendImport ? friendImportReference(friendImport.messageId) : subscriptionReference };
         // Local first (owner, 2026-11-12): the change is committed on this device and shown at once; the cloud upload
         // finishes silently. A subscription payment also records the payment attempt, which needs the cloud row
         // first, so it keeps waiting for the cloud as before.
@@ -1624,7 +1654,7 @@ function App() {
         const existing = editingId ? (cloudMode ? ownerCopy?.working.transactions : rawTxs)?.find(x => x.id === editingId) : null;
         if (editingId && !existing) throw new Error(tr('This record is not on this device yet. Try again when you are back online.'));
         const auto = !editingId && AUTOMATION_SOURCES.includes(draft.source);
-        const row = { ...(existing || {}), id: editingId || newId, merchant: draft.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: draft.account_id || 'local', transfer_to_account_id: type === 'transfer' ? draft.transfer_to_account_id : undefined, occurred_at, note: draft.note.trim().slice(0, 1000), payment_reference: String(draft.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(draft.receipt_note||'').trim().slice(0,500)||null, receipt_path: receiptPath, ...(existing ? {} : { external_reference: auto ? (draft.ref || undefined) : subscriptionReference, source: auto ? draft.source : 'Manual', created_at: new Date().toISOString() }) };
+        const row = { ...(existing || {}), id: editingId || newId, merchant: draft.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: draft.account_id || 'local', transfer_to_account_id: type === 'transfer' ? draft.transfer_to_account_id : undefined, occurred_at, note: draft.note.trim().slice(0, 1000), payment_reference: String(draft.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(draft.receipt_note||'').trim().slice(0,500)||null, receipt_path: receiptPath, ...(existing ? {} : { external_reference: friendImport ? friendImportReference(friendImport.messageId) : auto ? (draft.ref || undefined) : subscriptionReference, source: friendImport ? 'manual' : auto ? draft.source : 'Manual', created_at: new Date().toISOString() }) };
         const transactionRow = subscriptionPaymentState ? { ...row, subscription_payment_state: subscriptionPaymentState } : row;
         if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[transactionRow]);
         savedTransaction = transactionRow;
@@ -1658,6 +1688,20 @@ function App() {
         const removeOld = () => supabase.storage.from('movo-receipts').remove([oldReceiptPath]).catch(() => {});
         if (backgroundUpload) backgroundUpload.then(done => { if (done) removeOld(); });
         else await removeOld();
+      }
+      if (friendImport) {
+        const confirmed = online ? (backgroundUpload ? await backgroundUpload : true) : false;
+        if (confirmed) {
+          try {
+            await chatRequest(session, 'confirm_share_import', {
+              connectionId: friendImport.connectionId, messageId: friendImport.messageId,
+            });
+          } catch {
+            notify(tr('Transaction saved. Chat confirmation can be retried after syncing.'));
+          }
+        } else {
+          notify(tr('Saved on this device. Chat confirmation waits for cloud sync.'));
+        }
       }
       setForm({ ...draft, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '', subscriptionPaymentId: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null }); setSheet(null); return true;
     } catch (err) {
@@ -3060,7 +3104,7 @@ function App() {
       case 'Profile': return <Profile c={c} />;
       case 'Friends': return <>
         <SubHeader title={tr('Friends')} onBack={() => goBack('Profile')} />
-        <div className="friends-page"><FriendsContent key={friendIdentity} session={session} transactions={txs} onSignIn={() => go('Sign in')}
+        <div className="friends-page"><FriendsContent key={friendIdentity} session={session} transactions={txs} ownedTransactions={rawTxs} accounts={accountsView} cloudMode={cloudMode} onReviewImport={openFriendImport} onSignIn={() => go('Sign in')}
           onOpenSummary={openFriendSummary} /></div>
       </>;
       case 'FriendSummary': return !locked && selectedFriend?.owner === friendIdentity && session?.access_token
@@ -3134,7 +3178,7 @@ function App() {
       </nav>}
 
       {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} showBalance={show} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}
-      {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} showBalance={show} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : c.openScanner} />}
+      {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} importLocked={!!sheet.friendImport} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} showBalance={show} accounts={sheet.friendImport ? eligibleFriendImportAccounts(sheet.friendImport.shared, formAccounts) : formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : c.openScanner} />}
       {sheet?.name === 'scanner' && can('receiptScan') && <ScannerSheet show={show} fx={fx} refreshFx={refreshFx}
         accounts={formAccounts.filter(a => !a.is_archived)} busy={busy} saveError={error}
         onClose={() => { setSheet(null); setError(''); }}
@@ -3203,7 +3247,7 @@ function App() {
         </div>
       </Sheet>}
 
-      {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session} transactions={txs}
+      {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session} transactions={txs} ownedTransactions={rawTxs} accounts={accountsView} cloudMode={cloudMode} onReviewImport={openFriendImport}
         inviteToken={sheet.invite} onClose={() => { clearFriendInvite(); setSheet(null); }}
         onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite}
         onOpenSummary={friend => { clearFriendInvite(); openFriendSummary(friend); }} />}

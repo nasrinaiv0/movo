@@ -1,3 +1,25 @@
+## 2026-11-23 — PR #341 exact-head iOS workflow trigger (staging only)
+
+- **Evidence:** workflow `ios-build.yml` listens to `pull_request` against `main` and only runs on matching source changes. While PR #341 targeted the stacked feature base, its iOS check was `pending` with **zero jobs**, which is not a simulator build.
+- **Before-commit plan:** temporarily retarget the unmerged PR to main, commit documentation only to trigger a real `synchronize` event, record workflow IDs, then retarget to updated PR #339 before any merges. No production, database, signing, store upload or application-code changes. Keep iOS acceptance gated on the actual job outcome.
+- **Checked:** all 18 feature/test blob IDs remain identical after integration with #339's newer Android build tooling, and prior exact-head Phase 1/SQL/hybrid/IAP/container checks passed at `0967d7fb`. Fresh checks on the new documentation head must pass again.
+
+## 2026-11-23 — PR #341 stacked-head integration (staging only)
+
+- **Before-change evidence:** #341's previous source head `0967d7fb30b0` passed Phase 1, finance tenant isolation, IAP, hybrid sync, container and Vercel READY. iOS remained pending with no jobs after retargeting to the feature base; this is not a simulator pass.
+- **Integration:** reparent #341's 18 unchanged non-progress implementation/test blobs plus updated engineering documentation on #339's integrated head `bdcf44485d06`, preserving its 17 chat code paths and newly inherited AGP 9.5.1 tooling. No production/main/config/migration/merge mutation.
+- **Follow-up:** rerun all exact-head gates on the new #341 commit, inspect hosted preview and iOS run; use GitHub Actions → MOVO iOS build → Run workflow on this branch if branch-filtered PR iOS check stays jobless. Real-device sign-in and recipient import remain blocked from live acceptance while migrations are unapplied.
+
+## 2026-11-23 — Recipient acceptance, refusal and ledger import (staging-only)
+
+- **Baseline:** stacked upon open PR #339; no merge into main, production migration, store upload, or paid Supabase branch.
+- **Consent:** only the verified receiving friend may accept or decline a shared transaction. Acceptance writes only a recipient decision, not money or ledger transactions.
+- **Import:** the user maps their own same-currency active account(s), sees the normal Save form, and confirms. The existing hybrid finance writer uses the shared message UUID and unique `movo-friend:<messageId>` reference for exact-once behavior across retries/devices.
+- **Security:** server decision RPC requires service identity and a live accepted friendship, blocks sender/outsiders, prevents imported state without a matching persisted owner-ledger row, cascades on friend removal, never uses service role to write financial records.
+- **Tests:** staging synthetic PostgreSQL consent/receipt/grant/cascade tests are connected to the existing disposable CI harness; targeted API, mapping and UI tests are added. Current-head CI and Vercel acceptance are pending.
+- **Review gates:** real-device iOS/Android, offline/online sync, non-English labels, UGC reporting, native chat sign-in and privacy counsel. No rollout until separate owner authorization.
+- **Details:** [recipient import engineering note](engineering/updates/2026-11-23-friend-transaction-recipient-import.md).
+
 ## 2026-11-23 — PR #339 main integration (feature branch only; no merge to main)
 
 - **Before-change rationale:** main advanced by Android AGP 9.5.1 changes and two progress entries from PR #340. PR #339 only conflicts with main in this progress document; its 17 non-document code paths do not overlap main's changes.

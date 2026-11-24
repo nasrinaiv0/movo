@@ -67,7 +67,7 @@ export function ReceiptField({ form, setForm, cloudMode }) {
 }
 
 /** Calculator-first add/edit transaction sheet: type the amount on the keypad, pick a category, save. */
-export default function TransactionSheet({ currency = 'PHP', form, setForm, editing, accounts, cloudMode, busy, error, onSave, onClose, onScan, autoCategory = false, showBalance = true }) {
+export default function TransactionSheet({ currency = 'PHP', form, setForm, editing, accounts, cloudMode, busy, error, onSave, onClose, onScan, autoCategory = false, showBalance = true, importLocked = false }) {
   // Auto categorization: suggest a category from the description until the person picks one themselves.
   const [expr, setExpr] = useState(form.amount ? String(Number(form.amount)) : '');
   const [allCats, setAllCats] = useState(false);
@@ -86,14 +86,15 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
   const tap = (k) => setExpr(cur => press(cur, k));
   useEffect(() => {
     const onKey = (e) => {
+      if (importLocked) return;
       if (e.target.closest('input, textarea, select') || e.metaKey || e.ctrlKey) return;
       const k = keyFor(e.key);
       if (k && /^(\d|00|[.%+−×÷=⌫]|AC)$/.test(k)) { e.preventDefault(); setExpr(cur => press(cur, k)); }
     };
     document.addEventListener('keydown', onKey); return () => document.removeEventListener('keydown', onKey);
-  }, []);
+  }, [importLocked]);
 
-  const label = editing ? 'Edit transaction' : 'Add transaction';
+  const label = importLocked ? 'Import shared transaction' : editing ? 'Edit transaction' : 'Add transaction';
   const cats = CATEGORY_ICONS;
   const current = categoryOf(form.category);
   const canSave = !busy && Number.isFinite(value) && value > 0 && form.merchant.trim();
@@ -111,11 +112,12 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
     <div className="tx-top">
       <button type="button" className="tx-round tx-close-compact" onClick={close} aria-label={tr('Close {name}', { name: label })}><Icon name="close" size={18} /></button>
       <div className="tx-seg" role="group" aria-label={tr('Transaction type')}>
-        {Object.keys(TYPE_LABEL).map(t => <button type="button" key={t} className={type === t ? 'selected' : ''} aria-pressed={type === t} onClick={() => setForm({ ...form, transaction_type: t })}>{tr(TYPE_LABEL[t])}</button>)}
+        {Object.keys(TYPE_LABEL).map(t => <button type="button" key={t} className={type === t ? 'selected' : ''} aria-pressed={type === t} disabled={importLocked && t !== type} onClick={() => { if (!importLocked) setForm({ ...form, transaction_type: t }); }}>{tr(TYPE_LABEL[t])}</button>)}
       </div>
       {onScan ? <button type="button" className="tx-round" onClick={onScan} aria-label={tr('Scan a receipt')}><Icon name="scan" size={18} /></button> : <span className="tx-round ghost" />}
     </div>
 
+    {importLocked && <p className="tx-local" role="note">{tr('Shared amount, date and type are locked. Review your accounts and tap Save to import.')}</p>}
     <div className="tx-amount" aria-live="polite">
       <span className="tx-currency">{currencySymbol(currency)}</span>
       <div className="tx-figures">
@@ -150,20 +152,20 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
     </section>}
 
     <div className="tx-meta">
-      <label><span>{tr('Date')}</span><input type="date" required value={form.occurred_at} onChange={e => setForm({ ...form, occurred_at: e.target.value })} /></label>
+      <label><span>{tr('Date')}</span><input type="date" required value={form.occurred_at} disabled={importLocked} onChange={e => { if (!importLocked) setForm({ ...form, occurred_at: e.target.value }); }} /></label>
       {form.time ? <label><span>{tr('Time')}</span><input type="time" step="1" aria-label={tr('Time')} value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} /></label>
         : <button type="button" className="tx-clock" onClick={() => setForm({ ...form, time: new Date().toTimeString().slice(0, 8) })} aria-label={tr('Time recorded automatically when saved, now {time}. Tap to set a time.', { time: now })}><span>{tr('Time · auto')}</span><b>{now}</b></button>}
     </div>
 
-    {padOpen ? <div className="tx-pad" role="group" aria-label={tr('Amount keypad')}>
+    {!importLocked && (padOpen ? <div className="tx-pad" role="group" aria-label={tr('Amount keypad')}>
       {KEYS.flat().map(k => <button type="button" key={k} className={`k${/[÷×−+%]/.test(k) ? ' op' : ''}${k === '=' ? ' eq' : ''}${k === '⌫' || k === 'AC' ? ' clear' : ''}`} onClick={() => tap(k)} aria-label={{ '⌫': 'Delete digit', AC: 'Clear amount', '÷': 'Divide', '×': 'Multiply', '−': 'Minus', '+': 'Plus', '=': 'Equals', '%': 'Percent' }[k] || k}>{k === '⌫' ? <Icon name="backspace" size={20} /> : k}</button>)}
       <button type="button" className="tx-pad-toggle" onClick={() => setPadOpen(false)} aria-label={tr('Hide keypad')}><Icon name="down" size={18} /></button>
-    </div> : <button type="button" className="tx-pad-show" onClick={() => setPadOpen(true)}><Icon name="calc" size={16} /> {tr('Show keypad')}</button>}
+    </div> : <button type="button" className="tx-pad-show" onClick={() => setPadOpen(true)}><Icon name="calc" size={16} /> {tr('Show keypad')}</button>)}
 
     <ReceiptField form={form} setForm={setForm} cloudMode={cloudMode} />
     {error && <p className="form-error" role="alert">{error}</p>}
     <div className="tx-bottom">
-      <button type="submit" className="primary-button tx-save" disabled={!canSave}>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr(`Save ${TYPE_LABEL[type]}`)}</button>
+      <button type="submit" className="primary-button tx-save" disabled={!canSave}>{busy ? tr('Saving…') : importLocked ? tr('Save imported transaction') : editing ? tr('Save changes') : tr(`Save ${TYPE_LABEL[type]}`)}</button>
     </div>
   </form>}</Sheet>;
 }
