@@ -70,8 +70,8 @@ export default function Profile({ c }) {
     <div className="profile-social-actions" aria-label={tr('Friends and referrals')}>
       <button type="button" className="card profile-social-action" onClick={c.openFriends}>
         <span className="profile-social-icon"><Icon name="userPlus" size={20} /></span>
-        <strong>{tr('Friends')}</strong>
-        <small>{tr('Add a friend')}</small>
+        <strong>{tr('Friends & Chats')}</strong>
+        <small>{tr('Messages & transaction sharing')}</small>
       </button>
       <button type="button" className="card profile-social-action" onClick={() => setReferralOpen(true)}>
         <span className="profile-social-icon"><Icon name="gift" size={20} /></span>
@@ -229,6 +229,7 @@ export function EditProfile({ c }) {
         </div>
         <input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" hidden onChange={handlePhotoFile} />
         {photoError && <p className="form-error" role="alert">{photoError}</p>}
+        {session?.user?.id && <small>{tr('Your profile photo is visible to accepted MOVO friends in Chats. Removing it hides it from their conversations.')}</small>}
         <strong>{draft.profileName.trim() || user.name}</strong>
         <small>{maskEmail(user.email)}</small>
       </header>

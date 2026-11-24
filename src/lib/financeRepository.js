@@ -306,6 +306,26 @@ export async function savePreferences(userId, prefs, stickers) {
   if (Array.isArray(stickers)) row.stickers = stickers;
   return unwrap(await requireClient().from('user_preferences').upsert(row, { onConflict: 'user_id' }).select('updated_at').single());
 }
+/**
+ * Saves preferences only if the account's copy is still the one this device read (`expectedUpdatedAt`; null when
+ * there was no row yet). Returns the new row, or null when another device or the server changed it first, in which
+ * case the caller reloads, merges and tries again.
+ */
+export async function savePreferencesIfUnchanged(userId, prefs, stickers, expectedUpdatedAt) {
+  if (!userId) throw new Error('A signed-in user is required.');
+  const row = { prefs, updated_at: new Date().toISOString() };
+  if (Array.isArray(stickers)) row.stickers = stickers;
+  const client = requireClient();
+  if (!expectedUpdatedAt) {
+    const { data, error } = await client.from('user_preferences').insert({ user_id: userId, ...row }).select('updated_at').maybeSingle();
+    if (error) { if (error.code === '23505') return null; throw error; }
+    return data;
+  }
+  const { data, error } = await client.from('user_preferences').update(row)
+    .eq('user_id', userId).eq('updated_at', expectedUpdatedAt).select('updated_at').maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
 
 /**
  * Permanently deletes the signed-in user's own records. Row-level security limits every delete to auth.uid();

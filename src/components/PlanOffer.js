@@ -60,6 +60,9 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   const [error, setError] = useState('');
   const [period, setPeriod] = useState('monthly');
   const [products, setProducts] = useState([]);
+  // Why the store returned nothing ('' while loading or when products arrived), and a counter to ask again.
+  const [storeIssue, setStoreIssue] = useState('');
+  const [storeTry, setStoreTry] = useState(0);
   // A friend's code from a download link (?ref=M78038) is filled in, ready to use.
   // The field is part of the panel from the first frame (owner, 2026-11-12): no "Have a referral code?" step and no
   // waiting for sign-in or the plan check to load.
@@ -77,9 +80,14 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   const native = isNativePurchasePlatform();
   useEffect(() => {
     let live = true;
-    if (native) getStoreProducts().then(items => { if (live) setProducts(items || []); }).catch(() => { if (live) setProducts([]); });
+    if (native) {
+      setStoreIssue('');
+      getStoreProducts()
+        .then(items => { if (!live) return; setProducts(items || []); setStoreIssue(items?.length ? '' : 'empty'); })
+        .catch(() => { if (live) { setProducts([]); setStoreIssue('failed'); } });
+    }
     return () => { live = false; };
-  }, [native]);
+  }, [native, storeTry]);
   const selected = PLANS[index];
   const displayed = displayStoreProducts(products);
   const productFor = (tier, which) => displayed.find(item => item.tier === tier && item.period === which);
@@ -145,6 +153,11 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   else if (trialOffer) action = { label: busy ? tr('Starting…') : session?.access_token ? tr('Start my free month') : tr('Sign in to claim my free month'), run: claim };
   else if (!session?.access_token) action = { label: tr('Sign in to continue'), run: onSignIn };
   else if (product) action = { label: busy ? tr('Please wait…') : tr('Continue with {plan}', { plan: selected.name }), run: purchase };
+  // On a phone, say why the store had nothing to sell and let the person ask again, instead of a silent grey button.
+  else if (native && storeIssue) action = { label: tr('Try again'), run: () => setStoreTry(n => n + 1),
+    note: storeIssue === 'failed'
+      ? tr('The store could not load MOVO subscriptions. Check your connection and that MOVO was installed from the App Store or Google Play, then try again.')
+      : tr('The store has no MOVO subscriptions for this account yet. Install MOVO from its App Store or Google Play listing (testers: use the testing link), then try again.') };
   else action = { label: tr('Continue with {plan}', { plan: selected.name }), disabled: true, note: native ? tr('Store subscription products are not available yet.') : tr('Subscribe in the MOVO iOS or Android app.') };
   const markTone = trialOffer || (selected.tier === 'pro' && onTrial) ? 'white' : selected.tone;
 

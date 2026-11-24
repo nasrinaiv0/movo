@@ -6,6 +6,7 @@ import AccountPicker from './AccountPicker';
 import { evaluate, press, tokenize } from '../lib/calc';
 import { currencySymbol, number, getFormatLocale } from '../lib/format';
 import { t as tr } from '../lib/i18n';
+import { sameTransferCurrency, transferTargets } from '../lib/transferCurrency';
 
 /* The 12 compact categories (docs/TRANSACTION_CATEGORIES.md §5) as [id, label, icon, tone], for pickers. */
 export const CATEGORY_ICONS = PRIMARY.map(p => [p.id, p.label, p.icon, p.tone]);
@@ -126,9 +127,12 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
     <label className="tx-note"><Icon name="doc" size={18} /><input aria-label={tr('Description')} required maxLength={160} value={form.merchant} onChange={e => { const merchant = e.target.value; const category = autoCategory && type === 'expense' ? guessCategory(merchant) : form.category; setForm({ ...form, merchant, category }); }} placeholder={type === 'income' ? tr('Where is it from?') : type === 'transfer' ? tr('What is the transfer for?') : tr('What was it for?')} /></label>
 
     {(cloudMode || accounts.length > 0) ? <div className={`tx-accounts${type === 'transfer' ? ' two' : ''}`}>
-      <AccountPicker id="tx-account" label={type === 'transfer' ? tr('From') : type === 'income' ? tr('To account') : tr('Paid with')} ariaLabel={type === 'transfer' ? tr('From account') : tr('Account')} accounts={accounts} value={form.account_id} showBalance={showBalance} required={cloudMode} onChange={v => setForm({ ...form, account_id: v })} />
-      {type === 'transfer' && <AccountPicker id="tx-to-account" label={tr('To')} ariaLabel={tr('To account')} accounts={accounts.filter(a => a.id !== form.account_id)} value={form.transfer_to_account_id} showBalance={showBalance} onChange={v => setForm({ ...form, transfer_to_account_id: v })} />}
+      <AccountPicker id="tx-account" label={type === 'transfer' ? tr('From') : type === 'income' ? tr('To account') : tr('Paid with')} ariaLabel={type === 'transfer' ? tr('From account') : tr('Account')} accounts={accounts} value={form.account_id} showBalance={showBalance} required={cloudMode}
+        onChange={v => setForm({ ...form, account_id: v, transfer_to_account_id: type === 'transfer' && !sameTransferCurrency(accounts, v, form.transfer_to_account_id) ? '' : form.transfer_to_account_id })} />
+      {type === 'transfer' && <AccountPicker id="tx-to-account" label={tr('To')} ariaLabel={tr('To account')} accounts={transferTargets(accounts, form.account_id)} value={form.transfer_to_account_id} showBalance={showBalance} onChange={v => setForm({ ...form, transfer_to_account_id: v })} />}
     </div> : <p className="tx-local">{tr('Saved on this device')}</p>}
+    {type === 'transfer' && form.account_id && accounts.some(a => a.id !== form.account_id && !sameTransferCurrency(accounts, form.account_id, a.id)) &&
+      <p className="tx-local">{tr('Only accounts in the same currency are shown. For another currency, record an expense from one account and an income in the other.')}</p>}
 
     {type === 'expense' && <section className={`tx-cats${allCats ? ' all' : ''}`} aria-label={tr('Category')}>
       <div className="tx-cats-head"><span>{tr('Category')}</span>

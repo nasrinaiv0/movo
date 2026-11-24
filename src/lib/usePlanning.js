@@ -22,7 +22,9 @@ const shift = (day, n) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate
 export const planningAccounts = (accounts = []) => accounts.filter(a => !a.is_archived && (a.account_type !== 'card'
   || (a.cardKind === 'debit' && !a.linkedAccountId) || a.cardKind === 'credit'));
 
-export function planningSummary({ accounts = [], loans = [], receivables = [], goals = [], plans = [], allocations = [], planAllocations = [], occurrences = [], payments = [], toBase = (v) => v, today = todayKey() }) {
+export function planningSummary({ accounts = [], loans = [], receivables = [], goals = [], plans = [], allocations = [], planAllocations = [], occurrences = [], payments = [], toBase: rawToBase = (v) => v, today = todayKey() }) {
+  // An amount in a currency with no exchange rate counts as 0 here instead of turning every total invalid (audit 2026-11-23).
+  const toBase = (value, currency) => { const converted = Number(rawToBase(value, currency)); return Number.isFinite(converted) ? converted : 0; };
   const live = allocations.filter(a => a.status === 'allocated');
   const activePlans = planGoalData(plans, planAllocations, toBase);
   const position = financialPosition({

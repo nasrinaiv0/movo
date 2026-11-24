@@ -1,12 +1,17 @@
 import { Capacitor } from '@capacitor/core';
-import { NativePurchases, PURCHASE_TYPE } from '@capgo/native-purchases';
 import { supabase } from './supabaseClient';
 import { apiUrl, isNativeApp } from './platform';
 import { STORE_PRODUCTS, cacheStorePrices } from './storeProducts';
 
+// The store plugin loads on first use (every call goes through ensureConfigured), keeping it out of the startup bundle.
+let NativePurchases;
+let PURCHASE_TYPE;
 let configurationPromise;
 function ensureConfigured() {
-  if (!configurationPromise) configurationPromise = NativePurchases.configure({ autoFinishTransactions: false }).catch(error => { configurationPromise = undefined; throw error; });
+  if (!configurationPromise) configurationPromise = import('@capgo/native-purchases').then(plugin => {
+    ({ NativePurchases, PURCHASE_TYPE } = plugin);
+    return NativePurchases.configure({ autoFinishTransactions: false });
+  }).catch(error => { configurationPromise = undefined; throw error; });
   return configurationPromise;
 }
 
