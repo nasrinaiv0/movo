@@ -1,3 +1,7 @@
+## 2026-11-24 — #343 Chromium parse failure and migration release gate
+
+Downloaded current-head diagnostic: blank document, browser `Unexpected token ':'` before heading render. Remove webpack eval-based devtool, use structured DefinePlugin env definitions (no remote credentials), and validate generated JS syntax before launching Chromium; record full error stack. This addresses the likely fixture bundling cause without changing application behavior or weakening assertions. Re-run required. Add separate migration approval checklist; production metadata previously confirmed RPC/table absent. No remote migrations or merge authorized.
+
 ## 2026-11-24 — #343 integrate #342 and diagnose Chromium fixture
 
 Both prior browser jobs timed out locating Add before any form interaction and published no screenshots. Isolate the real FinancialPlanning component in its own fixture entry, use explicit English and realistic synthetic props, capture sanitized page errors, screenshot and DOM diagnostics on failure; require the actual heading and Add action. Preserve receiving/payment and overflow assertions, plus responsive layout classes used by the existing panel harness. No skipped tests or financial behavior changes. Integrate #342's new head with current main, preserving all original atomic RPC and SQL fixtures. Re-run exact-head CI; release sequencing requires the atomic RPC to exist before new clients use it.

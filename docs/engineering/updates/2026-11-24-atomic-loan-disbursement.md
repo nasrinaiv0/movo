@@ -19,3 +19,6 @@ Both concurrent calls correctly rejected the synthetic owner without cloud write
 
 ## Current main and Chromium acceptance remediation
 Integrate #342's updated head and preserve original SQL and accounting changes. Use a dedicated synthetic fixture rendering the real planning component, with explicit locale and adaptive shell. Capture failure screenshots and diagnostics; all assertions remain mandatory. Browser root cause not yet proven; exact-head CI required. Do not release the RPC client before the migration is present in the target database.
+
+## Browser parse remediation and database gate
+Current browser artifact confirms a pre-render SyntaxError, not an Add selector defect. Remove eval wrappers, use structured compile-time environment definitions, run node --check over emitted JavaScript, preserve full stack and all acceptance assertions. Root fix requires rerun. See [migration approval checklist](2026-11-24-atomic-loan-migration-approval.md). No remote changes.

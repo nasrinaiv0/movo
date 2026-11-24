@@ -23,7 +23,7 @@ const output = process.env.QA_OUTPUT || '/tmp/movo-loan-ui';
     browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
     for (const width of [320, 390, 768, 1280]) for (const mode of ['light', 'dark']) {
       const page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: 'reduce' });
-      page.on('pageerror', error => { errors.push(error.message); console.error('Browser error:', error.message); });
+      page.on('pageerror', error => { errors.push(error.stack || error.message); console.error('Browser error:', error.stack || error.message); });
       try {
       await page.route('**/*', route => route.request().url().startsWith('http://127.0.0.1:4175/') ? route.continue() : route.abort());
       await page.goto('http://127.0.0.1:4175/?screen=planning&mode='+mode, {waitUntil:'networkidle'});
