@@ -85,9 +85,11 @@ jobs:
             adb shell input keyevent KEYCODE_WAKEUP
             adb shell wm dismiss-keyguard
             adb shell settings put system font_scale 1.0
-            bash android/gradlew -p android :wear:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon || { adb shell dumpsys window > "$RUNNER_TEMP/wear-evidence/default-failure-focus.txt" || true; adb exec-out screencap -p > "$RUNNER_TEMP/wear-evidence/default-failure.png" || true; cat android/wear/build/outputs/androidTest-results/connected/debug/*.xml || true; exit 1; }
+            bash android/gradlew -p android :wear:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.expectedFontScale=1.0 -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon || { mkdir -p "$RUNNER_TEMP/wear-evidence/default-in-test"; adb pull /sdcard/Android/data/com.nasrinai.movo/files/ "$RUNNER_TEMP/wear-evidence/default-in-test/" || true; adb shell dumpsys window > "$RUNNER_TEMP/wear-evidence/default-failure-focus.txt" || true; adb exec-out screencap -p > "$RUNNER_TEMP/wear-evidence/default-failure.png" || true; cat android/wear/build/outputs/androidTest-results/connected/debug/*.xml || true; exit 1; }
             adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png "$RUNNER_TEMP/wear-evidence/default-font.png"
             test -s "$RUNNER_TEMP/wear-evidence/default-font.png"
+            adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.txt "$RUNNER_TEMP/wear-evidence/default-geometry.txt"
+            adb shell rm -f /sdcard/Android/data/com.nasrinai.movo/files/wear-layout-failure.png /sdcard/Android/data/com.nasrinai.movo/files/wear-layout-failure.txt /sdcard/Android/data/com.nasrinai.movo/files/wear-handoff-failure.png /sdcard/Android/data/com.nasrinai.movo/files/wear-handoff-failure.txt /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.txt
             adb shell rm -f /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png
             adb shell settings put system font_scale 2.0
             adb shell am force-stop com.nasrinai.movo
@@ -96,9 +98,10 @@ jobs:
             adb shell wm dismiss-keyguard
             adb shell am start -W -n com.nasrinai.movo/com.nasrinai.movo.wear.WearActivity
             timeout 30s sh -c 'until adb shell dumpsys window | grep -Eq "mCurrentFocus=.*com\.nasrinai\.movo/"; do sleep 1; done' || { adb shell dumpsys window > "$RUNNER_TEMP/wear-evidence/enlarged-focus.txt"; adb exec-out screencap -p > "$RUNNER_TEMP/wear-evidence/enlarged-foreground-failure.png"; exit 1; }
-            bash android/gradlew -p android :wear:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --rerun-tasks || { adb shell dumpsys window > "$RUNNER_TEMP/wear-evidence/enlarged-failure-focus.txt" || true; adb exec-out screencap -p > "$RUNNER_TEMP/wear-evidence/enlarged-failure.png" || true; cat android/wear/build/outputs/androidTest-results/connected/debug/*.xml || true; exit 1; }
+            bash android/gradlew -p android :wear:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.expectedFontScale=2.0 -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --rerun-tasks || { mkdir -p "$RUNNER_TEMP/wear-evidence/enlarged-in-test"; adb pull /sdcard/Android/data/com.nasrinai.movo/files/ "$RUNNER_TEMP/wear-evidence/enlarged-in-test/" || true; adb shell dumpsys window > "$RUNNER_TEMP/wear-evidence/enlarged-failure-focus.txt" || true; adb exec-out screencap -p > "$RUNNER_TEMP/wear-evidence/enlarged-failure.png" || true; cat android/wear/build/outputs/androidTest-results/connected/debug/*.xml || true; exit 1; }
             adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png "$RUNNER_TEMP/wear-evidence/enlarged-font.png"
             test -s "$RUNNER_TEMP/wear-evidence/enlarged-font.png"
+            adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.txt "$RUNNER_TEMP/wear-evidence/enlarged-geometry.txt"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

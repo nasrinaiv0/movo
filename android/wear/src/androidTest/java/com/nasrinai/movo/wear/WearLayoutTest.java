@@ -7,6 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ScrollView;
+import java.io.PrintWriter;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -16,7 +18,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static androidx.test.espresso.Espresso.onView;
-import static androidx.test.espresso.action.ViewActions.scrollTo;
+import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.junit.Assert.*;
@@ -36,11 +39,71 @@ public final class WearLayoutTest {
         return null;
     }
 
+    // Espresso scrollTo aligns the descendant edge, which can land inside the
+    // round display's clipped padding. Center the actual view in its ScrollView
+    // viewport and keep the independent full-visibility and corner assertions.
+    private void centerAction(ActivityScenario<WearActivity> scenario) {
+        scenario.onActivity(activity -> {
+            Button action = button(activity.getWindow().getDecorView());
+            assertNotNull(action);
+            android.view.ViewParent parent = action.getParent();
+            while (parent != null && !(parent instanceof ScrollView)) parent = parent.getParent();
+            assertTrue("Quick Log must be inside its scrollable viewport", parent instanceof ScrollView);
+            ScrollView viewport = (ScrollView) parent;
+            Rect target = new Rect(0, 0, action.getWidth(), action.getHeight());
+            viewport.offsetDescendantRectToMyCoords(action, target);
+            int center = (viewport.getPaddingTop() + viewport.getHeight() - viewport.getPaddingBottom()) / 2;
+            viewport.scrollTo(viewport.getScrollX(), Math.max(0, target.centerY() - center));
+            float expected = Float.parseFloat(InstrumentationRegistry.getArguments().getString("expectedFontScale", "1.0"));
+            assertEquals("Actual application font scale", expected, activity.getResources().getConfiguration().fontScale, 0.01f);
+        });
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+    }
+
+    private void capture(ActivityScenario<WearActivity> scenario, String name) throws Exception {
+        File dir = InstrumentationRegistry.getInstrumentation().getTargetContext().getExternalFilesDir(null);
+        assertNotNull(dir);
+        try (PrintWriter out = new PrintWriter(new File(dir, name + ".txt"))) {
+            scenario.onActivity(activity -> {
+                Button action = button(activity.getWindow().getDecorView());
+                out.println("fontScale=" + activity.getResources().getConfiguration().fontScale);
+                out.println("windowFocus=" + activity.hasWindowFocus());
+                out.println("display=" + activity.getResources().getDisplayMetrics());
+                if (action != null) {
+                    Rect visible = new Rect();
+                    int[] xy = new int[2]; action.getLocationOnScreen(xy);
+                    out.println("action=" + action.getWidth() + "x" + action.getHeight()
+                        + " at " + xy[0] + "," + xy[1] + " visible=" + action.getGlobalVisibleRect(visible) + " " + visible);
+                    android.view.ViewParent p = action.getParent();
+                    while (p != null && !(p instanceof ScrollView)) p = p.getParent();
+                    if (p instanceof ScrollView) {
+                        ScrollView v = (ScrollView) p;
+                        out.println("viewport=" + v.getWidth() + "x" + v.getHeight() + " scrollY=" + v.getScrollY()
+                            + " padding=" + v.getPaddingLeft() + "," + v.getPaddingTop() + "," + v.getPaddingRight() + "," + v.getPaddingBottom());
+                    }
+                }
+            });
+        }
+        Bitmap screenshot = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
+        assertNotNull("In-test screenshot", screenshot);
+        try (FileOutputStream out = new FileOutputStream(new File(dir, name + ".png"))) {
+            assertTrue(screenshot.compress(Bitmap.CompressFormat.PNG, 100, out));
+        } finally { screenshot.recycle(); }
+    }
+
+    private void captureFailure(ActivityScenario<WearActivity> scenario, String name, Throwable failure) {
+        try { capture(scenario, name); }
+        catch (Throwable diagnostic) { failure.addSuppressed(diagnostic); }
+    }
+
     @Test public void enlargedActionIsFullyVisibleAndFitsRoundDisplay() throws Exception {
         try (ActivityScenario<WearActivity> scenario = ActivityScenario.launch(WearActivity.class)) {
             scenario.onActivity(activity -> activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON));
-            onView(withText("Quick Log on phone")).perform(scrollTo());
+            try {
+            centerAction(scenario);
+            onView(withText("Quick Log on phone")).check(matches(isDisplayed()));
             scenario.onActivity(activity -> {
+                assertTrue("MOVO must have foreground window focus", activity.hasWindowFocus());
                 Button action = button(activity.getWindow().getDecorView());
                 assertNotNull(action);
                 Rect visible = new Rect();
@@ -65,18 +128,20 @@ public final class WearLayoutTest {
                     }
                 }
             });
-            Bitmap screenshot = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
-            assertNotNull(screenshot);
-            File file = new File(InstrumentationRegistry.getInstrumentation().getTargetContext().getExternalFilesDir(null), "wear-layout.png");
-            try (FileOutputStream out = new FileOutputStream(file)) { assertTrue(screenshot.compress(Bitmap.CompressFormat.PNG, 100, out)); }
-            screenshot.recycle();
+            capture(scenario, "wear-layout");
+            } catch (Exception | AssertionError failure) {
+                captureFailure(scenario, "wear-layout-failure", failure);
+                throw failure;
+            }
         }
     }
 
     @Test public void unreachablePhoneCannotLeaveTheActionDisabledForever() {
         try (ActivityScenario<WearActivity> scenario = ActivityScenario.launch(WearActivity.class)) {
             scenario.onActivity(activity -> activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON));
-            onView(withText("Quick Log on phone")).perform(scrollTo(), click());
+            try {
+            centerAction(scenario);
+            onView(withText("Quick Log on phone")).check(matches(isDisplayed())).perform(click());
             AtomicBoolean enabled = new AtomicBoolean(false);
             long deadline = SystemClock.uptimeMillis() + 17000;
             while (!enabled.get() && SystemClock.uptimeMillis() < deadline) {
@@ -84,6 +149,10 @@ public final class WearLayoutTest {
                 if (!enabled.get()) SystemClock.sleep(100);
             }
             assertTrue("A failed or timed-out handoff must allow another deliberate tap", enabled.get());
+            } catch (RuntimeException | AssertionError failure) {
+                captureFailure(scenario, "wear-handoff-failure", failure);
+                throw failure;
+            }
         }
     }
 }
