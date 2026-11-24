@@ -14,7 +14,8 @@ test('raw CSV round trip keeps the exact canonical timestamp, not the local disp
   const csv = buildCsv([['Date','Description','Type','Amount','Currency','Account'],[rawLedgerTimestamp(row),'Synthetic lunch','expense',42.25,'PHP','Bank']]);
   expect(csv).toContain('2026-11-30T12:00:00Z');
   const parsed = parseCsvTransactions(csv);
-  expect(parsed.rows[0].occurred_at).toBe('2026-11-30T12:00:00.000Z');
+  expect(parsed.errors).toEqual([]);
+  expect(parsed.transactions[0].occurred_at).toBe('2026-11-30T12:00:00.000Z');
 });
 test('date-only edits retain canonical UTC noon without affecting ordinary or explicit clock edits', () => {
   const row = { id:'synthetic', external_reference:'movo-friend:synthetic', occurred_at:'2026-11-30T12:00:00Z' };
