@@ -1,3 +1,7 @@
+## 2026-11-24 — #342 actual browser and native visual gate
+
+Prior exact head passed 1,806 tests and all four CI workflows; iOS artifact only showed the OS confirmation. Add the same real-component isolated Chromium loan fixture as #343, with syntax validation and failure screenshots, and an XCTest-only target/scheme that asserts the actual guest Planning UI and native URL entitlement response without signing in, modifying app code or logging any payment. Retain original simulator smoke and native physical compilation. Export XCTest attachments, fail on missing evidence. All exact-head CI/preview/visual checks must pass before merge. No migration or production write.
+
 ## 2026-11-24 — #342 integrate latest main before release review
 
 Compared trees against the previous main SHA. Only the append-only progress register overlaps; retain both histories and every existing loan routing/test blob. Inherit mascot integration and all other main files verbatim. Re-run exact-head CI and Vercel preview before any merge. No remote migration or production deployment initiated by this commit.
