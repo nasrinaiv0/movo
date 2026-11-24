@@ -16,6 +16,9 @@ Downloaded current-head diagnostic: blank document, browser `Unexpected token ':
 ## 2026-11-24 — #343 integrate #342 and diagnose Chromium fixture
 
 Both prior browser jobs timed out locating Add before any form interaction and published no screenshots. Isolate the real FinancialPlanning component in its own fixture entry, use explicit English and realistic synthetic props, capture sanitized page errors, screenshot and DOM diagnostics on failure; require the actual heading and Add action. Preserve receiving/payment and overflow assertions, plus responsive layout classes used by the existing panel harness. No skipped tests or financial behavior changes. Integrate #342's new head with current main, preserving all original atomic RPC and SQL fixtures. Re-run exact-head CI; release sequencing requires the atomic RPC to exist before new clients use it.
+## 2026-11-24 — Persistent encrypted loan recovery (staging)
+
+Reserve one owner-bound canonical RPC request in an atomic IndexedDB transaction, encrypted by the existing finance vault. Verify session before dispatch and acknowledgement; preserve ambiguous requests for explicit retry and prevent another draft from overwriting them. Add key-loss detection, explicit account/data erasure and synthetic store tests. No automatic upload, migration or production change. Exact-head acceptance pending. Known limitation: a permanently rejected or corrupted request requires recovery support; no destructive discard or bypass is offered.
 
 ## 2026-11-24 — Atomic loan concurrency entitlement fixture
 

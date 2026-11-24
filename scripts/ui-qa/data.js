@@ -10,3 +10,5 @@ export const getReminderPreferences=async()=>({enabled:true,reminder_days:[0],ti
 export const reminderActionKey=e=>e.kind+e.item.id; export const isReminderActioned=()=>false; export const reminderOccurrenceAllowsDisplay=()=>true; export const snoozeSchedule=allocateToGoal; export const snoozeObligation=allocateToGoal;
 export const syncPaymentNotifications=allocateToGoal; export const inQuietHours=()=>false; export const canSchedulePaymentNotifications=()=>false;
 export const recordPaymentAttempt=allocateToGoal;
+
+export const readPendingLoan=async()=>null; export const recoverPendingLoan=allocateToGoal;
