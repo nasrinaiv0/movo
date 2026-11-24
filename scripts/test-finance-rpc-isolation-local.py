@@ -199,6 +199,8 @@ def main():
             "private friend chats: cross-user denial, projected cards, idempotency and block deletion")
         sql((ROOT / "supabase/tests/loan_payment_accounts.test.sql").read_text(),
             "loan payment account isolation, currency and single-ledger posting")
+        sql((ROOT / "supabase/tests/atomic_loan_disbursement.test.sql").read_text(),
+            "atomic loan disbursement, payload replay, rollback and account isolation")
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_") or not RESTORE_DATABASE.startswith("movo_rollback_test_"):

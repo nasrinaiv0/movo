@@ -13,6 +13,7 @@ import { creditCardPlanningMetrics, creditRepaymentEstimate } from '../lib/credi
 import { cardNetworkLogoUrl, institutionLogoCandidates } from '../lib/institutions';
 import { convert, KNOWN_CURRENCIES } from '../lib/fx';
 import usePlanning from '../lib/usePlanning';
+import { newRecordId } from '../lib/recordId';
 import { loanPaymentMethods, loanPaymentLedger } from '../lib/loanAccounts';
 import BillsPanel from '../components/BillsPanel';
 import AriesMascot from '../components/AriesMascot';
@@ -23,7 +24,7 @@ import '../components/AriesPlanning.css';
  * (assets, liabilities, net worth, money available). Records what the person says happened; it never moves money.
  */
 const TABS = [['overview', 'Overview'], ['cards', 'Credit cards'], ['bills', 'Bills'], ['loans', 'Loans & debts'], ['owed', 'Owed to you'], ['goals', 'Goals & Plans']];
-const blankLoan = (cur) => ({ name: '', obligation_type: 'loan', lender: '', principal_amount: '', currency: cur, interest_rate: '0', inconsistent_interest: false, interest_months: '12', monthly_interest_rates: Array(12).fill(''), due_date: '', account_id: '', payment_account_id: '', new_proceeds: false, notes: '' });
+const blankLoan = (cur) => ({ request_id: newRecordId(), name: '', obligation_type: 'loan', lender: '', principal_amount: '', currency: cur, interest_rate: '0', inconsistent_interest: false, interest_months: '12', monthly_interest_rates: Array(12).fill(''), due_date: '', account_id: '', payment_account_id: '', new_proceeds: false, notes: '' });
 const blankReceivable = (cur) => ({ name: '', counterparty: '', reason: '', opening_amount: '', currency: cur, due_date: '', account_id: '', new_lending: false, notes: '' });
 const blankGoal = (cur) => ({ name: '', target_amount: '', currency: cur, target_date: '', notes: '' });
 const LOAN_EVENTS = [['principal_payment', 'Principal repayment'], ['interest_payment', 'Interest payment'], ['fee', 'Fee'], ['principal_increase', 'Increase principal']];

@@ -82,22 +82,18 @@ export async function createLoan(input, userId) {
   const newProceeds = input?.new_proceeds === true;
   const interestSchedule = buildMonthlyInterestSchedule(input?.inconsistent_interest, input?.interest_months, input?.monthly_interest_rates);
   if (newProceeds && !input?.account_id) throw new Error('Choose the account receiving the loan proceeds.');
-  const client = requireClient();
-  const loan = unwrap(await client.from('financial_loans').insert({
-    user_id: userId, name: validName(input?.name), obligation_type: input?.obligation_type === 'debt' ? 'debt' : 'loan',
-    opening_principal: newProceeds ? 0 : principal, lender: typeof input?.lender === 'string' ? input.lender.trim().slice(0, 120) || null : null,
-    currency: validCurrency(input?.currency), principal_amount: principal, outstanding_principal: newProceeds ? 0 : principal,
-    interest_rate: interestSchedule.length ? 0 : Math.max(0, Number(input?.interest_rate) || 0), interest_schedule: interestSchedule, due_date: validDate(input?.due_date),
-    account_id: input?.account_id || null, payment_account_id: input?.payment_account_id || null, notes: typeof input?.notes === 'string' ? input.notes.trim().slice(0, 2000) || null : null,
-  }).select().single());
-  if (!newProceeds) return loan;
-  try {
-    await recordLoanEvent({ loan_id: loan.id, event_type: 'borrowed', amount: principal, currency: loan.currency, account_id: input.account_id, note: 'Initial loan proceeds' });
-    return loan;
-  } catch (error) {
-    await client.from('financial_loans').delete().eq('id', loan.id);
-    throw error;
-  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input?.request_id || '')) throw new Error('A stable loan request ID is required.');
+  return unwrap(await requireClient().rpc('create_loan_atomic', {
+    p_request_id: input.request_id, p_expected_user_id: userId,
+    p_name: validName(input?.name), p_obligation_type: input?.obligation_type === 'debt' ? 'debt' : 'loan',
+    p_principal: principal, p_currency: validCurrency(input?.currency),
+    p_new_proceeds: newProceeds, p_account_id: input?.account_id || null,
+    p_payment_account_id: input?.payment_account_id || null,
+    p_lender: typeof input?.lender === 'string' ? input.lender.trim().slice(0, 120) || null : null,
+    p_interest_rate: interestSchedule.length ? 0 : Math.max(0, Number(input?.interest_rate) || 0),
+    p_interest_schedule: interestSchedule, p_due_date: validDate(input?.due_date),
+    p_notes: typeof input?.notes === 'string' ? input.notes.trim().slice(0, 2000) || null : null,
+  }));
 }
 async function listLoanEventsFromCloud(loanId) {
   if (!loanId) throw new Error('A loan ID is required.');
