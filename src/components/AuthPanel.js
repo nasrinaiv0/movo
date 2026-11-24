@@ -5,6 +5,7 @@ import { authErrorCategory, nativeAuthStorageFailureCode } from '../lib/authErro
 import { nativePlatform } from '../lib/platform';
 import { MovoMark } from './MovoLogo';
 import AriesMascot from './AriesMascot';
+import { ZodiacSignInRow } from './ZodiacMascots';
 import './AuthPanel.css';
 import { t as tr, rich } from '../lib/i18n';
 
@@ -204,5 +205,6 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
 
     {onContinueLocally && <button className="auth-local" type="button" onClick={() => { if (needsConsent()) return; onContinueLocally(); }}>{tr('Continue with this device only')}</button>}
     <p className="auth-privacy">{tr('MOVO never asks for bank passwords, card PINs or CVVs. Enter your MOVO code only on this screen.')}</p>
+    <ZodiacSignInRow />
   </section>;
 }

@@ -25,6 +25,33 @@ Expand the mandatory paired R8 contract to call the reflected window bridge befo
 ## 2026-11-22 — Adaptive phone, foldable and wearable interfaces
 
 Implement read-only fold geometry and safe panes without remounting transaction forms, adaptive native iOS navigation with iPad/landscape packaging, and round-screen/scalable-text watch companions. Preserve all finance, account, purchase and storage paths. Local full JavaScript run: 267 suites / 1,786 tests; typecheck and strict original-only build pass. English/default and Arabic/largest-text browser runs pass 56 checks; native CI acceptance is tracked in the [implementation handover](engineering/updates/2026-11-22-adaptive-device-compatibility.md); physical devices, Duo SDK/poses, signed pairing and live hosting remain separate release gates.
+## 2026-11-24 — PR #345 CI repair
+
+Original head `bdff6446`: GitHub per-commit documentation gate rejected two code-only commits; Vercel reported 1,804 passing tests and one failing legacy exact Menu tile expectation in App.test.js. Consolidate only this PR's three original commits into one documented commit, retain the direct shortcut and its unit test, update the full-app assertion and verify tab switch/close. No guard changes. No production or data changes. CI and actual visual acceptance pending. [Engineering update](engineering/updates/2026-11-24-menu-plans-limits.md).
+
+## 2026-11-24 — Restore direct Menu access to Plans & limits
+
+Owner request: restore one combined Plans & limits tile in Menu, using the existing `c.openBudgets('plans')` handler and centered Plans & limits sheet (Plans and Limits tabs, including account and merchant limits). Preserve Financial planning, existing data, offline behavior, subscription entitlements, translations and styling. No new routes, accounting logic, migrations or production changes. Acceptance: one tile, correct initial tab, both tabs accessible, close returns to Menu; exact-head CI and visual acceptance remain required.
+
+## 2026-11-24 — #337 integration with current main
+
+Conflict audit found only this progress register overlaps. Retain all original mascot blobs and main changes; exact-head CI and Vercel preview remain required. No production change.
+
+## 2026-11-23 — Animated SVGs for every zodiac mascot (#337)
+
+The thirteen sign-in characters now use animated SVG with the two Aries designs retained. The other eleven signs keep their original pixels and move with character-specific gestures and a separate vector effect. The production build and all 1,772 tests passed. The current lineup and twelve alternate designs are available as twenty-five standalone animated files. [Engineering update](engineering/updates/2026-11-23-all-zodiac-svg-motion.md).
+
+## 2026-11-23 — Sync gold-horned Aries' SVG motion with the original Aries (#337)
+
+The two Aries designs share the 2.65-second hop, blink and wave timing in the sign-in row. The new layered SVG keeps the gold-horned portrait and uses its free hand for the wave. Both SVG and animation preview were decoded and checked. All 1,772 tests and the production build passed locally. [Engineering update](engineering/updates/2026-11-23-guardian-aries-svg-motion.md).
+
+## 2026-11-23 — Keep both Aries mascots in the zodiac lineup (#337)
+
+The sign-in card keeps MOVO's original Aries alongside twelve new reference-based chibi guardians, including a gold-horned Aries. Bundled transparent artwork and short, reduced-motion-aware animations run in the existing decorative row. The animation pack and 13-character contact sheet were verified. Node 26 type checking, all 1,772 tests, production bundling and precaching of the sprite passed locally. [Engineering update](engineering/updates/2026-11-23-zodiac-chibi-guardians.md).
+
+## 2026-11-23 — MOVO zodiac sign-in mascots
+
+Added a monochrome sign-in row with the existing Aries and eleven original zodiac designs. Each character plays one short entrance motion, with reduced-motion support and no new sign-in actions or data changes. Local Node 26 verification covers all 266 Jest suites / 1,772 tests, type checking and the production build. Hosted and physical-device verification remain separate. [Engineering update](engineering/updates/2026-11-23-zodiac-sign-in-mascots.md).
 
 ## 2026-11-23 — PR #339 main integration (feature branch only; no merge to main)
 

@@ -20,6 +20,7 @@ export default function Menu({ c }) {
     { icon: 'cashback', tone: 'pink', title: 'Cashback', sub: tr('Rewards and cashback'), onClick: () => go('Cashback') },
     { icon: 'calendarClock', tone: 'orange', title: 'Scheduled', sub: tr('Upcoming payments'), onClick: () => go('ScheduledTransactions') },
     { icon: 'planning', tone: 'blue', title: 'Financial planning', sub: tr('Plans, limits, bills and debts'), onClick: () => go('FinancialPlanning') },
+    { icon: 'limits', tone: 'teal', title: 'Plans & limits', sub: tr('Savings goals and spending limits'), onClick: () => c.openBudgets('plans') },
     { icon: 'exchange', tone: 'teal', title: 'Exchange rates', sub: tr('Convert currencies'), onClick: () => go('ExchangeRates') },
     { icon: 'crypto', tone: 'amber', title: 'Crypto market', sub: tr('Prices and watchlist'), onClick: () => go('CryptoMarket') },
     { icon: 'stocks', tone: 'indigo', title: 'Stocks market', sub: tr('Prices and watchlist'), onClick: () => go('StocksMarket') },
