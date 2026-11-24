@@ -40,3 +40,13 @@ Latest Wear failure is missing real web assets during plugin update. Run the sta
 
 ## 2026-11-24 Wear focus recovery
 Both native builds reached round-screen instrumentation. Downloaded small-round report identifies an invisible root without window focus at Espresso scrollTo; second test passed. Keep only the disposable emulator/test activity awake and dismiss its keyguard before each run. Retain all acceptance assertions; do not treat this as a proven fix until new CI completes.
+
+## Wear acceptance: window focus on a fresh emulator (2026-11-24)
+- **What failed.** Both round-watch jobs failed in `enlargedActionIsFullyVisibleAndFitsRoundDisplay` with Espresso's `RootViewWithoutFocusException`. MOVO's decor view was `INVISIBLE` and never received window focus. Something else covered the activity, so no layout assertion ever ran.
+- **Change.** Before the tests, the disposable emulator now:
+  - waits for `sys.boot_completed`;
+  - marks first-run setup complete (`device_provisioned`, `user_setup_complete`);
+  - keeps the screen on;
+  - sends the watch to its home screen.
+- **Diagnostics.** The job logs the focused window and saves a `before-tests.png` screenshot. On a test failure it prints the focused window and the instrumentation XML into the job log.
+- **Unchanged.** The test methods and assertions are unchanged.

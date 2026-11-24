@@ -1,3 +1,7 @@
+## 2026-11-24 — #335 Wear acceptance window focus
+
+Both round-watch jobs failed before any layout assertion: Espresso reported `RootViewWithoutFocusException`, and MOVO's window stayed invisible on the fresh Wear emulator. The workflow now finishes the emulator's first-run setup, keeps it awake and returns it to the watch face before the tests. It also logs the focused window and the instrumentation XML on failure. Test assertions are unchanged; workflow-only change.
+
 ## 2026-11-24 — Wear emulator window-focus remediation (#335)
 
 Real build and Capacitor sync now complete; both round-device runs reached instrumentation. Small-round report showed Espresso RootViewWithoutFocusException (invisible decor root); the handoff recovery test passed. Keep disposable emulator awake, wake/dismiss keyguard before each font-scale run and hold the test activity screen on. Preserve Espresso interaction, geometry and screenshot assertions; no production app behavior change. Exact-head rerun pending.
