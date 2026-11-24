@@ -37,6 +37,11 @@ const owner='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-822
     await page.goto('http://127.0.0.1:4176/?mode='+mode);
     const button=name=>page.getByRole('button',{name,exact:true});
     await button('Accept').waitFor();assert.equal(await page.getByTestId('calendar').innerText(),'2026-11-30 · 2026-11');
+    assert.equal(await page.getByTestId('raw-date').textContent(),'2026-11-30T12:00:00Z');
+    assert.equal(await page.getByTestId('unchanged-date').textContent(),'2026-11-30T12:00:00.000Z');
+    assert.equal(await page.getByTestId('changed-date').textContent(),'2026-12-01T12:00:00.000Z');
+    const explicitClock=await page.evaluate(()=>new Date('2026-11-30T13:00:00').toISOString());
+    assert.equal(await page.getByTestId('changed-clock').textContent(),explicitClock);
     await button('Accept').click();const save=button('Save to my transactions');await save.waitFor();assert.equal(await save.isDisabled(),true);
     assert.equal(await page.locator('select option').filter({hasText:'Other owner bank'}).count(),0);
     await page.getByLabel('Your account').selectOption(bank);

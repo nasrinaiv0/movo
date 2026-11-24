@@ -1,5 +1,5 @@
 import { useProfilePhoto } from './lib/useProfilePhoto';
-import { sharedLedgerDisplayDate } from './lib/sharedLedgerDate';
+import { rawLedgerTimestamp, sharedCalendarDate, sharedLedgerDisplayDate, sharedLedgerEditedTimestamp } from './lib/sharedLedgerDate';
 import { Preferences } from '@capacitor/preferences';
 import FriendsSheet, { FriendsContent } from './components/FriendsSheet';
 import FriendFinanceSummary from './components/FriendFinanceSummary';
@@ -1492,7 +1492,7 @@ function App() {
     setForm({
       merchant: t.merchant || '', amount: String(t.origAmount ?? t.amount ?? ''), transaction_type: t.type || t.transaction_type || 'expense',
       category: t.categoryId || t.category || 'other', account_id: t.account_id || '', transfer_to_account_id: t.transfer_to_account_id || '',
-      occurred_at: new Date(t.date || t.occurred_at).toLocaleDateString('en-CA'), time: new Date(t.date || t.occurred_at).toTimeString().slice(0, 8), note: t.note || '', payment_reference: t.payment_reference || '', receipt_note: t.receipt_note || '', receipt_path: t.receipt_path || '', receipt_path_to_delete: '', receipt_file: null,
+      occurred_at: sharedCalendarDate(t) || new Date(t.date || t.occurred_at).toLocaleDateString('en-CA'), time: sharedCalendarDate(t) ? '12:00:00' : new Date(t.date || t.occurred_at).toTimeString().slice(0, 8), note: t.note || '', payment_reference: t.payment_reference || '', receipt_note: t.receipt_note || '', receipt_path: t.receipt_path || '', receipt_path_to_delete: '', receipt_file: null,
     });
     setSheet({ name: 'transaction', id: t.id });
   };
@@ -1515,9 +1515,9 @@ function App() {
     const clock = /^\d{2}:\d{2}(:\d{2})?$/.test(draft.time || '') ? (draft.time.length === 5 ? `${draft.time}:00` : draft.time) : new Date().toTimeString().slice(0, 8);
     const stamp = new Date(`${draft.occurred_at}T${clock}`);
     if (Number.isNaN(stamp.getTime())) { setError(tr('Enter a valid date and time.')); return false; }
-    const occurred_at = stamp.toISOString();
-    const txCurrency = formAccounts.find(a => a.id === draft.account_id)?.currency || base;
     const editingId = sheet?.name === 'transaction' ? sheet.id : null;
+    const occurred_at = sharedLedgerEditedTimestamp(editingId ? rawTxs.find(x => x.id === editingId) : null, draft.occurred_at, clock, stamp.toISOString());
+    const txCurrency = formAccounts.find(a => a.id === draft.account_id)?.currency || base;
     // Duplicate guard (receipts, notifications, chat and manual entries): warn once, a second Save logs it anyway.
     const dup = editingId ? null : findDuplicate({ merchant: draft.merchant, amount, type, date: occurred_at, account_id: draft.account_id, ref: draft.ref || '' }, rawTxs);
     const sig = `${type}|${amount}|${draft.merchant.trim().toLowerCase()}|${draft.occurred_at}|${draft.account_id}`;
@@ -2035,7 +2035,7 @@ function App() {
     // Every column MOVO's CSV import reads back (exact time, both accounts of a transfer, note, reference), plus a
     // stable category id; accounting activity is not a transaction and is left out.
     const rows = [['Date', 'Description', 'Category', 'Category ID', 'Type', 'Amount', 'Currency', 'Account', 'To Account', 'Note', 'Payment Reference'],
-      ...txs.filter(t => ['income', 'expense', 'transfer'].includes(t.type)).map(t => [t.date, t.merchant, categoryFullLabel(t.categoryId || t.category), t.categoryId || '', t.type, t.origAmount, t.origCurrency || 'PHP', t.accountName, t.type === 'transfer' ? t.transferToAccountName : '', t.note || '', t.payment_reference || ''])];
+      ...txs.filter(t => ['income', 'expense', 'transfer'].includes(t.type)).map(t => [rawLedgerTimestamp(t), t.merchant, categoryFullLabel(t.categoryId || t.category), t.categoryId || '', t.type, t.origAmount, t.origCurrency || 'PHP', t.accountName, t.type === 'transfer' ? t.transferToAccountName : '', t.note || '', t.payment_reference || ''])];
     const csv = buildCsv(rows);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     const a = document.createElement('a'); a.href = url; a.download = 'movo-transactions.csv'; a.click();

@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {FriendConversation} from '../../src/components/FriendMessages';
-import {sharedLedgerDisplayDate} from '../../src/lib/sharedLedgerDate';
+import {rawLedgerTimestamp,sharedLedgerDisplayDate,sharedLedgerEditedTimestamp} from '../../src/lib/sharedLedgerDate';
 import {dayKey,monthKey} from '../../src/lib/format';
 import '../../src/App.css';
 import '../../src/components/FriendMessages.css';
@@ -28,6 +28,10 @@ function Fixture(){
  <h1 style={{fontSize:20}}>Private conversation</h1>
  <button type="button" onClick={()=>setId(v=>v===owner?other:owner)}>Switch synthetic owner</button>
  <div data-testid="calendar">{dayKey(shown)} · {monthKey(shown)}</div>
+ <output hidden data-testid="raw-date">{rawLedgerTimestamp(row)}</output>
+ <output hidden data-testid="unchanged-date">{sharedLedgerEditedTimestamp(row,'2026-11-30','12:00:00',new Date(shown).toISOString())}</output>
+ <output hidden data-testid="changed-date">{sharedLedgerEditedTimestamp(row,'2026-12-01','12:00:00',new Date('2026-12-01T12:00:00').toISOString())}</output>
+ <output hidden data-testid="changed-clock">{sharedLedgerEditedTimestamp(row,'2026-11-30','13:00:00',new Date('2026-11-30T13:00:00').toISOString())}</output>
  <FriendConversation key={id} session={session} friend={friend} importAccounts={accounts} onImport={onImport} onBack={()=>{}}/>
  </main></div>;
 }
