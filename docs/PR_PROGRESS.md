@@ -1,3 +1,23 @@
+## 2026-11-24 — #337 integration with current main
+
+Conflict audit found only this progress register overlaps. Retain all original mascot blobs and main changes; exact-head CI and Vercel preview remain required. No production change.
+
+## 2026-11-23 — Animated SVGs for every zodiac mascot (#337)
+
+The thirteen sign-in characters now use animated SVG with the two Aries designs retained. The other eleven signs keep their original pixels and move with character-specific gestures and a separate vector effect. The production build and all 1,772 tests passed. The current lineup and twelve alternate designs are available as twenty-five standalone animated files. [Engineering update](engineering/updates/2026-11-23-all-zodiac-svg-motion.md).
+
+## 2026-11-23 — Sync gold-horned Aries' SVG motion with the original Aries (#337)
+
+The two Aries designs share the 2.65-second hop, blink and wave timing in the sign-in row. The new layered SVG keeps the gold-horned portrait and uses its free hand for the wave. Both SVG and animation preview were decoded and checked. All 1,772 tests and the production build passed locally. [Engineering update](engineering/updates/2026-11-23-guardian-aries-svg-motion.md).
+
+## 2026-11-23 — Keep both Aries mascots in the zodiac lineup (#337)
+
+The sign-in card keeps MOVO's original Aries alongside twelve new reference-based chibi guardians, including a gold-horned Aries. Bundled transparent artwork and short, reduced-motion-aware animations run in the existing decorative row. The animation pack and 13-character contact sheet were verified. Node 26 type checking, all 1,772 tests, production bundling and precaching of the sprite passed locally. [Engineering update](engineering/updates/2026-11-23-zodiac-chibi-guardians.md).
+
+## 2026-11-23 — MOVO zodiac sign-in mascots
+
+Added a monochrome sign-in row with the existing Aries and eleven original zodiac designs. Each character plays one short entrance motion, with reduced-motion support and no new sign-in actions or data changes. Local Node 26 verification covers all 266 Jest suites / 1,772 tests, type checking and the production build. Hosted and physical-device verification remain separate. [Engineering update](engineering/updates/2026-11-23-zodiac-sign-in-mascots.md).
+
 ## 2026-11-23 — PR #339 main integration (feature branch only; no merge to main)
 
 - **Before-change rationale:** main advanced by Android AGP 9.5.1 changes and two progress entries from PR #340. PR #339 only conflicts with main in this progress document; its 17 non-document code paths do not overlap main's changes.
