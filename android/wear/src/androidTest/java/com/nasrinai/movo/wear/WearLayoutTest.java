@@ -58,7 +58,9 @@ public final class WearLayoutTest {
                     int[] location = new int[2]; action.getLocationOnScreen(location);
                     for (int x : new int[] { location[0], location[0] + action.getWidth() }) {
                         for (int y : new int[] { location[1], location[1] + action.getHeight() }) {
-                            assertTrue("Action corner is clipped by round display", Math.hypot(x - w / 2, y - h / 2) <= radius + 1);
+                            assertTrue(String.format(java.util.Locale.ROOT, "Action corner (%d,%d) is clipped by round display: distance %.1f > radius %.1f; action %dx%d at (%d,%d) on %.0fx%.0f",
+                                    x, y, Math.hypot(x - w / 2, y - h / 2), radius, action.getWidth(), action.getHeight(), location[0], location[1], w, h),
+                                    Math.hypot(x - w / 2, y - h / 2) <= radius + 1);
                         }
                     }
                 }

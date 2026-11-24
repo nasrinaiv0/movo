@@ -1,3 +1,7 @@
+## 2026-11-24 — #335 Wear round-screen padding
+
+Once the Wear acceptance test could focus MOVO, it found a real layout bug: the Quick Log button's corners were clipped by the round screen. The round padding was only applied from a window-insets listener, which API 34 legacy windows never call because the decor consumes the insets. The padding is now applied in `onCreate`, rounded up, and still widened for system insets. The failure message now includes the measured geometry; the assertion is unchanged.
+
 ## 2026-11-24 — #335 Wear acceptance window focus
 
 Both round-watch jobs failed before any layout assertion: Espresso reported `RootViewWithoutFocusException`, and MOVO's window stayed invisible on the fresh Wear emulator. The workflow now finishes the emulator's first-run setup, keeps it awake and returns it to the watch face before the tests. It also logs the focused window and the instrumentation XML on failure. Test assertions are unchanged; workflow-only change.

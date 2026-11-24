@@ -12,7 +12,6 @@ import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -67,8 +66,12 @@ public final class WearActivity extends Activity {
         body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
         body.setGravity(Gravity.CENTER);
+        // Apply the round-screen inset now: on legacy (non edge-to-edge) windows the decor
+        // consumes window insets, so the listener below may never run.
+        fitRoundScreen(0, 0, 0, 0);
         root.setOnApplyWindowInsetsListener((view, insets) -> {
-            fitRoundScreen(insets);
+            fitRoundScreen(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
+                    insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
             return insets;
         });
 
@@ -116,14 +119,13 @@ public final class WearActivity extends Activity {
         root.requestApplyInsets();
     }
 
-    private void fitRoundScreen(WindowInsets insets) {
-        // The inscribed rectangle keeps even enlarged, wrapping controls inside a round display.
+    private void fitRoundScreen(int left, int top, int right, int bottom) {
+        // The inscribed square keeps even enlarged, wrapping controls inside a round display.
+        // Round up so a corner never lands a pixel outside the circle.
         int round = getResources().getConfiguration().isScreenRound()
-                ? Math.round(getResources().getDisplayMetrics().widthPixels * 0.146447f) : dp(16);
-        scroll.setPadding(Math.max(round, insets.getSystemWindowInsetLeft()),
-                Math.max(round, insets.getSystemWindowInsetTop()),
-                Math.max(round, insets.getSystemWindowInsetRight()),
-                Math.max(round, insets.getSystemWindowInsetBottom()));
+                ? (int) Math.ceil(getResources().getDisplayMetrics().widthPixels * 0.146447f) : dp(16);
+        scroll.setPadding(Math.max(round, left), Math.max(round, top),
+                Math.max(round, right), Math.max(round, bottom));
     }
 
     @Override public boolean onGenericMotionEvent(MotionEvent event) {

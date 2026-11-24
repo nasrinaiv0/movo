@@ -80,6 +80,7 @@ jobs:
             adb shell settings put system font_scale 2.0
             adb shell am force-stop com.nasrinai.movo
             adb shell input keyevent KEYCODE_WAKEUP
+            adb shell input keyevent KEYCODE_HOME
             adb shell wm dismiss-keyguard
             bash android/gradlew -p android :wear:connectedDebugAndroidTest --no-daemon --rerun-tasks || { adb shell dumpsys window | grep -E "mCurrentFocus|mFocusedApp"; cat android/wear/build/outputs/androidTest-results/connected/debug/*.xml; exit 1; }
             adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png "$RUNNER_TEMP/wear-evidence/enlarged-font.png"

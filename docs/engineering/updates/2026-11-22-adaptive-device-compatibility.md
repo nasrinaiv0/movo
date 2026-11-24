@@ -50,3 +50,10 @@ Both native builds reached round-screen instrumentation. Downloaded small-round 
   - sends the watch to its home screen.
 - **Diagnostics.** The job logs the focused window and saves a `before-tests.png` screenshot. On a test failure it prints the focused window and the instrumentation XML into the job log.
 - **Unchanged.** The test methods and assertions are unchanged.
+
+## Wear round-screen padding fix (2026-11-24)
+- **What failed.** With focus fixed, the acceptance test reached its layout assertion and found a real bug: `Action corner is clipped by round display`.
+- **Cause.** `WearActivity` set the round-screen padding only from an `OnApplyWindowInsetsListener`. On API 34 a legacy (not edge-to-edge) window's decor consumes the insets before they reach that listener. The scroll view therefore had no padding, and the full-width Quick Log button reached the corners of the circle.
+- **App fix.** The inscribed-square padding is applied in `onCreate` and rounded up. The listener still widens it for real system insets.
+- **Diagnostics.** The corner assertion now reports the measured corner, distance, radius and button bounds. The workflow also returns to the watch face before the enlarged-text run, because a charging screen held focus after the first run.
+- **Unchanged.** The assertion and its tolerance are unchanged.
