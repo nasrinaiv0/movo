@@ -1,3 +1,7 @@
+## 2026-11-24 — #346 isolated capability migration rehearsal
+
+Before staging commit: reuse #341's exact decision SQL, tenant test and draft legal note; keep app/API integration on HOLD pending owner/session fencing, accept/decline versus write race, confirmation retry, date semantics, legal and independent review. Dry-run source replay succeeded for all existing client/API files except the newer SQL runner, which is reconciled manually. Existing disposable localhost PostgreSQL service harness now excludes three known pending migrations from the baseline, asserts absence, then applies friend chat, recipient decisions and atomic loans in dependency order after existing PR274 rehearsal. Preserve all financial and security suites and concurrent loan tests. No production data, remote migration or application release. Fresh CI required.
+
 ## 2026-11-24 — #342 iOS acceptance Keychain signing
 
 After the compile fix the XCTest reached the app, but it showed MOVO's fail-closed "Saved financial records are locked" screen: the acceptance build was unsigned, so the simulator app could not use the Keychain that holds the finance vault key. The XCTest step now builds with an ad hoc local signature for the simulator only. Assertions and vault behaviour are unchanged; workflow-only change.

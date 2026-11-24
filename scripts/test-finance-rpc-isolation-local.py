@@ -188,7 +188,13 @@ def main():
         # Main already contains migrations newer than the staged PR. Rehearse
         # the upgrade from that deployed schema with only the three PR stages pending.
         upgrade_versions = ("20261111133000", "20261111133100", "20261111133200")
-        baseline = [migration for migration in migrations if migration.name[:14] not in upgrade_versions]
+        # Rehearse the three observed missing production capabilities separately.
+        # This is a repository-derived approximation, not a production dump.
+        pending_versions = ("20261123131500", "20261123170000", "20261124030000")
+        pending = [migration for migration in migrations if migration.name[:14] in pending_versions]
+        if tuple(migration.name[:14] for migration in pending) != pending_versions:
+            raise RuntimeError("Unexpected pending friend/loan migration sequence")
+        baseline = [migration for migration in migrations if migration.name[:14] not in upgrade_versions + pending_versions]
         upgrade = [migration for migration in migrations if migration.name[:14] in upgrade_versions]
         if tuple(migration.name[:14] for migration in upgrade) != upgrade_versions:
             raise RuntimeError("Unexpected PR274 migration sequence or missing upgrade step")
@@ -218,6 +224,16 @@ def main():
         restore_into_generated_test_database(clean_baseline_snapshot, DATABASE)
         for migration in upgrade:
             sql(migration.read_text(), "clean schema: " + migration.name)
+        sql("""
+          do $$ begin
+            if to_regclass('public.movo_friend_messages') is not null
+              or to_regclass('public.movo_friend_transaction_decisions') is not null
+              or to_regclass('public.loan_creation_requests') is not null
+            then raise exception 'pending migrations already present in rehearsal baseline'; end if;
+          end $$;
+        """, "pending capabilities absent before isolated upgrade")
+        for migration in pending:
+            sql(migration.read_text(), "pending capability upgrade: " + migration.name)
         sql((ROOT / "supabase/tests/security_definer_tenant_isolation.test.sql").read_text(),
             "12 SECURITY DEFINER cross-tenant denials and owner-only controls")
         sql((ROOT / "supabase/tests/hybrid_sync_operations.test.sql").read_text(),
@@ -242,6 +258,8 @@ def main():
             "discoverable usernames, recipient approval, snapshot revocation and avatar isolation")
         sql((ROOT / "supabase/tests/friend_chat.test.sql").read_text(),
             "private friend chats: cross-user denial, projected cards, idempotency and block deletion")
+        sql((ROOT / "supabase/tests/friend_transaction_import.test.sql").read_text(),
+            "recipient consent, immutable import receipt, account mapping and cascade")
         sql((ROOT / "supabase/tests/loan_payment_accounts.test.sql").read_text(),
             "loan payment account isolation, currency and single-ledger posting")
         sql((ROOT / "supabase/tests/atomic_loan_disbursement.test.sql").read_text(),
