@@ -37,3 +37,6 @@ The generated app assets directory must exist before Capacitor's native update w
 
 ## 2026-11-24 complete Capacitor sync
 Latest Wear failure is missing real web assets during plugin update. Run the standard strict web build and cap sync used by the passing native-security workflow, not a dummy assets directory. Native acceptance remains mandatory.
+
+## 2026-11-24 Wear focus recovery
+Both native builds reached round-screen instrumentation. Downloaded small-round report identifies an invisible root without window focus at Espresso scrollTo; second test passed. Keep only the disposable emulator/test activity awake and dismiss its keyguard before each run. Retain all acceptance assertions; do not treat this as a proven fix until new CI completes.

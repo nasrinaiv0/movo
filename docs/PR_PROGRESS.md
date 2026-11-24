@@ -1,3 +1,7 @@
+## 2026-11-24 — Wear emulator window-focus remediation (#335)
+
+Real build and Capacitor sync now complete; both round-device runs reached instrumentation. Small-round report showed Espresso RootViewWithoutFocusException (invisible decor root); the handoff recovery test passed. Keep disposable emulator awake, wake/dismiss keyguard before each font-scale run and hold the test activity screen on. Preserve Espresso interaction, geometry and screenshot assertions; no production app behavior change. Exact-head rerun pending.
+
 ## 2026-11-24 — Wear clean checkout full sync (#335)
 
 Latest runner failed during Capacitor copy because ./build is absent. Match the existing Android native-security workflow: build real web assets and run cap sync android before the Wear Gradle task. Retain generated file assertion and all native tests. No fake build folder or reduced acceptance. No production change.

@@ -5,6 +5,7 @@ import android.graphics.Rect;
 import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -37,6 +38,7 @@ public final class WearLayoutTest {
 
     @Test public void enlargedActionIsFullyVisibleAndFitsRoundDisplay() throws Exception {
         try (ActivityScenario<WearActivity> scenario = ActivityScenario.launch(WearActivity.class)) {
+            scenario.onActivity(activity -> activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON));
             onView(withText("Quick Log on phone")).perform(scrollTo());
             scenario.onActivity(activity -> {
                 Button action = button(activity.getWindow().getDecorView());
@@ -71,6 +73,7 @@ public final class WearLayoutTest {
 
     @Test public void unreachablePhoneCannotLeaveTheActionDisabledForever() {
         try (ActivityScenario<WearActivity> scenario = ActivityScenario.launch(WearActivity.class)) {
+            scenario.onActivity(activity -> activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON));
             onView(withText("Quick Log on phone")).perform(scrollTo(), click());
             AtomicBoolean enabled = new AtomicBoolean(false);
             long deadline = SystemClock.uptimeMillis() + 17000;
