@@ -1,3 +1,56 @@
+## 2026-11-24 — #335 exact-main reconciliation and signed iPad acceptance
+
+Before staging commit: main 72ae8398, prior head 04a5033f; exact-context patches for App.js, Xcode project, iOS workflow and this log; preserve both histories, existing accounting/vault and all unrelated main blobs. Reuse the main signed XCTest for iPhone and iPad with separate result bundles and screenshot attachments; expand test target device family. Keep unsigned compile/launch diagnostics distinct from actual signed acceptance. Wear and R8 reruns remain pending; no weakened assertions, no production change, no remote SQL. [Engineering handover](engineering/updates/2026-11-24-adaptive-main-reconciliation.md).
+
+## 2026-11-24 — #342 iOS acceptance Keychain signing
+
+After the compile fix the XCTest reached the app, but it showed MOVO's fail-closed "Saved financial records are locked" screen: the acceptance build was unsigned, so the simulator app could not use the Keychain that holds the finance vault key. The XCTest step now builds with an ad hoc local signature for the simulator only. Assertions and vault behaviour are unchanged; workflow-only change.
+
+## 2026-11-24 — #342 iOS acceptance compile fix
+
+`build-ios` failed to compile the new XCTest target: `XCUIApplication.open(_:)` needs iOS 16.4 and the target deploys to iOS 15.0. The deep-link step is now behind an availability guard that fails (never skips) on older simulators. Test-only change; no app, accounting or database change.
+## 2026-11-24 — #343 browser evidence and shared native visual gate
+
+Exact 7c4c1bdc Chromium run 45321986274 passed 8/8 real-component checks; artifact 14888800582 contains 8 original screenshots and results.json with zero page errors or horizontal overflow. Receiving selection enables initial proceeds, payment preference remains independent, opt-out clears receiving selection. Integrate #342's shared XCTest-only native guest acceptance and browser gate; preserve all atomic SQL/accounting blobs. Revalidate the new head. No remote migrations or merge.
+
+## 2026-11-24 — #343 Chromium parse failure and migration release gate
+
+Downloaded current-head diagnostic: blank document, browser `Unexpected token ':'` before heading render. Remove webpack eval-based devtool, use structured DefinePlugin env definitions (no remote credentials), and validate generated JS syntax before launching Chromium; record full error stack. This addresses the likely fixture bundling cause without changing application behavior or weakening assertions. Re-run required. Add separate migration approval checklist; production metadata previously confirmed RPC/table absent. No remote migrations or merge authorized.
+
+## 2026-11-24 — #343 integrate #342 and diagnose Chromium fixture
+
+Both prior browser jobs timed out locating Add before any form interaction and published no screenshots. Isolate the real FinancialPlanning component in its own fixture entry, use explicit English and realistic synthetic props, capture sanitized page errors, screenshot and DOM diagnostics on failure; require the actual heading and Add action. Preserve receiving/payment and overflow assertions, plus responsive layout classes used by the existing panel harness. No skipped tests or financial behavior changes. Integrate #342's new head with current main, preserving all original atomic RPC and SQL fixtures. Re-run exact-head CI; release sequencing requires the atomic RPC to exist before new clients use it.
+## 2026-11-24 — Persistent encrypted loan recovery (staging)
+
+Reserve one owner-bound canonical RPC request in an atomic IndexedDB transaction, encrypted by the existing finance vault. Verify session before dispatch and acknowledgement; preserve ambiguous requests for explicit retry and prevent another draft from overwriting them. Add key-loss detection, explicit account/data erasure and synthetic store tests. No automatic upload, migration or production change. Exact-head acceptance pending. Known limitation: a permanently rejected or corrupted request requires recovery support; no destructive discard or bypass is offered.
+
+## 2026-11-24 — Atomic loan concurrency entitlement fixture
+
+The two-session RPC attempts correctly denied the synthetic free owner with cloud_read_only_upgrade_required. Seed a short-lived synthetic Pro grant using the existing hybrid-sync fixture pattern; set explicit authenticated claims in both worker sessions. No authorization guard changes. Sequential SQL still passed; concurrent rerun required.
+
+## 2026-11-24 — Concurrent loan fixture authorization repair
+
+The sequential SQL regression passed again. Two-session test failed at synthetic account setup with sign_in_required before either RPC ran. Set the existing disposable fixture service-role JWT claim during seed only, as in the repository's SQL fixtures. Both racing callers still use authenticated role and owner-bound sub. Do not weaken the live guard. Exact-head rerun required.
+
+## 2026-11-24 — Atomic loan parallel replay and rendered fixture acceptance
+
+First isolated SQL workflow passed. Add two simultaneous independent authenticated sessions using the same UUID and assert one liability, event, receipt and cash posting. Add isolated Chromium actual-component rendering for 320/390/768/1280px light/dark with external requests blocked, screenshot artifacts, receiving and repayment selection assertions and overflow checks. No production connection, no paid resource, no release. Exact-head evidence pending.
+
+## 2026-11-24 — Atomic loan disbursement (staging)
+
+One database RPC creates the loan, initial event and accounting posting, with an owner-scoped digest receipt and stable per-draft UUID. Added replay, validation, rollback, historical liability and retry tests. Existing edit and repayment paths unchanged. No remote migrations or production changes. Exact-head acceptance pending.
+
+## 2026-11-24 — #342 actual browser and native visual gate
+
+Prior exact head passed 1,806 tests and all four CI workflows; iOS artifact only showed the OS confirmation. Add the same real-component isolated Chromium loan fixture as #343, with syntax validation and failure screenshots, and an XCTest-only target/scheme that asserts the actual guest Planning UI and native URL entitlement response without signing in, modifying app code or logging any payment. Retain original simulator smoke and native physical compilation. Export XCTest attachments, fail on missing evidence. All exact-head CI/preview/visual checks must pass before merge. No migration or production write.
+
+## 2026-11-24 — #342 integrate latest main before release review
+
+Compared trees against the previous main SHA. Only the append-only progress register overlaps; retain both histories and every existing loan routing/test blob. Inherit mascot integration and all other main files verbatim. Re-run exact-head CI and Vercel preview before any merge. No remote migration or production deployment initiated by this commit.
+
+## 2026-11-24 — Loan/debt receiving-account routing (#342)
+
+Selection automatically enables proceeds; clearing or opting out disables it. Preserve historical liabilities and repayment preferences. Existing accounting RPC posts proceeds; no extra balance write. Added UI and isolated SQL regressions. Initial CI flagged fixture dollar quoting and per-commit documentation; fixed both in a documented consolidated implementation commit. Exact-head acceptance pending; no production change.
 ## 2026-11-24 — #335 Wear round-screen padding
 
 Once the Wear acceptance test could focus MOVO, it found a real layout bug: the Quick Log button's corners were clipped by the round screen. The round padding was only applied from a window-insets listener, which API 34 legacy windows never call because the decor consumes the insets. The padding is now applied in `onCreate`, rounded up, and still widened for system insets. The failure message now includes the measured geometry; the assertion is unchanged.

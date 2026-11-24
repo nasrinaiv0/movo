@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
 import AccountPicker, { accountName, accountKind } from '../components/AccountPicker';
@@ -6,13 +6,15 @@ import { Chips, Money, SectionTitle, Sheet, Skeleton, SubHeader } from '../compo
 import { formatDate, money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { deleteRecord, useConfirm } from '../components/ConfirmDialog';
-import { allocateToGoal, allocatePlanFunds, createGoal, createLoan, createReceivable, updateLoan, deleteLoan, updateReceivable, deleteReceivable, recordLoanEvent, recordReceivableEvent, releaseGoalAllocation, releasePlanFundingAllocation } from '../lib/obligationsRepository';
+import { allocateToGoal, allocatePlanFunds, createGoal, createLoan, readPendingLoan, recoverPendingLoan, createReceivable, updateLoan, deleteLoan, updateReceivable, deleteReceivable, recordLoanEvent, recordReceivableEvent, releaseGoalAllocation, releasePlanFundingAllocation } from '../lib/obligationsRepository';
 import { goalProgress } from '../lib/accounting';
 import { creditCardOutstanding } from '../lib/financialPlanningIntegrations';
 import { creditCardPlanningMetrics, creditRepaymentEstimate } from '../lib/creditCard';
 import { cardNetworkLogoUrl, institutionLogoCandidates } from '../lib/institutions';
 import { convert, KNOWN_CURRENCIES } from '../lib/fx';
 import usePlanning from '../lib/usePlanning';
+import { newRecordId } from '../lib/recordId';
+import { validLoanOwner } from '../lib/pendingLoanStore';
 import { loanPaymentMethods, loanPaymentLedger } from '../lib/loanAccounts';
 import BillsPanel from '../components/BillsPanel';
 import AriesMascot from '../components/AriesMascot';
@@ -23,7 +25,7 @@ import '../components/AriesPlanning.css';
  * (assets, liabilities, net worth, money available). Records what the person says happened; it never moves money.
  */
 const TABS = [['overview', 'Overview'], ['cards', 'Credit cards'], ['bills', 'Bills'], ['loans', 'Loans & debts'], ['owed', 'Owed to you'], ['goals', 'Goals & Plans']];
-const blankLoan = (cur) => ({ name: '', obligation_type: 'loan', lender: '', principal_amount: '', currency: cur, interest_rate: '0', inconsistent_interest: false, interest_months: '12', monthly_interest_rates: Array(12).fill(''), due_date: '', account_id: '', payment_account_id: '', new_proceeds: false, notes: '' });
+const blankLoan = (cur) => ({ request_id: newRecordId(), name: '', obligation_type: 'loan', lender: '', principal_amount: '', currency: cur, interest_rate: '0', inconsistent_interest: false, interest_months: '12', monthly_interest_rates: Array(12).fill(''), due_date: '', account_id: '', payment_account_id: '', new_proceeds: false, notes: '' });
 const blankReceivable = (cur) => ({ name: '', counterparty: '', reason: '', opening_amount: '', currency: cur, due_date: '', account_id: '', new_lending: false, notes: '' });
 const blankGoal = (cur) => ({ name: '', target_amount: '', currency: cur, target_date: '', notes: '' });
 const LOAN_EVENTS = [['principal_payment', 'Principal repayment'], ['interest_payment', 'Interest payment'], ['fee', 'Fee'], ['principal_increase', 'Increase principal']];
@@ -42,6 +44,17 @@ export default function FinancialPlanning({ c }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [pendingLoan, setPendingLoan] = useState(null);
+  const [pendingReadError, setPendingReadError] = useState(null);
+  const loanOwner = c.session?.user?.id;
+  useEffect(() => {
+    let active = true;
+    setPendingLoan(null); setPendingReadError(null);
+    if (validLoanOwner(loanOwner)) Promise.resolve().then(() => readPendingLoan(loanOwner))
+      .then(value => { if (active) setPendingLoan(value || null); })
+      .catch(() => { if (active) setPendingReadError(loanOwner); });
+    return () => { active = false; };
+  }, [loanOwner]);
   const [cardDraft, setCardDraft] = useState(null);
   const [creditSpendDraft, setCreditSpendDraft] = useState(null);
   const [expandedCreditCards, setExpandedCreditCards] = useState({});
@@ -102,6 +115,19 @@ export default function FinancialPlanning({ c }) {
     } catch (e) { setError(e?.message || tr('Could not save. Please try again.')); return false; }
     finally { setBusy(false); }
   };
+  const refreshPendingLoan = async () => {
+    if (!validLoanOwner(loanOwner)) return;
+    try { setPendingLoan(await readPendingLoan(loanOwner)); setPendingReadError(null); }
+    catch { setPendingReadError(loanOwner); }
+  };
+  const submitLoan = async () => {
+    await run(() => createLoan(form, loanOwner), 'Loan or debt added.');
+    await refreshPendingLoan();
+  };
+  const retryLoan = async () => {
+    await run(() => recoverPendingLoan(loanOwner), 'Loan or debt added.');
+    await refreshPendingLoan();
+  };
 
   const header = <SubHeader title={tr('Financial planning')} onBack={() => c.go('Menu')} right={p.cloud && !p.offline ? <button type="button" className="round-button accent" aria-label={tr('Add')} onClick={() => setSheet({ kind: 'add' })}><Icon name="plus" size={20} /></button> : null} />;
   const hero = <section className="card sub-hero fp-hero" aria-label={tr('Financial position')}>
@@ -157,6 +183,12 @@ export default function FinancialPlanning({ c }) {
     {p.offline && <p className="form-hint fp-offline" role="status">{tr('Changes are kept on this device until safely reconciled.')}</p>}
     {(error || p.error) && <div className="app-alert" role="alert"><span>{error || tr(p.error)}</span>{p.error && <button type="button" className="link-button" aria-label="↻" onClick={() => p.reload()}>↻</button>}</div>}
     {notice && <p className="form-note fp-notice" role="status">{notice}</p>}
+    {pendingReadError === loanOwner && pendingReadError && <div className="app-alert" role="alert"><span>{tr('Could not save. Please try again.')}</span><button type="button" className="link-button" onClick={refreshPendingLoan}>{tr('Retry')}</button></div>}
+    {pendingLoan?.p_expected_user_id === loanOwner && pendingLoan && <section className="card pad" aria-label={tr('Loans & debts')}>
+      <strong>{tr('Changes are kept on this device until safely reconciled.')}</strong>
+      <p className="form-note">{pendingLoan.p_name} · {cash(pendingLoan.p_principal, pendingLoan.p_currency)} · {pendingLoan.p_account_id ? accountName(inCurrency(pendingLoan.p_currency).find(a => a.id === pendingLoan.p_account_id)) : tr('Other debt')}</p>
+      <button type="button" className="primary-button" disabled={busy || p.offline} onClick={retryLoan}>{tr('Retry')}</button>
+    </section>}
 
     {tab === 'overview' && <>
       <SectionTitle>{tr('At a glance')}</SectionTitle>
@@ -391,15 +423,15 @@ export default function FinancialPlanning({ c }) {
     </Sheet>}
 
     {sheet?.kind === 'loan' && <Sheet title={tr('Add a loan or debt')} onClose={() => setSheet(null)} label={tr('Add a loan or debt')}>
-      <form className="sheet-form loan-details-form" onSubmit={e => { e.preventDefault(); run(() => createLoan(form, c.session?.user?.id), 'Loan or debt added.'); }}>
+      <form className="sheet-form loan-details-form" onSubmit={e => { e.preventDefault(); submitLoan(); }}>
         {error && <p className="app-alert" role="alert">{error}</p>}
         <label>{tr('Record type')}<select value={form.obligation_type} onChange={e => set({ obligation_type: e.target.value })}><option value="loan">{tr('Loan')}</option><option value="debt">{tr('Other debt')}</option></select></label>
         <label>{tr('Name')}<input required maxLength="120" value={form.name} onChange={e => set({ name: e.target.value })} /></label>
         <label>{tr('Lender / creditor')}<input maxLength="120" value={form.lender} onChange={e => set({ lender: e.target.value })} /></label>
         <label>{tr('Original principal')}<input required type="number" inputMode="decimal" min="0.01" step="0.01" value={form.principal_amount} onChange={e => set({ principal_amount: e.target.value })} /></label>
-        <label>{tr('Currency')}<select value={form.currency} onChange={e => { const currency = e.target.value; set({ currency, account_id: spendable.some(a => a.id === form.account_id && a.currency === currency) ? form.account_id : '', payment_account_id: paymentMethods(currency).some(a => a.id === form.payment_account_id) ? form.payment_account_id : '' }); }}>{[...new Set([base, ...(c.accountsView || []).map(a => a.currency), ...KNOWN_CURRENCIES])].filter(Boolean).map(currency => <option key={currency} value={currency}>{currency}</option>)}</select></label>
-        <label className="legal-disclosure-check"><input type="checkbox" checked={form.new_proceeds} onChange={e => set({ new_proceeds: e.target.checked })} /><span>{tr('This is a new loan draw; add the proceeds to the account balance')}</span></label>
-        <AccountPicker id="loan-receiving-account" label={tr('Receiving account')} accounts={inCurrency(form.currency)} value={form.account_id} onChange={v => set({ account_id: v })} showBalance={show} required={form.new_proceeds} placeholder={tr('Choose account (optional)')} />
+        <label>{tr('Currency')}<select value={form.currency} onChange={e => { const currency = e.target.value; const account_id = inCurrency(currency).some(a => a.id === form.account_id) ? form.account_id : ''; set({ currency, account_id, new_proceeds: Boolean(account_id), payment_account_id: paymentMethods(currency).some(a => a.id === form.payment_account_id) ? form.payment_account_id : '' }); }}>{[...new Set([base, ...(c.accountsView || []).map(a => a.currency), ...KNOWN_CURRENCIES])].filter(Boolean).map(currency => <option key={currency} value={currency}>{currency}</option>)}</select></label>
+        <label className="legal-disclosure-check"><input type="checkbox" checked={form.new_proceeds} onChange={e => set(e.target.checked ? { new_proceeds: true } : { new_proceeds: false, account_id: '' })} /><span>{tr('This is a new loan draw; add the proceeds to the account balance')}</span></label>
+        <AccountPicker id="loan-receiving-account" label={tr('Receiving account')} accounts={inCurrency(form.currency)} value={form.account_id} onChange={v => set({ account_id: v, new_proceeds: Boolean(v) })} showBalance={show} required={form.new_proceeds} placeholder={tr('Choose account (optional)')} />
         <AccountPicker id="loan-payment-account" label={tr('Pay from card or account')} accounts={paymentMethods(form.currency)} value={form.payment_account_id || ''} onChange={v => set({ payment_account_id: v })} showBalance={show} placeholder={tr('Choose account (optional)')} />
         <p className="form-note">{tr('The receiving account gets new loan proceeds only when selected above. The payment method is a preference; no payment is recorded yet.')}</p>
         <label className="legal-disclosure-check"><input type="checkbox" checked={!!form.inconsistent_interest} onChange={e => set({ inconsistent_interest: e.target.checked })} /><span>{tr('Interest changes each month')}</span></label>
