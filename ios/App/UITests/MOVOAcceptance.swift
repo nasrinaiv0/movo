@@ -56,6 +56,11 @@ final class MOVOAcceptance: XCTestCase {
         attach("MOVO-guest-planning-verified")
 
         // Native URL delivery must result in the actual entitlement UI, not a SpringBoard prompt.
+        // XCUIApplication.open(_:) needs iOS 16.4; the CI simulator runs a newer iOS, so this branch always runs there.
+        guard #available(iOS 16.4, *) else {
+            XCTFail("The deep-link acceptance step needs an iOS 16.4 or newer simulator")
+            return
+        }
         app.open(URL(string: "movo://log?src=siri_shortcut&amount=12.34&merchant=Simulator%20Test")!)
         let open = springboard.alerts.buttons["Open"].firstMatch
         if open.waitForExistence(timeout: 5) { open.tap() }

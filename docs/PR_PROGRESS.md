@@ -1,3 +1,6 @@
+## 2026-11-24 — #342 iOS acceptance compile fix
+
+`build-ios` failed to compile the new XCTest target: `XCUIApplication.open(_:)` needs iOS 16.4 and the target deploys to iOS 15.0. The deep-link step is now behind an availability guard that fails (never skips) on older simulators. Test-only change; no app, accounting or database change.
 ## 2026-11-24 — #343 browser evidence and shared native visual gate
 
 Exact 7c4c1bdc Chromium run 45321986274 passed 8/8 real-component checks; artifact 14888800582 contains 8 original screenshots and results.json with zero page errors or horizontal overflow. Receiving selection enables initial proceeds, payment preference remains independent, opt-out clears receiving selection. Integrate #342's shared XCTest-only native guest acceptance and browser gate; preserve all atomic SQL/accounting blobs. Revalidate the new head. No remote migrations or merge.

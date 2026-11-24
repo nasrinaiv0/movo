@@ -17,3 +17,6 @@ Tree comparison shows only the progress register overlaps the mascot merge. Pres
 
 ## Actual visual release gate
 Previous simulator screenshot was an OS prompt. Real browser fixture and UI-only XCTest target added. Guest native planning/sign-in restriction and free automation gate must be proven by accessibility assertions; signed-in loan form is covered by isolated real-component browser fixtures, not a live account. Physical-device and store testing remain separate. No production changes.
+
+## iOS acceptance compile fix (2026-11-24)
+`build-ios` failed to compile `UITests/MOVOAcceptance.swift`: `XCUIApplication.open(_:)` is only available in iOS 16.4 or newer, and the test target deploys to iOS 15.0. The deep-link step is now behind `guard #available(iOS 16.4, *)`. The CI simulator runs a newer iOS, so the step still runs and still asserts the entitlement gate. On an older simulator it fails instead of silently skipping. No app, accounting or database change.
