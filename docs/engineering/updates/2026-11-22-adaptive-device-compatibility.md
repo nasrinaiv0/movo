@@ -31,3 +31,6 @@ API hosting was previously HTTP 402 `DEPLOYMENT_DISABLED`; restoring it remains 
 Revert this source change to remove the optional window bridge, universal target/adaptive chrome and watch UI changes. Preserve all financial records, secure storage and store receipts. No database rollback or history rewrite is necessary.
 
 Before a device/store release, verify real cover↔inner and book/tabletop transitions, landscape, multi-window, keyboards, large text, screen readers, local lock/account switching, camera/OCR and signed store purchase/restore. Verify watch pairing/unpairing, absent/locked/unreachable phones and one deliberate phone save. Record actual SDK/device/build IDs and screenshots separately from browser/host tests.
+
+## 2026-11-24 clean-checkout Wear generation
+The generated app assets directory must exist before Capacitor's native update writes plugin metadata. Create it before update, retain the Cordova file check and all emulator assertions. New head acceptance pending.

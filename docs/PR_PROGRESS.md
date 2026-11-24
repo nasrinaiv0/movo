@@ -1,3 +1,7 @@
+## 2026-11-24 — Wear acceptance clean-checkout repair (#335)
+
+The updated Wear runner reached Capacitor but failed with ENOENT writing capacitor.plugins.json. Create the generated app assets directory before dependency generation, preserving the Cordova Gradle assertion and native acceptance gates. Exact-head checks pending; no production change.
+
 ## 2026-11-24 — #335 integration and Wear CI preparation
 
 Preserve current main AGP 9, transfer currency and preference sync safeguards, plus the existing adaptive-device changes. Generate the required Capacitor Android dependency project before Wear Gradle. Native and hosted validation pending; no production change.
