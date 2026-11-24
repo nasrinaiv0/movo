@@ -1,3 +1,7 @@
+## 2026-11-24 — Loan/debt receiving-account routing (#342)
+
+Selection automatically enables proceeds; clearing or opting out disables it. Preserve historical liabilities and repayment preferences. Existing accounting RPC posts proceeds; no extra balance write. Added UI and isolated SQL regressions. Initial CI flagged fixture dollar quoting and per-commit documentation; fixed both in a documented consolidated implementation commit. Exact-head acceptance pending; no production change.
+
 ## 2026-11-23 — PR #339 main integration (feature branch only; no merge to main)
 
 - **Before-change rationale:** main advanced by Android AGP 9.5.1 changes and two progress entries from PR #340. PR #339 only conflicts with main in this progress document; its 17 non-document code paths do not overlap main's changes.

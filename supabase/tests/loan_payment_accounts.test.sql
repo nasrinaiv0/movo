@@ -28,4 +28,18 @@ do $$ begin
  if (select sum(signed_amount) from public.accounting_postings where account_id='20000000-0000-0000-0000-00000000c101') <> -200 then raise exception 'card payment posting incorrect'; end if;
  if exists(select 1 from public.accounting_postings where account_id='10000000-0000-0000-0000-00000000c101') then raise exception 'receiving account debited twice'; end if;
 end $$;
+
+-- New loan and other-debt draws use the same canonical borrowed-event posting.
+insert into public.financial_loans(id,user_id,name,obligation_type,currency,principal_amount,opening_principal,outstanding_principal,account_id,payment_account_id) values
+ ('60000000-0000-0000-0000-00000000c101','00000000-0000-0000-0000-00000000c101','New loan','loan','PHP',500,0,0,'10000000-0000-0000-0000-00000000c101','20000000-0000-0000-0000-00000000c101'),
+ ('70000000-0000-0000-0000-00000000c101','00000000-0000-0000-0000-00000000c101','New debt','debt','PHP',300,0,0,'10000000-0000-0000-0000-00000000c101',null);
+select public.record_loan_event('60000000-0000-0000-0000-00000000c101','borrowed',500,'PHP','10000000-0000-0000-0000-00000000c101');
+select public.record_loan_event('70000000-0000-0000-0000-00000000c101','borrowed',300,'PHP','10000000-0000-0000-0000-00000000c101');
+do $$ begin
+ if (select outstanding_principal from public.financial_loans where id='60000000-0000-0000-0000-00000000c101') is distinct from 500 then raise exception 'loan principal incorrect'; end if;
+ if (select outstanding_principal from public.financial_loans where id='70000000-0000-0000-0000-00000000c101') is distinct from 300 then raise exception 'debt principal incorrect'; end if;
+ if (select sum(signed_amount) from public.accounting_postings where account_id='10000000-0000-0000-0000-00000000c101') is distinct from 800 then raise exception 'receiving balance increase incorrect'; end if;
+ if (select count(*) from public.accounting_postings where account_id='10000000-0000-0000-0000-00000000c101') <> 2 then raise exception 'unexpected duplicate proceeds'; end if;
+ if (select sum(signed_amount) from public.accounting_postings where account_id='20000000-0000-0000-0000-00000000c101') is distinct from -200 then raise exception 'repayment preference affected by new draws'; end if;
+end $$;
 rollback;

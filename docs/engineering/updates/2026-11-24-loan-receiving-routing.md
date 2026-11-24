@@ -8,3 +8,6 @@ Selecting a receiving account in the new-record form automatically enables the e
 
 ## Acceptance
 Test selection, clearing, historical entry, currency changes, both obligation types, repayment preference and finance refresh. Exercise SQL signed posting and outstanding principal with disposable data; confirm non-income classification, owner/currency guards and no duplicate posting. Review existing two-request create flow for lost-response/idempotency risk before any broader redesign; this patch does not claim to resolve it. No production migration, merge, store upload or production change. Independent Claude review requested in PR; exact-head CI and signed-in browser evidence pending.
+
+## Implementation and CI remediation
+Selection wiring and both regression suites are implemented. Initial CI rejected per-commit documentation and collapsed SQL dollar quotes; the new implementation commit includes both required documents and correct delimiters. Full acceptance remains pending.
