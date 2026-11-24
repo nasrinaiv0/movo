@@ -16,3 +16,12 @@ Disposable account creation failed with sign_in_required before racing requests.
 
 ## Concurrent entitlement fixture
 Both concurrent calls correctly rejected the synthetic owner without cloud write entitlement. Add the same short-lived manual plan grant used by the existing disposable hybrid tests and explicit authenticated claims in both sessions; do not weaken server guards. New exact-head CI required.
+
+## Current main and Chromium acceptance remediation
+Integrate #342's updated head and preserve original SQL and accounting changes. Use a dedicated synthetic fixture rendering the real planning component, with explicit locale and adaptive shell. Capture failure screenshots and diagnostics; all assertions remain mandatory. Browser root cause not yet proven; exact-head CI required. Do not release the RPC client before the migration is present in the target database.
+
+## Browser parse remediation and database gate
+Current browser artifact confirms a pre-render SyntaxError, not an Add selector defect. Remove eval wrappers, use structured compile-time environment definitions, run node --check over emitted JavaScript, preserve full stack and all acceptance assertions. Root fix requires rerun. See [migration approval checklist](2026-11-24-atomic-loan-migration-approval.md). No remote changes.
+
+## Verified browser acceptance and native gate
+Exact 7c4c1bdc run 45321986274 passed all eight combinations, 320/390/768/1280 widths in light/dark; original artifact 14888800582 inspected. No runtime errors or overflow. Integrate shared #342 visual acceptance target without changing SQL. New exact-head verification required; keep migration and merge blocked.

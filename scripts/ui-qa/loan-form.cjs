@@ -23,10 +23,12 @@ const output = process.env.QA_OUTPUT || '/tmp/movo-loan-ui';
     browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
     for (const width of [320, 390, 768, 1280]) for (const mode of ['light', 'dark']) {
       const page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: 'reduce' });
-      page.on('pageerror', error => errors.push(error.message));
+      page.on('pageerror', error => { errors.push(error.stack || error.message); console.error('Browser error:', error.stack || error.message); });
+      try {
       await page.route('**/*', route => route.request().url().startsWith('http://127.0.0.1:4175/') ? route.continue() : route.abort());
       await page.goto('http://127.0.0.1:4175/?screen=planning&mode='+mode, {waitUntil:'networkidle'});
-      await page.locator('button[aria-label="Add"]').first().click();
+      await page.getByRole('heading',{name:'Financial planning',exact:true}).waitFor({timeout:10000});
+      await page.getByRole('button',{name:'Add',exact:true}).click({timeout:10000});
       await page.getByRole('button',{name:'Add a loan or debt',exact:true}).click();
       const dialog = page.getByRole('dialog',{name:'Add a loan or debt'});
       await dialog.waitFor();
@@ -55,7 +57,11 @@ const output = process.env.QA_OUTPUT || '/tmp/movo-loan-ui';
       await proceeds.uncheck();
       assert.equal(await receiving.inputValue(),'');
       results.push({width,mode,measure,receivingAutoPosts:true,repaymentPreferenceIndependent:true});
-      await page.close();
+      } catch (error) {
+        await page.screenshot({path:output+'/'+width+'-'+mode+'-failure.png',fullPage:true}).catch(()=>{});
+        fs.writeFileSync(output+'/'+width+'-'+mode+'-diagnostic.json',JSON.stringify({width,mode,errors,body:await page.locator('body').innerText().catch(()=>''),cause:error.message},null,2));
+        throw error;
+      } finally { await page.close(); }
     }
     assert.deepEqual(errors,[]);
     fs.writeFileSync(output+'/results.json',JSON.stringify({results,errors},null,2));
