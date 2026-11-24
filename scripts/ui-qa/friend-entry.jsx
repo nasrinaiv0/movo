@@ -24,11 +24,11 @@ function Fixture(){
    return response.json();
  };
  const shown=sharedLedgerDisplayDate(row);
- return <main className={'friend-qa '+mode} style={{maxWidth:560,margin:'24px auto',padding:12,minWidth:0}}>
+ return <div className={'movo-app theme-'+mode+' accent-green'} style={{minHeight:'100vh',padding:'24px 0',background:'var(--bg)',color:'var(--text)'}}><main className="friend-qa" style={{maxWidth:560,margin:'0 auto',padding:12,minWidth:0}}>
  <h1 style={{fontSize:20}}>Private conversation</h1>
  <button type="button" onClick={()=>setId(v=>v===owner?other:owner)}>Switch synthetic owner</button>
  <div data-testid="calendar">{dayKey(shown)} · {monthKey(shown)}</div>
  <FriendConversation key={id} session={session} friend={friend} importAccounts={accounts} onImport={onImport} onBack={()=>{}}/>
- </main>;
+ </main></div>;
 }
 createRoot(document.getElementById('root')).render(<Fixture/>);

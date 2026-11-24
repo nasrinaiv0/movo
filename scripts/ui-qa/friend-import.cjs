@@ -24,7 +24,7 @@ const owner='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-822
    return send(200,{ok:true});
   }
   const file=path.join('/tmp/movo-ui-qa',url.pathname==='/'?'index.html':path.basename(url.pathname));
-  fs.readFile(file,(err,data)=>{res.writeHead(err?404:200,{'Content-Type':file.endsWith('.js')?'text/javascript':file.endsWith('.html')?'text/html':'application/octet-stream'});res.end(err?'Not found':data);});
+  fs.readFile(file,(err,data)=>{res.writeHead(err?404:200,{'Content-Type':file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.html')?'text/html; charset=utf-8':'application/octet-stream'});res.end(err?'Not found':data);});
  });
  await new Promise(resolve=>server.listen(4176,'127.0.0.1',resolve));let browser;const results=[];
  try{
@@ -41,6 +41,16 @@ const owner='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-822
     assert.equal(await page.locator('select option').filter({hasText:'Other owner bank'}).count(),0);
     await page.getByLabel('Your account').selectOption(bank);
     assert.equal(await save.isEnabled(),true);
+    await save.scrollIntoViewIfNeeded();
+    const visual=await save.evaluate(el=>{
+      const root=el.closest('.movo-app'), scroll=el.closest('.friend-chat-messages');
+      const bg=getComputedStyle(root).backgroundColor, rgb=bg.match(/\d+(?:\.\d+)?/g).slice(0,3).map(Number);
+      const b=el.getBoundingClientRect(), s=scroll.getBoundingClientRect();
+      return {bg,brightness:rgb.reduce((a,v)=>a+v,0)/3,buttonHeight:b.height,fullyVisible:b.top>=s.top-1&&b.bottom<=s.bottom+1&&b.left>=s.left-1&&b.right<=s.right+1,charset:document.characterSet};
+    });
+    assert.equal(visual.charset,'UTF-8');assert.ok(mode==='dark'?visual.brightness<100:visual.brightness>180,JSON.stringify(visual));
+    assert.ok(visual.fullyVisible&&visual.buttonHeight>=44,JSON.stringify(visual));
+    assert.ok(!(await page.locator('.friend-conversation').innerText()).includes('â€'));
     if(timezoneId==='Asia/Manila')await page.screenshot({path:output+'/'+prefix+'-mapping.png',fullPage:true});
     const measure=await page.evaluate(()=>({viewport:innerWidth,scroll:document.documentElement.scrollWidth}));assert.ok(measure.scroll<=width+1);
     await save.click();await button('Retry same import').waitFor();assert.equal(states.get(owner).imports,1);
@@ -53,7 +63,7 @@ const owner='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-822
     assert.equal(await page.getByText('Imported to your records',{exact:true}).count(),0);
     assert.equal(await page.locator('.friend-import-controls').count(),0);
     assert.equal(requests.length,2);assert.deepEqual(errors,[]);
-    results.push({timezoneId,width,mode,measure,calendar:true,receiptRecovery:true,ownerSwitch:true});
+    results.push({timezoneId,width,mode,measure,visual,calendar:true,receiptRecovery:true,ownerSwitch:true});
    }catch(e){await page.screenshot({path:output+'/'+prefix+'-failure.png',fullPage:true}).catch(()=>{});throw e;}finally{await page.close();}
   }
   fs.writeFileSync(output+'/results.json',JSON.stringify(results,null,2));console.log(results.length+' isolated real-component checks passed');
