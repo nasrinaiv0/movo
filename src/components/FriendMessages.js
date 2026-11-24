@@ -157,7 +157,7 @@ export function FriendConversation({ session, friend, transactions = [], importA
       {thread?.messages?.map(message => <article key={message.id} className={'friend-chat-bubble' + (message.senderId === identity ? ' mine' : '')}>
         {message.kind === 'transaction' ? <SharedCard card={message.card} /> : <p dir="auto">{message.body}</p>}
         {importAvailable && decisions !== null && message.kind === 'transaction' && message.senderId !== identity &&
-          <FriendImportControls key={message.id} session={session} connectionId={friend.id} message={message}
+          <FriendImportControls key={`${identity}:${friend.id}:${message.id}`} session={session} connectionId={friend.id} message={message}
             initialStatus={decisions[message.id] || 'unreviewed'} accounts={importAccounts} onImport={onImport} />}
         <time dateTime={message.createdAt}>{stamp(message.createdAt)}</time>
       </article>)}

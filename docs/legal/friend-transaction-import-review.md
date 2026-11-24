@@ -21,3 +21,6 @@ The proposed server RPC posts only after a fresh owner-bound consent and explici
 
 ## Staged UI and account-erasure boundary
 Incoming cards remain informational unless the explicit client/server rollout flags are enabled in an approved isolated environment. Accept/decline does not post money; only explicit account selection and the atomic save action records a transaction. Unknown responses retry the same mapping; no offline posting fallback. Pending account erasure blocks new imports. Date presentation and full market translations remain subject to review. No published legal document is modified.
+
+## Calendar date presentation amendment
+For a date-only imported transaction, canonical UTC noon remains the stored timestamp; the app's normalized display treats it as a local calendar label rather than the sender's instant. This is not a claimed transaction time. Review export and edit behavior separately. This draft is not published.

@@ -1,4 +1,5 @@
 import { useProfilePhoto } from './lib/useProfilePhoto';
+import { sharedLedgerDisplayDate } from './lib/sharedLedgerDate';
 import { Preferences } from '@capacitor/preferences';
 import FriendsSheet, { FriendsContent } from './components/FriendsSheet';
 import FriendFinanceSummary from './components/FriendFinanceSummary';
@@ -225,7 +226,7 @@ const normalize = (t, accountsById, base, rates) => {
     category: cat.label,
     subcategory: cat.subLabel,
     type: t.transaction_type || t.type,
-    date: t.occurred_at || t.date,
+    date: sharedLedgerDisplayDate(t),
     origAmount, origCurrency, currency: base,
     amount: convert(origAmount, origCurrency, base, rates),
     accountName: account?.name || t.account || 'Manual entry',
