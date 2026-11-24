@@ -141,6 +141,7 @@ def verify_atomic_loan_concurrency():
     bank = "10000000-0000-0000-0000-00000000d201"
     request = "50000000-0000-0000-0000-00000000d201"
     sql(f"""
+      select set_config('request.jwt.claims','{{"role":"service_role"}}',false);
       insert into auth.users(id) values ('{owner}');
       insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance)
       values ('{bank}','{owner}','Concurrent synthetic bank','bank','PHP',1000);

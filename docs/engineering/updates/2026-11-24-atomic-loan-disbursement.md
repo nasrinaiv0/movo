@@ -10,3 +10,6 @@ Added the proposed RPC, protected request receipt, stable per-draft UUID and dis
 
 ## Parallel and visual acceptance plan
 First exact-head disposable finance run succeeded. Add two independent authenticated SQL sessions and exact-count assertions, plus real-component Chromium rendering using synthetic data and blocked external traffic. Browser screenshots are component evidence, not authenticated hosted financial acceptance. CI results pending.
+
+## Concurrent seed correction
+Disposable account creation failed with sign_in_required before racing requests. Seed synthetic data with the existing service-role fixture claim only; the two actual request sessions remain authenticated and owner-bound. No production change or guard bypass.

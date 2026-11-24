@@ -1,3 +1,7 @@
+## 2026-11-24 — Concurrent loan fixture authorization repair
+
+The sequential SQL regression passed again. Two-session test failed at synthetic account setup with sign_in_required before either RPC ran. Set the existing disposable fixture service-role JWT claim during seed only, as in the repository's SQL fixtures. Both racing callers still use authenticated role and owner-bound sub. Do not weaken the live guard. Exact-head rerun required.
+
 ## 2026-11-24 — Atomic loan parallel replay and rendered fixture acceptance
 
 First isolated SQL workflow passed. Add two simultaneous independent authenticated sessions using the same UUID and assert one liability, event, receipt and cash posting. Add isolated Chromium actual-component rendering for 320/390/768/1280px light/dark with external requests blocked, screenshot artifacts, receiving and repayment selection assertions and overflow checks. No production connection, no paid resource, no release. Exact-head evidence pending.
