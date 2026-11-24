@@ -20,3 +20,9 @@ Previous simulator screenshot was an OS prompt. Real browser fixture and UI-only
 
 ## iOS acceptance compile fix (2026-11-24)
 `build-ios` failed to compile `UITests/MOVOAcceptance.swift`: `XCUIApplication.open(_:)` is only available in iOS 16.4 or newer, and the test target deploys to iOS 15.0. The deep-link step is now behind `guard #available(iOS 16.4, *)`. The CI simulator runs a newer iOS, so the step still runs and still asserts the entitlement gate. On an older simulator it fails instead of silently skipping. No app, accounting or database change.
+
+## iOS acceptance: Keychain on the simulator (2026-11-24)
+- **What failed.** With the compile fix, the XCTest ran but failed with `Guest navigation did not become ready`.
+- **Cause.** The exported UI hierarchy shows MOVO's own "Saved financial records are locked" screen with Retry. The finance vault reads its key from the iOS Keychain, and the acceptance build was unsigned (`CODE_SIGNING_ALLOWED=NO`). An unsigned simulator app cannot use the Keychain, so the vault fails closed (as designed) and the guest UI never appears.
+- **Fix.** The XCTest build step now uses an ad hoc "Sign to Run Locally" signature for the simulator only (`CODE_SIGN_IDENTITY=-`, no team or provisioning profile). The earlier unsigned build and smoke steps are unchanged.
+- **Unchanged.** The test's assertions are unchanged, and the app's fail-closed vault behaviour is unchanged.
