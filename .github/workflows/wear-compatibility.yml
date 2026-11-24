@@ -65,8 +65,8 @@ jobs:
             adb wait-for-device shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 1; done'
             adb shell settings put global device_provisioned 1
             adb shell settings put secure user_setup_complete 1
-            adb shell settings put global stay_on_while_plugged_in 7
-            adb shell svc power stayon true
+            adb shell dumpsys battery unplug
+            adb shell settings put system screen_off_timeout 1800000
             adb shell input keyevent KEYCODE_WAKEUP
             adb shell input keyevent KEYCODE_HOME
             sleep 5
@@ -79,6 +79,7 @@ jobs:
             adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png "$RUNNER_TEMP/wear-evidence/default-font.png"
             adb shell settings put system font_scale 2.0
             adb shell am force-stop com.nasrinai.movo
+            adb shell dumpsys battery unplug
             adb shell input keyevent KEYCODE_WAKEUP
             adb shell input keyevent KEYCODE_HOME
             adb shell wm dismiss-keyguard
