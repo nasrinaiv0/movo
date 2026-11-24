@@ -11,3 +11,6 @@ Test selection, clearing, historical entry, currency changes, both obligation ty
 
 ## Implementation and CI remediation
 Selection wiring and both regression suites are implemented. Initial CI rejected per-commit documentation and collapsed SQL dollar quotes; the new implementation commit includes both required documents and correct delimiters. Full acceptance remains pending.
+
+## Latest main integration
+Tree comparison shows only the progress register overlaps the mascot merge. Preserve all original routing and accounting regression blobs and both documentation histories. Exact-head revalidation required before requested merge.
