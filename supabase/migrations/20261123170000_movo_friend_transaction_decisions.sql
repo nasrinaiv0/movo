@@ -127,7 +127,14 @@ declare
   receipt jsonb;
 begin
   if uid is null or uid is distinct from p_expected_user_id
-     or public.movo_account_erasure_pending() then
+     or coalesce(auth.jwt()->>'is_anonymous','false')='true' then
+    raise exception 'share_owner_mismatch' using errcode='42501';
+  end if;
+  -- Serialize with clear/finish erasure and the FK key-share lock taken by
+  -- insertion of an erasure request. Recheck pending status after acquiring it.
+  perform 1 from auth.users where id=uid
+    and (email_confirmed_at is not null or phone_confirmed_at is not null) for update;
+  if not found or public.movo_account_erasure_pending() then
     raise exception 'share_owner_mismatch' using errcode='42501';
   end if;
   if p_connection_id is null or p_message_id is null or p_account_id is null

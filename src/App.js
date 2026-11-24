@@ -2487,6 +2487,32 @@ function App() {
   const [locked, setLocked] = useState(() => lockState().enabled && process.env.NODE_ENV !== 'test');
   reviewGateRef.current = { ready: setupDone && !locked, sheet: !!sheet };
   const friendIdentity = session?.user?.id || 'guest';
+  // Explicit staging build opt-in; never enable on an existing production preview.
+  const friendImportEnabled = process.env.REACT_APP_MOVO_ATOMIC_FRIEND_IMPORT === 'true'
+    && Boolean(session?.user?.id && session.access_token && cloudMode && can('cloudWrite') && !locked);
+  async function importFriendTransaction(mapping) {
+    const owner = session?.user?.id;
+    if (!friendImportEnabled || !owner || owner !== mapping.ownerId || cloudAuthUserRef.current !== owner
+      || !cloudSyncRequestedRef.current || syncActiveRef.current || uploadsInFlightRef.current > 0
+      || loadOfflineWorkspace(owner)?.dirty || !supabase) throw new Error('friend_import_not_ready');
+    const { data: current, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || current?.session?.user?.id !== owner || cloudAuthUserRef.current !== owner)
+      throw new Error('friend_import_owner_changed');
+    // Do NOT use cloudWrite/localFirstWrite: their offline fallback is unsuitable
+    // for a remote consent decision. A lost response must retry this same RPC.
+    const { data, error: rpcError } = await withTimeout(supabase.rpc('movo_import_friend_transaction', {
+      p_expected_user_id: owner, p_connection_id: mapping.connectionId, p_message_id: mapping.messageId,
+      p_account_id: mapping.accountId, p_transfer_to_account_id: mapping.destinationId || null,
+      p_shared_date: mapping.date,
+    }), CLOUD_WRITE_TIMEOUT_MS);
+    if (rpcError) throw rpcError;
+    if (data?.ownerId !== owner || data?.messageId !== mapping.messageId
+      || data?.transactionId !== mapping.messageId || data?.status !== 'imported'
+      || cloudAuthUserRef.current !== owner) throw new Error('friend_import_receipt_unverified');
+    let refreshed = false;
+    try { refreshed = await refreshCloud({ id: owner }); } catch { /* confirmed receipt; refresh later */ }
+    return { ...data, refreshed: Boolean(refreshed) };
+  }
   useEffect(() => {
     if (!friendInvite || !authReady || !setupDone || locked || sheet || view === 'Sign in') return;
     const visit = friendIdentity + ':' + friendInvite;
@@ -3061,7 +3087,7 @@ function App() {
       case 'Profile': return <Profile c={c} />;
       case 'Friends': return <>
         <SubHeader title={tr('Friends')} onBack={() => goBack('Profile')} />
-        <div className="friends-page"><FriendsContent key={friendIdentity} session={session} transactions={txs} onSignIn={() => go('Sign in')}
+        <div className="friends-page"><FriendsContent key={friendIdentity} session={session} transactions={txs} importAccounts={friendImportEnabled ? accountsView : []} onImport={friendImportEnabled ? importFriendTransaction : undefined} onSignIn={() => go('Sign in')}
           onOpenSummary={openFriendSummary} /></div>
       </>;
       case 'FriendSummary': return !locked && selectedFriend?.owner === friendIdentity && session?.access_token
@@ -3204,7 +3230,7 @@ function App() {
         </div>
       </Sheet>}
 
-      {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session} transactions={txs}
+      {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session} transactions={txs} importAccounts={friendImportEnabled ? accountsView : []} onImport={friendImportEnabled ? importFriendTransaction : undefined}
         inviteToken={sheet.invite} onClose={() => { clearFriendInvite(); setSheet(null); }}
         onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite}
         onOpenSummary={friend => { clearFriendInvite(); openFriendSummary(friend); }} />}

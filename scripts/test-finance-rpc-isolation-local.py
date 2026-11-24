@@ -188,7 +188,7 @@ def verify_friend_import_concurrency():
     message = "30000000-0000-0000-0000-00000000f302"
     sql(f"""
       select set_config('request.jwt.claims','{{"role":"service_role"}}',false);
-      insert into auth.users(id) values ('{sender}'),('{owner}');
+      insert into auth.users(id,email_confirmed_at) values ('{sender}',now()),('{owner}',now());
       insert into public.movo_manual_plan_grants(user_id,tier,expires_at,reason) values ('{owner}','pro',now()+interval '1 day','isolated concurrent import');
       insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance) values ('{bank}','{owner}','Synthetic bank','bank','PHP',1000);
       insert into public.movo_friend_connections(id,member_low,member_high,name_low,name_high) values ('{connection}','{sender}','{owner}','Sender','Recipient');
@@ -221,6 +221,86 @@ def verify_friend_import_concurrency():
         then raise exception 'atomic share duplicated or incomplete'; end if;
       end $race$;
     """, "two independent authenticated SQL sessions: exactly one share import")
+
+
+def verify_friend_import_revocation_races():
+    """Run both ordered outcomes using separate disposable database connections."""
+    from concurrent.futures import ThreadPoolExecutor
+    import time
+    for index, mode in enumerate(("decline_first", "import_first", "remove_first", "erasure_first", "erase_after_import"), 1):
+        sender = f"00000000-0000-0000-0000-00000000e{index}01"
+        owner = f"00000000-0000-0000-0000-00000000e{index}02"
+        bank = f"10000000-0000-0000-0000-00000000e{index}02"
+        connection = f"20000000-0000-0000-0000-00000000e{index}02"
+        message = f"30000000-0000-0000-0000-00000000e{index}02"
+        marker = 846000 + index
+        sql(f"""
+          select set_config('request.jwt.claims','{{"role":"service_role"}}',false);
+          insert into auth.users(id,email_confirmed_at) values ('{sender}',now()),('{owner}',now());
+          insert into public.movo_manual_plan_grants(user_id,tier,expires_at,reason) values ('{owner}','pro',now()+interval '1 day','isolated revocation');
+          insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance) values ('{bank}','{owner}','Synthetic bank','bank','PHP',1000);
+          insert into public.movo_friend_connections(id,member_low,member_high,name_low,name_high) values ('{connection}','{sender}','{owner}','Sender','Recipient');
+          insert into public.movo_friend_messages(id,connection_id,sender_id,client_id,kind,body,card) values ('{message}','{connection}','{sender}',gen_random_uuid(),'transaction','','{{"type":"expense","currency":"PHP","amount":42.25,"date":"2026-11-23"}}');
+          insert into public.movo_friend_transaction_decisions(message_id,recipient_id,status) values ('{message}','{owner}','accepted');
+        """, "seed revocation race " + mode)
+        recipient = f"set local role authenticated; set local request.jwt.claims = '{{\"role\":\"authenticated\"}}'; set local request.jwt.claim.sub = '{owner}';"
+        service = """set local role service_role; set local request.jwt.claims = '{"role":"service_role"}';"""
+        posting = f"select public.movo_import_friend_transaction('{owner}','{connection}','{message}','{bank}',null,'2026-11-23');"
+        decline = f"""select public.movo_friend_transaction_decision('{owner}','decline_share','{{"connectionId":"{connection}","messageId":"{message}"}}');"""
+        remove = f"select public.movo_friends('{sender}','remove',null,null,'{connection}');"
+        erase = f"insert into public.movo_account_erasure_requests(user_id) values ('{owner}');"
+        finish = f"select public.movo_finish_account_erasure('{owner}');"
+        blocked = f"""
+          do $block$ begin
+            begin
+              perform public.movo_import_friend_transaction('{owner}','{connection}','{message}','{bank}',null,'2026-11-23');
+              raise exception 'revoked import unexpectedly posted';
+            exception when insufficient_privilege then null;
+            end;
+          end $block$;
+        """
+        if mode == "import_first":
+            first, second = recipient + posting, service + decline
+        elif mode == "erase_after_import":
+            first, second = recipient + posting, service + erase + finish
+        else:
+            first = service + {"decline_first": decline, "remove_first": remove, "erasure_first": erase}[mode]
+            second = recipient + blocked
+        def run(statement):
+            return command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE,
+                           stdin="begin; set local lock_timeout='10s'; " + statement + " commit;").stdout
+        # Signal only after the first action has acquired its real database locks.
+        # A held transaction advisory marker is observable from the second session.
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first_future = executor.submit(run, first + f" select pg_advisory_xact_lock({marker}); select pg_sleep(2);")
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                held = command("psql", *CONN, "-X", "-Atq", "-d", DATABASE,
+                    stdin=f"select exists(select 1 from pg_locks where locktype='advisory' and classid=0 and objid={marker} and granted);").stdout.strip()
+                if held == "t":
+                    break
+                if first_future.done():
+                    first_future.result()
+                    raise RuntimeError("first transaction ended before overlap: " + mode)
+                time.sleep(0.05)
+            else:
+                raise RuntimeError("race synchronization timed out: " + mode)
+            second_future = executor.submit(run, second)
+            first_future.result(timeout=30)
+            result = second_future.result(timeout=30)
+        if mode == "import_first" and '"status": "imported"' not in result:
+            raise RuntimeError("late decline changed imported receipt")
+        expected = 1 if mode == "import_first" else 0
+        sql(f"""
+          do $race$ begin
+            if (select count(*) from public.transactions where user_id='{owner}' and id='{message}') <> {expected}
+               or (select count(*) from public.movo_sync_operations where user_id='{owner}' and operation_id='{message}') <> {expected}
+            then raise exception 'race ledger or receipt mismatch'; end if;
+            if '{mode}'='erase_after_import' and (exists(select 1 from auth.users where id='{owner}')
+                or exists(select 1 from public.movo_friend_transaction_decisions where recipient_id='{owner}'))
+            then raise exception 'erasure retained user or decisions'; end if;
+          end $race$;
+        """, "ordered concurrent consent/erasure outcome: " + mode)
 
 
 def main():
@@ -311,6 +391,7 @@ def main():
             "atomic loan disbursement, payload replay, rollback and account isolation")
         verify_atomic_loan_concurrency()
         verify_friend_import_concurrency()
+        verify_friend_import_revocation_races()
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_") or not RESTORE_DATABASE.startswith("movo_rollback_test_"):

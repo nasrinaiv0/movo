@@ -40,7 +40,7 @@ export default function FriendsSheet({ onClose, ...props }) {
   return <Sheet title={tr('Friends')} className="friends-sheet" onClose={onClose}><FriendsContent {...props} /></Sheet>;
 }
 
-export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled, onOpenSummary, transactions = [] }) {
+export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled, onOpenSummary, transactions = [], importAccounts = [], onImport }) {
   const socialAvailable = Boolean(onOpenSummary);
   const signedIn = Boolean(session?.user?.id && session.access_token);
   const [friends, setFriends] = useState(null);
@@ -231,7 +231,7 @@ export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled
           <button type="button" disabled={busy} aria-pressed={mode === 'invite'} onClick={() => showMode('invite')}>{tr('Share profile')}</button>
         </nav>
         {mode === 'chats' && <FriendChatsDirectory session={session} onSelect={friend => { setChatFriend(friend); showMode('chat'); }} />}
-        {mode === 'chat' && chatFriend && <FriendConversation key={chatFriend.id} session={session} friend={chatFriend} transactions={transactions} onBack={() => showMode('chats')} />}
+        {mode === 'chat' && chatFriend && <FriendConversation key={chatFriend.id} session={session} friend={chatFriend} transactions={transactions} importAccounts={importAccounts} onImport={onImport} onBack={() => showMode('chats')} />}
         {mode === 'search' && connectMethods}
         {mode === 'search' && socialAvailable && (directory ? <FriendsDiscovery directory={directory} busy={busy} run={run} reload={reload} /> :
           <><p className="friends-note" role={directoryError ? 'alert' : 'status'}>{directoryError || tr('Loading…')}</p>

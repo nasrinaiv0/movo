@@ -18,3 +18,6 @@ The recipient-import feature does not establish a debt, proof of payment, escrow
 
 ## Atomic implementation review amendment
 The proposed server RPC posts only after a fresh owner-bound consent and explicit account mapping, with one canonical transaction and receipt. Offline drafts do not change balances before authorized reconciliation. The shared date is a calendar label stored at noon UTC; UI date presentation and international disclosure require review. After removal, private decision data is deleted; retry fails closed and the recipient retains their previously imported ledger record. This remains an unpublished draft, not effective legal text.
+
+## Staged UI and account-erasure boundary
+Incoming cards remain informational unless the explicit client/server rollout flags are enabled in an approved isolated environment. Accept/decline does not post money; only explicit account selection and the atomic save action records a transaction. Unknown responses retry the same mapping; no offline posting fallback. Pending account erasure blocks new imports. Date presentation and full market translations remain subject to review. No published legal document is modified.
