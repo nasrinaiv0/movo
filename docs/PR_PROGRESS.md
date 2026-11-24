@@ -1,3 +1,7 @@
+## 2026-11-24 — #342 iOS acceptance Keychain signing
+
+After the compile fix the XCTest reached the app, but it showed MOVO's fail-closed "Saved financial records are locked" screen: the acceptance build was unsigned, so the simulator app could not use the Keychain that holds the finance vault key. The XCTest step now builds with an ad hoc local signature for the simulator only. Assertions and vault behaviour are unchanged; workflow-only change.
+
 ## 2026-11-24 — #342 iOS acceptance compile fix
 
 `build-ios` failed to compile the new XCTest target: `XCUIApplication.open(_:)` needs iOS 16.4 and the target deploys to iOS 15.0. The deep-link step is now behind an availability guard that fails (never skips) on older simulators. Test-only change; no app, accounting or database change.
