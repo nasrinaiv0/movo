@@ -2,6 +2,10 @@ import { supabase } from './supabaseClient';
 import { fetchAllRows } from './supabasePagination';
 import { buildMonthlyInterestSchedule } from './loanInterest';
 import { cachedList } from './offlineReadCache';
+import { readPendingLoan, reservePendingLoan, acknowledgePendingLoan } from './pendingLoanStore';
+import { withTimeout, CLOUD_WRITE_TIMEOUT_MS } from './networkFailure';
+export { readPendingLoan };
+
 
 const requireClient = () => {
   if (!supabase) throw new Error('MOVO cloud storage is not configured.');
@@ -83,7 +87,7 @@ export async function createLoan(input, userId) {
   const interestSchedule = buildMonthlyInterestSchedule(input?.inconsistent_interest, input?.interest_months, input?.monthly_interest_rates);
   if (newProceeds && !input?.account_id) throw new Error('Choose the account receiving the loan proceeds.');
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input?.request_id || '')) throw new Error('A stable loan request ID is required.');
-  return unwrap(await requireClient().rpc('create_loan_atomic', {
+  const payload = {
     p_request_id: input.request_id, p_expected_user_id: userId,
     p_name: validName(input?.name), p_obligation_type: input?.obligation_type === 'debt' ? 'debt' : 'loan',
     p_principal: principal, p_currency: validCurrency(input?.currency),
@@ -93,7 +97,29 @@ export async function createLoan(input, userId) {
     p_interest_rate: interestSchedule.length ? 0 : Math.max(0, Number(input?.interest_rate) || 0),
     p_interest_schedule: interestSchedule, p_due_date: validDate(input?.due_date),
     p_notes: typeof input?.notes === 'string' ? input.notes.trim().slice(0, 2000) || null : null,
-  }));
+  };
+  return sendPendingLoan(userId, payload);
+}
+
+async function assertLoanSession(owner) {
+  const { data, error } = await requireClient().auth.getSession();
+  if (error) throw error;
+  if (data?.session?.user?.id !== owner) throw new Error('loan_recovery_account_changed');
+}
+async function sendPendingLoan(owner, payload) {
+  await assertLoanSession(owner);
+  const saved = await reservePendingLoan(owner, payload);
+  await assertLoanSession(owner);
+  const result = unwrap(await withTimeout(requireClient().rpc('create_loan_atomic', saved), CLOUD_WRITE_TIMEOUT_MS));
+  await assertLoanSession(owner);
+  return acknowledgePendingLoan(owner, saved.p_request_id, result);
+}
+/** Explicit user action only. No background upload or new UUID. */
+export async function recoverPendingLoan(owner) {
+  await assertLoanSession(owner);
+  const saved = await readPendingLoan(owner);
+  if (!saved) throw new Error('loan_recovery_no_pending_request');
+  return sendPendingLoan(owner, saved);
 }
 async function listLoanEventsFromCloud(loanId) {
   if (!loanId) throw new Error('A loan ID is required.');

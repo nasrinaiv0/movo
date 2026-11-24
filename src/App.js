@@ -26,6 +26,7 @@ import { applyCardPayments } from './lib/creditCard';
 import { invalidateChatHistoryWrites } from './lib/chatHistory';
 import { buildIndexedBalances } from './lib/indexedBalance';
 import { clearHybridOwner } from './lib/hybridLocalStore';
+import { clearPendingLoanOwner } from './lib/pendingLoanStore';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AccountOptions } from './components/AccountPicker';
 import { flushSync } from 'react-dom';
@@ -2054,7 +2055,7 @@ function App() {
       if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
       await Promise.all([
         clearOwnedAccountQr(ownerId, files.accountIds), removeLocalAttachments(files.receiptKeys),
-        ...(ownerId && typeof indexedDB !== 'undefined' ? [clearHybridOwner(ownerId)] : []),
+        ...(ownerId && typeof indexedDB !== 'undefined' ? [clearHybridOwner(ownerId), clearPendingLoanOwner(ownerId)] : []),
       ]);
       if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
       if (cloudMode && session?.user) { setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]); }
@@ -2095,7 +2096,7 @@ function App() {
         Promise.resolve().then(() => { if (!clearOfflineWorkspace(ownerId)) throw new Error('workspace_cleanup_failed'); }),
         clearOwnedAccountQr(ownerId, files.accountIds), removeLocalAttachments(files.receiptKeys),
       ];
-      if (typeof indexedDB !== 'undefined') cleanup.push(clearHybridOwner(ownerId));
+      if (typeof indexedDB !== 'undefined') cleanup.push(clearHybridOwner(ownerId), clearPendingLoanOwner(ownerId));
       const results = await Promise.allSettled(cleanup);
       if (!stillOwnsDeviceSession()) return;
       if (results.every(result => result.status === 'fulfilled')) {

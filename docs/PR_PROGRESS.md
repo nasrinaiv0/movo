@@ -1,3 +1,7 @@
+## 2026-11-24 — Persistent encrypted loan recovery (staging)
+
+Reserve one owner-bound canonical RPC request in an atomic IndexedDB transaction, encrypted by the existing finance vault. Verify session before dispatch and acknowledgement; preserve ambiguous requests for explicit retry and prevent another draft from overwriting them. Add key-loss detection, explicit account/data erasure and synthetic store tests. No automatic upload, migration or production change. Exact-head acceptance pending. Known limitation: a permanently rejected or corrupted request requires recovery support; no destructive discard or bypass is offered.
+
 ## 2026-11-24 — Atomic loan concurrency entitlement fixture
 
 The two-session RPC attempts correctly denied the synthetic free owner with cloud_read_only_upgrade_required. Seed a short-lived synthetic Pro grant using the existing hybrid-sync fixture pattern; set explicit authenticated claims in both worker sessions. No authorization guard changes. Sequential SQL still passed; concurrent rerun required.

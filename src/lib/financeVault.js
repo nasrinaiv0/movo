@@ -275,7 +275,8 @@ async function keyExistsInData(includeNative = false) {
     }
   }
   return await existingDatabaseContainsCiphertext('movo.hybrid.finance.v1', ['records', 'operations', 'metadata']) ||
-    await existingDatabaseContainsCiphertext('movo-account-media-v1', ['account-qr']);
+    await existingDatabaseContainsCiphertext('movo-account-media-v1', ['account-qr']) ||
+    await existingDatabaseContainsCiphertext('movo.loan.requests.v1', ['pending']);
 }
 
 async function getWebHmacKey(engine) {
