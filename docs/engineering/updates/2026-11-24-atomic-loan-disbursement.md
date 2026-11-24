@@ -16,3 +16,6 @@ Disposable account creation failed with sign_in_required before racing requests.
 
 ## Concurrent entitlement fixture
 Both concurrent calls correctly rejected the synthetic owner without cloud write entitlement. Add the same short-lived manual plan grant used by the existing disposable hybrid tests and explicit authenticated claims in both sessions; do not weaken server guards. New exact-head CI required.
+
+## Current main and Chromium acceptance remediation
+Integrate #342's updated head and preserve original SQL and accounting changes. Use a dedicated synthetic fixture rendering the real planning component, with explicit locale and adaptive shell. Capture failure screenshots and diagnostics; all assertions remain mandatory. Browser root cause not yet proven; exact-head CI required. Do not release the RPC client before the migration is present in the target database.
