@@ -148,12 +148,14 @@ class EmulatorSafetyTests(unittest.TestCase):
             folder = Path(directory)
             adb.side_effect = [subprocess.TimeoutExpired(['adb', 'logcat'], 30), 'activity evidence', 'pulled screenshots']
             run.side_effect = subprocess.TimeoutExpired(['adb', 'screencap'], 30)
-            smoke.capture(folder)
+            with self.assertRaisesRegex(smoke.EvidenceError, 'Android diagnostic capture failed'):
+                smoke.capture(folder)
             self.assertEqual((folder / 'activity.txt').read_text(), 'activity evidence')
             self.assertEqual(adb.call_count, 3)
             self.assertEqual(adb.call_args.args[0], 'pull')
             self.assertIn('logcat:', (folder / 'diagnostic-errors.txt').read_text())
             self.assertIn('screenshot:', (folder / 'diagnostic-errors.txt').read_text())
+            self.assertFalse((folder / 'passed.txt').exists())
 
     def test_live_recording_refuses_unverified_devices_and_preserves_acceptance_failure(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(smoke.subprocess, 'Popen') as popen:
