@@ -1,0 +1,223 @@
+{
+  "@jest/core": {
+    "severity": "low",
+    "advisories": [],
+    "via": [
+      "jest-config",
+      "jest-runner"
+    ],
+    "nodes": [
+      "node_modules/@jest/core"
+    ],
+    "advisorySeverity": {}
+  },
+  "@svgr/plugin-svgo": {
+    "severity": "high",
+    "advisories": [],
+    "via": [
+      "svgo"
+    ],
+    "nodes": [
+      "node_modules/@svgr/plugin-svgo"
+    ],
+    "advisorySeverity": {}
+  },
+  "@svgr/webpack": {
+    "severity": "high",
+    "advisories": [],
+    "via": [
+      "@svgr/plugin-svgo"
+    ],
+    "nodes": [
+      "node_modules/@svgr/webpack"
+    ],
+    "advisorySeverity": {}
+  },
+  "@tootallnate/once": {
+    "severity": "low",
+    "advisories": [
+      "GHSA-vpq2-c234-7xj6"
+    ],
+    "via": [],
+    "nodes": [
+      "node_modules/@tootallnate/once"
+    ],
+    "advisorySeverity": {
+      "GHSA-vpq2-c234-7xj6": "low"
+    }
+  },
+  "css-select": {
+    "severity": "high",
+    "advisories": [],
+    "via": [
+      "nth-check"
+    ],
+    "nodes": [
+      "node_modules/svgo/node_modules/css-select"
+    ],
+    "advisorySeverity": {}
+  },
+  "http-proxy-agent": {
+    "severity": "low",
+    "advisories": [],
+    "via": [
+      "@tootallnate/once"
+    ],
+    "nodes": [
+      "node_modules/http-proxy-agent"
+    ],
+    "advisorySeverity": {}
+  },
+  "jest": {
+    "severity": "low",
+    "advisories": [],
+    "via": [
+      "@jest/core",
+      "jest-cli"
+    ],
+    "nodes": [
+      "node_modules/jest"
+    ],
+    "advisorySeverity": {}
+  },
+  "jest-cli": {
+    "severity": "low",
+    "advisories": [],
+    "via": [
+      "@jest/core",
+      "jest-config"
+    ],
+    "nodes": [
+      "node_modules/jest-cli"
+    ],
+    "advisorySeverity": {}
+  },
+  "jest-config": {
+    "severity": "low",
+    "advisories": [],
+    "via": [
+      "jest-environment-jsdom",
+      "jest-runner"
+    ],
+    "nodes": [
+      "node_modules/jest-config"
+    ],
+    "advisorySeverity": {}
+  },
+  "jest-environment-jsdom": {
+    "severity": "low",
+    "advisories": [],
+    "via": [
+      "jsdom"
+    ],
+    "nodes": [
+      "node_modules/jest-environment-jsdom"
+    ],
+    "advisorySeverity": {}
+  },
+  "jest-runner": {
+    "severity": "low",
+    "advisories": [],
+    "via": [
+      "jest-environment-jsdom"
+    ],
+    "nodes": [
+      "node_modules/jest-runner"
+    ],
+    "advisorySeverity": {}
+  },
+  "jsdom": {
+    "severity": "low",
+    "advisories": [],
+    "via": [
+      "http-proxy-agent"
+    ],
+    "nodes": [
+      "node_modules/jsdom"
+    ],
+    "advisorySeverity": {}
+  },
+  "nth-check": {
+    "severity": "high",
+    "advisories": [
+      "GHSA-rp65-9cf3-cjxr"
+    ],
+    "via": [],
+    "nodes": [
+      "node_modules/svgo/node_modules/nth-check"
+    ],
+    "advisorySeverity": {
+      "GHSA-rp65-9cf3-cjxr": "high"
+    }
+  },
+  "react-scripts": {
+    "severity": "high",
+    "advisories": [],
+    "via": [
+      "@svgr/webpack",
+      "jest",
+      "webpack-dev-server"
+    ],
+    "nodes": [
+      "node_modules/react-scripts"
+    ],
+    "advisorySeverity": {}
+  },
+  "svgo": {
+    "severity": "high",
+    "advisories": [
+      "GHSA-2p49-hgcm-8545",
+      "GHSA-4vpr-x523-8j87",
+      "GHSA-w27v-7q3p-w38r"
+    ],
+    "via": [
+      "css-select"
+    ],
+    "nodes": [
+      "node_modules/svgo"
+    ],
+    "advisorySeverity": {
+      "GHSA-2p49-hgcm-8545": "high",
+      "GHSA-4vpr-x523-8j87": "moderate",
+      "GHSA-w27v-7q3p-w38r": "high"
+    }
+  },
+  "webpack-dev-middleware": {
+    "severity": "high",
+    "advisories": [
+      "GHSA-g84c-rxfj-3j2c"
+    ],
+    "via": [],
+    "nodes": [
+      "node_modules/webpack-dev-middleware"
+    ],
+    "advisorySeverity": {
+      "GHSA-g84c-rxfj-3j2c": "high"
+    }
+  },
+  "webpack-dev-server": {
+    "severity": "high",
+    "advisories": [
+      "GHSA-4v9v-hfq4-rm2v",
+      "GHSA-79cf-xcqc-c78w",
+      "GHSA-9jgg-88mc-972h",
+      "GHSA-f5vj-f2hx-8m93",
+      "GHSA-m28w-2pqf-7qgj",
+      "GHSA-mx8g-39q3-5c79"
+    ],
+    "via": [
+      "webpack-dev-middleware"
+    ],
+    "nodes": [
+      "node_modules/webpack-dev-server"
+    ],
+    "advisorySeverity": {
+      "GHSA-9jgg-88mc-972h": "moderate",
+      "GHSA-4v9v-hfq4-rm2v": "moderate",
+      "GHSA-79cf-xcqc-c78w": "moderate",
+      "GHSA-mx8g-39q3-5c79": "moderate",
+      "GHSA-f5vj-f2hx-8m93": "moderate",
+      "GHSA-m28w-2pqf-7qgj": "moderate"
+    }
+  }
+}

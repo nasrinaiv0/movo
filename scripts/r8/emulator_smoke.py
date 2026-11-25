@@ -123,11 +123,20 @@ def instrument(folder, method, legal, phase=None):
     print("Starting instrumentation: " + label, flush=True)
     try:
         result = adb(*args, RUNNER, timeout=240)
-    except subprocess.TimeoutExpired as error:
-        partial = error.stdout or ""
-        if isinstance(partial, bytes):
-            partial = partial.decode("utf-8", errors="replace")
-        (folder / (label + ".txt")).write_text(partial + "\nInstrumentation timed out; acceptance FAILED.\n")
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as error:
+        # A disconnected emulator may disappear before end-of-run capture. Keep
+        # the failed stage's stdout AND stderr while retaining the original error.
+        def evidence_text(value):
+            return value.decode("utf-8", errors="replace") if isinstance(value, bytes) else value or ""
+        status = ("timed out" if isinstance(error, subprocess.TimeoutExpired)
+                  else "exited with status " + str(error.returncode))
+        try:
+            (folder / (label + ".txt")).write_text(
+                evidence_text(error.stdout)[-262144:] + "\n--- stderr ---\n" +
+                evidence_text(error.stderr)[-262144:] +
+                "\nInstrumentation " + status + "; acceptance FAILED.\n", encoding="utf-8")
+        except OSError as diagnostic_error:
+            print(f"Failed to retain instrumentation transcript: {diagnostic_error}", file=sys.stderr)
         raise
     (folder / (label + ".txt")).write_text(result)
     print(result, flush=True)
