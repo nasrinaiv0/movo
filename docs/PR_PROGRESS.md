@@ -1,3 +1,7 @@
+## 2026-11-25 — atomic loan guard candidate (before commit)
+
+Separate staging-only change to unshipped atomic-loan SQL: require verified nonanonymous authoritative auth user and lock owner row before checking account erasure and creating/replaying receipt. Existing ledger, request digest, account locks and grants preserved. Update disposable auth fixture/positive owners and exact-error negative and ordered loan/erasure race tests; no production SQL execution. New checksum requires individual review and authorization. Review lock-order/deadlock and client compatibility; CI pending, not independent external review. No merge, paid provisioning, production mutation or flag activation.
+
 ## 2026-11-25 — isolated MOVO recovery integration (before commit)
 
 Reconcile frozen #335 and #346 from pinned heads without changing either branch. Preserve both documentation histories, exact existing flags, native vault and ledger behavior. Prepared native evidence corrections: 24 local mocked/unit tests passed; check blob identities and wire portable tests into CI; isolate completed iPhone before iPad. Full audit JSON evidence in existing PR CI; no dependency upgrade without advisories. Full migration fingerprints compared (11 exact, 4 whitespace, 19 differing, 7 missing stored SQL, 9 unmatched); zero five ledger-preflight violations; no production migration, paid provisioning, merge, deployment or flag change. Loan erasure guard remains a separate staging review/test commit. Fresh CI, actual native/browser artifacts, backup and independent review mandatory.

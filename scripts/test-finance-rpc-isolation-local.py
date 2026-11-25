@@ -103,6 +103,7 @@ CREATE TABLE auth.users (
   raw_user_meta_data jsonb DEFAULT '{}'::jsonb,
   email_confirmed_at timestamptz,
   phone_confirmed_at timestamptz,
+  is_anonymous boolean NOT NULL DEFAULT false,
   created_at timestamptz DEFAULT now()
 );
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
@@ -142,7 +143,7 @@ def verify_atomic_loan_concurrency():
     request = "50000000-0000-0000-0000-00000000d201"
     sql(f"""
       select set_config('request.jwt.claims','{{"role":"service_role"}}',false);
-      insert into auth.users(id) values ('{owner}');
+      insert into auth.users(id,email_confirmed_at) values ('{owner}',now());
       insert into public.movo_manual_plan_grants(user_id,tier,expires_at,reason) values ('{owner}','pro',now()+interval '1 day','isolated concurrent test');
       insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance)
       values ('{bank}','{owner}','Concurrent synthetic bank','bank','PHP',1000);
@@ -303,6 +304,85 @@ def verify_friend_import_revocation_races():
         """, "ordered concurrent consent/erasure outcome: " + mode)
 
 
+def verify_loan_erasure_races():
+    """Require both orders on separate disposable sessions with an observed overlap."""
+    from concurrent.futures import ThreadPoolExecutor
+    import time
+    for index, mode in enumerate(("erasure_first", "loan_first"), 1):
+        owner = f"00000000-0000-0000-0000-00000000f{index}01"
+        bank = f"10000000-0000-0000-0000-00000000f{index}01"
+        request = f"50000000-0000-0000-0000-00000000f{index}01"
+        marker = 847000 + index
+        sql(f"""
+          select set_config('request.jwt.claims','{{"role":"service_role"}}',false);
+          insert into auth.users(id,email_confirmed_at) values ('{owner}',now());
+          insert into public.movo_manual_plan_grants(user_id,tier,expires_at,reason)
+            values ('{owner}','pro',now()+interval '1 day','isolated loan erasure race');
+          insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance)
+            values ('{bank}','{owner}','Synthetic loan bank','bank','PHP',1000);
+        """, "seed loan erasure race " + mode)
+        actor = f"""set local role authenticated; set local request.jwt.claims='{{"role":"authenticated"}}'; set local request.jwt.claim.sub='{owner}';"""
+        service = """set local role service_role; set local request.jwt.claims='{"role":"service_role"}';"""
+        posting = f"select (public.create_loan_atomic('{request}','{owner}','Loan race','loan',500,'PHP',true,'{bank}',null,null,0,'[]',null,null)).id;"
+        erase = f"insert into public.movo_account_erasure_requests(user_id) values ('{owner}');"
+        denied = f"""
+          do $block$ begin
+            begin
+              perform public.create_loan_atomic('{request}','{owner}','Loan race','loan',500,'PHP',true,'{bank}',null,null,0,'[]',null,null);
+              raise exception 'erasure-pending loan unexpectedly accepted';
+            exception when insufficient_privilege then
+              if SQLERRM <> 'authentication_required' then raise; end if;
+            end;
+          end $block$;
+        """
+        # Keep the user and receipt present in loan-first until assertions prove
+        # that a post-erasure-request replay is also denied; then finish erasure.
+        first, second = (service + erase, actor + denied) if mode == "erasure_first" else (actor + posting, service + erase)
+        def run(statement):
+            return command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE,
+                           stdin="begin; set local lock_timeout='10s'; " + statement + " commit;").stdout
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first_future = executor.submit(run, first + f" select pg_advisory_xact_lock({marker}); select pg_sleep(2);")
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                held = command("psql", *CONN, "-X", "-Atq", "-d", DATABASE,
+                    stdin=f"select exists(select 1 from pg_locks where locktype='advisory' and classid=0 and objid={marker} and granted);").stdout.strip()
+                if held == "t":
+                    break
+                if first_future.done():
+                    first_future.result()
+                    raise RuntimeError("first loan race ended before overlap")
+                time.sleep(0.05)
+            else:
+                raise RuntimeError("loan erasure race synchronization timed out")
+            second_future = executor.submit(run, second)
+            first_future.result(timeout=30)
+            second_future.result(timeout=30)
+        if mode == "loan_first":
+            run(actor + denied)
+        expected = 1 if mode == "loan_first" else 0
+        sql(f"""
+          do $race$ begin
+            if (select count(*) from public.financial_loans where user_id='{owner}') <> {expected}
+              or (select count(*) from public.loan_creation_requests where user_id='{owner}') <> {expected}
+              or (select count(*) from public.loan_events where user_id='{owner}') <> {expected}
+              or (select count(*) from public.accounting_postings where user_id='{owner}') <> {expected}
+              or coalesce((select sum(signed_amount) from public.accounting_postings where user_id='{owner}'),0) <> {expected * 500}
+            then raise exception 'loan erasure ordering or accounting mismatch'; end if;
+          end $race$;
+        """, "ordered loan/erasure result " + mode)
+        run(service + f"select public.movo_clear_cloud_records('{owner}'); select public.movo_finish_account_erasure('{owner}');")
+        sql(f"""
+          do $race$ begin
+            if exists(select 1 from auth.users where id='{owner}')
+               or exists(select 1 from public.loan_creation_requests where user_id='{owner}')
+               or exists(select 1 from public.accounting_postings where user_id='{owner}')
+               or exists(select 1 from public.financial_loans where user_id='{owner}')
+            then raise exception 'loan erasure retained identity or finance data'; end if;
+          end $race$;
+        """, "loan erasure clears receipts and financial rows " + mode)
+
+
 def main():
     command("createdb", *CONN, DATABASE)
     try:
@@ -390,6 +470,7 @@ def main():
         sql((ROOT / "supabase/tests/atomic_loan_disbursement.test.sql").read_text(),
             "atomic loan disbursement, payload replay, rollback and account isolation")
         verify_atomic_loan_concurrency()
+        verify_loan_erasure_races()
         verify_friend_import_concurrency()
         verify_friend_import_revocation_races()
         print("PASS isolated finance authorization: no customer database accessed")
