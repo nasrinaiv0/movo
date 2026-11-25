@@ -74,16 +74,16 @@ jobs:
       - name: Diagnostic R8 9.4.34 matched baseline and candidate
         run: python3 scripts/r8/experiment.py --mode analyzer --output "$R8_OUTPUT"
       - name: Verify temporary configuration restored
-        if: always()
-        env:
-          MOVO_JOB_CANCELLED: ${{ cancelled() }}
+        if: ${{ always() && !cancelled() }}
+        run: |
+          set -euo pipefail
+          # A non-cancelled compiler failure or drift must never be repaired into a pass.
+          git diff --exit-code -- android/settings.gradle android/app/proguard-rules.pro
+      - name: Restore experiment-owned paths after cancellation only
+        if: cancelled()
         run: |
           set -euo pipefail
           if git diff --exit-code -- android/settings.gradle android/app/proguard-rules.pro; then exit 0; fi
-          if [ "$MOVO_JOB_CANCELLED" != "true" ]; then
-            echo "::error::Unexpected experiment configuration drift"
-            exit 1
-          fi
           # Runner cancellation can interrupt Python before its finally block.
           # Restore only the two experiment-owned paths in this disposable checkout.
           git restore --source=HEAD --worktree -- android/settings.gradle android/app/proguard-rules.pro
