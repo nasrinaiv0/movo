@@ -1,4 +1,5 @@
 import { useProfilePhoto } from './lib/useProfilePhoto';
+import { rawLedgerTimestamp, sharedCalendarDate, sharedLedgerDisplayDate, sharedLedgerEditedTimestamp } from './lib/sharedLedgerDate';
 import { Preferences } from '@capacitor/preferences';
 import FriendsSheet, { FriendsContent } from './components/FriendsSheet';
 import FriendFinanceSummary from './components/FriendFinanceSummary';
@@ -32,6 +33,8 @@ import { AccountOptions } from './components/AccountPicker';
 import { flushSync } from 'react-dom';
 import './App.css';
 import './AdaptiveLayout.css';
+import './DeviceLayout.css';
+import { appScrollTop, scrollAppTo } from './lib/appScroll';
 import './screens/Settings.css';
 import AuthPanel from './components/AuthPanel';
 import Icon, { NasrinMark } from './components/Icon';
@@ -225,7 +228,7 @@ const normalize = (t, accountsById, base, rates) => {
     category: cat.label,
     subcategory: cat.subLabel,
     type: t.transaction_type || t.type,
-    date: t.occurred_at || t.date,
+    date: sharedLedgerDisplayDate(t),
     origAmount, origCurrency, currency: base,
     amount: convert(origAmount, origCurrency, base, rates),
     accountName: account?.name || t.account || 'Manual entry',
@@ -413,8 +416,8 @@ function App() {
   const systemDark = useSystemDark();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 6);
-    window.addEventListener('scroll', onScroll, { passive: true }); return () => window.removeEventListener('scroll', onScroll);
+    const onScroll = () => setScrolled(appScrollTop() > 6);
+    window.addEventListener('scroll', onScroll, { passive: true, capture: true }); return () => window.removeEventListener('scroll', onScroll, true);
   }, []);
   const setPref = useCallback((key, value) => {
     const capturedOwner = preferenceOwner;
@@ -1375,7 +1378,7 @@ function App() {
     // A return to the page below (device Back, swipe, or an on-screen back arrow to the previous page).
     const isBack = prev !== next && (backMoveRef.current || swipeBackRef.current || screenTrailRef.current.peek() === next);
     if (prev !== next) {
-      const memo = scrollMemoRef.current; memo.delete(prev); memo.set(prev, window.scrollY || 0);
+      const memo = scrollMemoRef.current; memo.delete(prev); memo.set(prev, appScrollTop());
       while (memo.size > 20) memo.delete(memo.keys().next().value);
     }
     setMotion(dNext > dPrev ? 'push' : dNext < dPrev ? 'pop' : (ORDER[next] ?? 0) > (ORDER[prev] ?? 0) ? 'tab-right' : (ORDER[next] ?? 0) < (ORDER[prev] ?? 0) ? 'tab-left' : 'fade');
@@ -1384,7 +1387,7 @@ function App() {
       const snaps = pageSnapsRef.current; const main = document.querySelector('main.screen');
       if (main) {
         snaps.delete(prev);
-        snaps.set(prev, { node: main.cloneNode(true), className: main.className.replace(/\benter-\S+/g, '').trim(), scroll: window.scrollY || 0 });
+        snaps.set(prev, { node: main.cloneNode(true), className: main.className.replace(/\benter-\S+/g, '').trim(), scroll: appScrollTop() });
         while (snaps.size > 6) snaps.delete(snaps.keys().next().value);
       }
     }
@@ -1396,7 +1399,7 @@ function App() {
     viewRef.current = next;
     setSheet(null); setError(''); setView(next);
     if (next !== 'Settings') setQuery('');
-    try { window.scrollTo?.(0, 0); } catch { /* jsdom */ }
+    scrollAppTo(0);
   }, []);
   // An on-screen back arrow that returns to the screen the person came from (e.g. Profile opened from Settings goes back
   // to Settings), or to `fallback` when there is no earlier screen. go() treats the trail's top as a return.
@@ -1433,7 +1436,7 @@ function App() {
           if (timing && timing.iterations !== Infinity && a.playState !== 'finished') a.finish();
         });
       } catch { /* older engines: the short entrance plays */ }
-      if (back.scroll && Math.abs((window.scrollY || 0) - back.scroll) > 2) { try { window.scrollTo(0, back.scroll); } catch { /* jsdom */ } }
+      if (back.scroll && Math.abs(appScrollTop() - back.scroll) > 2) { scrollAppTo(back.scroll); }
     };
     settle();
     const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame(settle) : null;
@@ -1491,7 +1494,7 @@ function App() {
     setForm({
       merchant: t.merchant || '', amount: String(t.origAmount ?? t.amount ?? ''), transaction_type: t.type || t.transaction_type || 'expense',
       category: t.categoryId || t.category || 'other', account_id: t.account_id || '', transfer_to_account_id: t.transfer_to_account_id || '',
-      occurred_at: new Date(t.date || t.occurred_at).toLocaleDateString('en-CA'), time: new Date(t.date || t.occurred_at).toTimeString().slice(0, 8), note: t.note || '', payment_reference: t.payment_reference || '', receipt_note: t.receipt_note || '', receipt_path: t.receipt_path || '', receipt_path_to_delete: '', receipt_file: null,
+      occurred_at: sharedCalendarDate(t) || new Date(t.date || t.occurred_at).toLocaleDateString('en-CA'), time: sharedCalendarDate(t) ? '12:00:00' : new Date(t.date || t.occurred_at).toTimeString().slice(0, 8), note: t.note || '', payment_reference: t.payment_reference || '', receipt_note: t.receipt_note || '', receipt_path: t.receipt_path || '', receipt_path_to_delete: '', receipt_file: null,
     });
     setSheet({ name: 'transaction', id: t.id });
   };
@@ -1514,9 +1517,9 @@ function App() {
     const clock = /^\d{2}:\d{2}(:\d{2})?$/.test(draft.time || '') ? (draft.time.length === 5 ? `${draft.time}:00` : draft.time) : new Date().toTimeString().slice(0, 8);
     const stamp = new Date(`${draft.occurred_at}T${clock}`);
     if (Number.isNaN(stamp.getTime())) { setError(tr('Enter a valid date and time.')); return false; }
-    const occurred_at = stamp.toISOString();
-    const txCurrency = formAccounts.find(a => a.id === draft.account_id)?.currency || base;
     const editingId = sheet?.name === 'transaction' ? sheet.id : null;
+    const occurred_at = sharedLedgerEditedTimestamp(editingId ? rawTxs.find(x => x.id === editingId) : null, draft.occurred_at, clock, stamp.toISOString());
+    const txCurrency = formAccounts.find(a => a.id === draft.account_id)?.currency || base;
     // Duplicate guard (receipts, notifications, chat and manual entries): warn once, a second Save logs it anyway.
     const dup = editingId ? null : findDuplicate({ merchant: draft.merchant, amount, type, date: occurred_at, account_id: draft.account_id, ref: draft.ref || '' }, rawTxs);
     const sig = `${type}|${amount}|${draft.merchant.trim().toLowerCase()}|${draft.occurred_at}|${draft.account_id}`;
@@ -2034,7 +2037,7 @@ function App() {
     // Every column MOVO's CSV import reads back (exact time, both accounts of a transfer, note, reference), plus a
     // stable category id; accounting activity is not a transaction and is left out.
     const rows = [['Date', 'Description', 'Category', 'Category ID', 'Type', 'Amount', 'Currency', 'Account', 'To Account', 'Note', 'Payment Reference'],
-      ...txs.filter(t => ['income', 'expense', 'transfer'].includes(t.type)).map(t => [t.date, t.merchant, categoryFullLabel(t.categoryId || t.category), t.categoryId || '', t.type, t.origAmount, t.origCurrency || 'PHP', t.accountName, t.type === 'transfer' ? t.transferToAccountName : '', t.note || '', t.payment_reference || ''])];
+      ...txs.filter(t => ['income', 'expense', 'transfer'].includes(t.type)).map(t => [rawLedgerTimestamp(t), t.merchant, categoryFullLabel(t.categoryId || t.category), t.categoryId || '', t.type, t.origAmount, t.origCurrency || 'PHP', t.accountName, t.type === 'transfer' ? t.transferToAccountName : '', t.note || '', t.payment_reference || ''])];
     const csv = buildCsv(rows);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     const a = document.createElement('a'); a.href = url; a.download = 'movo-transactions.csv'; a.click();
@@ -2487,6 +2490,32 @@ function App() {
   const [locked, setLocked] = useState(() => lockState().enabled && process.env.NODE_ENV !== 'test');
   reviewGateRef.current = { ready: setupDone && !locked, sheet: !!sheet };
   const friendIdentity = session?.user?.id || 'guest';
+  // Explicit staging build opt-in; never enable on an existing production preview.
+  const friendImportEnabled = process.env.REACT_APP_MOVO_ATOMIC_FRIEND_IMPORT === 'true'
+    && Boolean(session?.user?.id && session.access_token && cloudMode && can('cloudWrite') && !locked);
+  async function importFriendTransaction(mapping) {
+    const owner = session?.user?.id;
+    if (!friendImportEnabled || !owner || owner !== mapping.ownerId || cloudAuthUserRef.current !== owner
+      || !cloudSyncRequestedRef.current || syncActiveRef.current || uploadsInFlightRef.current > 0
+      || loadOfflineWorkspace(owner)?.dirty || !supabase) throw new Error('friend_import_not_ready');
+    const { data: current, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || current?.session?.user?.id !== owner || cloudAuthUserRef.current !== owner)
+      throw new Error('friend_import_owner_changed');
+    // Do NOT use cloudWrite/localFirstWrite: their offline fallback is unsuitable
+    // for a remote consent decision. A lost response must retry this same RPC.
+    const { data, error: rpcError } = await withTimeout(supabase.rpc('movo_import_friend_transaction', {
+      p_expected_user_id: owner, p_connection_id: mapping.connectionId, p_message_id: mapping.messageId,
+      p_account_id: mapping.accountId, p_transfer_to_account_id: mapping.destinationId || null,
+      p_shared_date: mapping.date,
+    }), CLOUD_WRITE_TIMEOUT_MS);
+    if (rpcError) throw rpcError;
+    if (data?.ownerId !== owner || data?.messageId !== mapping.messageId
+      || data?.transactionId !== mapping.messageId || data?.status !== 'imported'
+      || cloudAuthUserRef.current !== owner) throw new Error('friend_import_receipt_unverified');
+    let refreshed = false;
+    try { refreshed = await refreshCloud({ id: owner }); } catch { /* confirmed receipt; refresh later */ }
+    return { ...data, refreshed: Boolean(refreshed) };
+  }
   useEffect(() => {
     if (!friendInvite || !authReady || !setupDone || locked || sheet || view === 'Sign in') return;
     const visit = friendIdentity + ':' + friendInvite;
@@ -3023,11 +3052,11 @@ function App() {
     // Let the touch-down marking paint first, then render the screen in one go (no slower concurrent render).
     requestAnimationFrame(() => setTimeout(() => go(target), 0));
   };
-  const rootStyle = { ...glassVars, colorScheme: resolved, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), '--on-accent': contrastTextForAccent(accentHex), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
+  const rootStyle = { ...(layout.pane ? { '--pane-x': layout.pane.x + 'px', '--pane-y': layout.pane.y + 'px', '--pane-width': layout.pane.width + 'px', '--pane-height': layout.pane.height + 'px' } : {}), ...glassVars, colorScheme: resolved, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), '--on-accent': contrastTextForAccent(accentHex), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
   // Bottom navigation accent (owner, 2026-11-11): Pro+ shows platinum and Pro gold by default; Settings → Appearance
   // can switch it back to the app accent. Only a server-verified paid plan counts; the free month keeps the app accent.
   const navTier = prefs.navAccent !== 'app' && entitlement?.source !== 'trial' ? ({ pro_plus: 'platinum', pro: 'gold' }[subscriptionPlan] || '') : '';
-  const rootClass = `movo-app plan-${plan}${navTier ? ` nav-tier-${navTier}` : ''} theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${prefs.iconColors === false ? ' no-icon-colors' : ''}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}${nativePlatform() === 'android' ? ' platform-android' : ''}`;
+  const rootClass = `movo-app plan-${plan}${navTier ? ` nav-tier-${navTier}` : ''} theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${prefs.iconColors === false ? ' no-icon-colors' : ''}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.pane ? ' layout-pane' : layout.dual ? ' layout-dual' : ''}${nativePlatform() === 'android' ? ' platform-android' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
   if (navIdx !== 2 && navIdx >= 0) lastTab.current = navIdx;
@@ -3061,7 +3090,7 @@ function App() {
       case 'Profile': return <Profile c={c} />;
       case 'Friends': return <>
         <SubHeader title={tr('Friends')} onBack={() => goBack('Profile')} />
-        <div className="friends-page"><FriendsContent key={friendIdentity} session={session} transactions={txs} onSignIn={() => go('Sign in')}
+        <div className="friends-page"><FriendsContent key={friendIdentity} session={session} transactions={txs} importAccounts={friendImportEnabled ? accountsView : []} onImport={friendImportEnabled ? importFriendTransaction : undefined} onSignIn={() => go('Sign in')}
           onOpenSummary={openFriendSummary} /></div>
       </>;
       case 'FriendSummary': return !locked && selectedFriend?.owner === friendIdentity && session?.access_token
@@ -3124,7 +3153,7 @@ function App() {
         <span className="side-brand"><MovoMark size={30} /><span>Movo</span></span>
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
-          return <button type="button" key={label} className={`side-item${active ? ' active' : ''}`} disabled={!setupDone} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={tr(label)} title={tr(label)}>
+          return <button type="button" key={label} data-nav-target={target} className={`side-item${active ? ' active' : ''}`} disabled={!setupDone} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={tr(label)} title={tr(label)}>
             <span className="side-icon">{center ? <NasrinMark size={20} /> : <Icon name={icon} size={22} strokeWidth={1.8} filled={active} />}{target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}</span>
             <span className="side-label">{tr(label)}</span>
           </button>;
@@ -3204,7 +3233,7 @@ function App() {
         </div>
       </Sheet>}
 
-      {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session} transactions={txs}
+      {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session} transactions={txs} importAccounts={friendImportEnabled ? accountsView : []} onImport={friendImportEnabled ? importFriendTransaction : undefined}
         inviteToken={sheet.invite} onClose={() => { clearFriendInvite(); setSheet(null); }}
         onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite}
         onOpenSummary={friend => { clearFriendInvite(); openFriendSummary(friend); }} />}

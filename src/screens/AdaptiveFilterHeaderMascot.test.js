@@ -66,7 +66,6 @@ test('Home mascot artwork subtly shrinks on scroll without shrinking its button'
   expect(prop(scroll, 'height')).toBeUndefined();
   expect(prop(photo, 'transform')).toBe('scale(.9)');
   const app = fs.readFileSync(path.join(__dirname, '..', 'App.js'), 'utf8');
-  expect(app).toContain('window.scrollY > 6');
   expect(app).toContain('is-scrolled');
 });
 

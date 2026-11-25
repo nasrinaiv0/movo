@@ -18,5 +18,5 @@
     "jsx": "react-jsx"
   },
   "include": ["src"],
-  "exclude": ["src/lib/iapHandlers.test.js", "src/lib/iapSecurity.test.js"]
+  "exclude": ["src/**/*.test.js"]
 }

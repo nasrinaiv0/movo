@@ -12,6 +12,9 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from native_evidence import EvidenceError, fresh_capture_destination, require_png
+
 
 BUNDLE_ID = "com.nasrinai.movo"
 SMOKE_LOG_URL = "movo://log?src=siri_shortcut&amount=12.34&merchant=Simulator%20Test"
@@ -37,7 +40,7 @@ def run_command(args, timeout):
     return result.stdout
 
 
-def choose_iphone(simulator_json):
+def choose_iphone(simulator_json, family="iphone"):
     try:
         data = json.loads(simulator_json)
         phones = []
@@ -47,13 +50,16 @@ def choose_iphone(simulator_json):
             match = re.search(r"(?:^|[.])iOS[- ](\d+)[._-](\d+)", runtime)
             version = tuple(map(int, match.groups())) if match else (-1, -1)
             for device in devices:
-                if (device.get("isAvailable") and "iPhone" in device.get("name", "")
+                name = device.get("name", "")
+                matches = ("iPad" in name if family == "ipad" else "iPhone" in name and (family != "duo" or "Duo" in name))
+                if (device.get("isAvailable") and matches
                         and device.get("udid")):
                     phones.append({**device, "_runtime": runtime, "_version": version})
     except (ValueError, KeyError, TypeError, AttributeError) as error:
         raise SmokeFailure("Could not parse available CoreSimulator devices") from error
     if not phones:
-        raise SmokeFailure("No available iPhone Simulator on the macOS runner")
+        label = "iPhone" if family == "iphone" else family
+        raise SmokeFailure(f"No available {label} Simulator on the macOS runner")
     return sorted(
         phones,
         key=lambda device: (
@@ -179,10 +185,10 @@ def open_log_url_with_one_cold_recovery(device_id, app, *,
     runner(command, timeout=90)
 
 
-def smoke(app, screenshot):
+def smoke(app, screenshot, family="iphone"):
     if not os.path.isdir(app):
         raise SmokeFailure(f"Simulator .app is missing: {app}")
-    device = choose_iphone(run_command(["xcrun", "simctl", "list", "devices", "available", "--json"], 30))
+    device = choose_iphone(run_command(["xcrun", "simctl", "list", "devices", "available", "--json"], 30), family)
     device_id = device["udid"]
     print(f"Simulator selected: {device['name']} ({device_id}), "
           f"runtime={device.get('_runtime')}, state={device.get('state')}", flush=True)
@@ -195,10 +201,12 @@ def smoke(app, screenshot):
     time.sleep(5)
     open_log_url_with_one_cold_recovery(device_id, app)
     time.sleep(3)
-    os.makedirs(os.path.dirname(os.path.abspath(screenshot)), exist_ok=True)
-    capture_screenshot_with_one_cold_recovery(device_id, app, screenshot)
-    if not os.path.isfile(screenshot):
-        raise SmokeFailure("simctl screenshot reported success but did not create an image")
+    try:
+        fresh_capture_destination(screenshot)
+        capture_screenshot_with_one_cold_recovery(device_id, app, screenshot)
+        require_png(screenshot)
+    except (EvidenceError, OSError) as error:
+        raise SmokeFailure(f"Invalid iOS screenshot evidence: {error}") from error
     print("Native iOS app installed, launched, received a deep link, and captured a screenshot.")
 
 
@@ -206,9 +214,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--app", required=True)
     parser.add_argument("--screenshot", required=True)
+    parser.add_argument("--device-family", choices=["iphone", "ipad", "duo"], default="iphone")
     args = parser.parse_args()
     try:
-        smoke(args.app, args.screenshot)
+        smoke(args.app, args.screenshot, args.device_family)
     except SmokeFailure as error:
         print(f"::error::MOVO iOS simulator smoke failed: {error}", file=sys.stderr)
         # A failed screenshot is still a failure; no step is marked successful.

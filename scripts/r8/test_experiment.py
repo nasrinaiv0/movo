@@ -1,5 +1,6 @@
 from pathlib import Path
 import subprocess
+import signal
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -39,6 +40,26 @@ class RepositoryBackoffTests(unittest.TestCase):
                         experiment.build_with_repository_backoff(["gradlew"], Path(tmp) / "build.log")
             build.assert_called_once()
             sleep.assert_not_called()
+
+    def test_sigterm_raises_for_finally_cleanup(self):
+        with self.assertRaises(KeyboardInterrupt):
+            experiment.interrupt_experiment(signal.SIGTERM, None)
+
+    def test_interrupted_child_is_stopped_and_error_preserved(self):
+        from unittest.mock import MagicMock
+        process = MagicMock()
+        process.pid = 45678
+        process.poll.return_value = None
+        process.stdout.__iter__.side_effect = KeyboardInterrupt("synthetic interruption")
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.object(experiment.subprocess, "Popen", return_value=process) as launch:
+                with patch.object(experiment.os, "killpg") as kill:
+                    with self.assertRaises(KeyboardInterrupt):
+                        experiment.command(["gradlew"], Path(tmp) / "build.log", cwd=Path(tmp))
+            self.assertTrue(launch.call_args.kwargs["start_new_session"])
+            kill.assert_called_once_with(45678, signal.SIGTERM)
+            process.wait.assert_called_once_with(timeout=5)
+            process.stdout.close.assert_called_once()
 
 
 if __name__ == "__main__":

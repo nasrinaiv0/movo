@@ -4,6 +4,7 @@ import { newRecordId } from '../lib/recordId';
 import { money } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import Icon from './Icon';
+import FriendImportControls from './FriendImportControls';
 import './FriendMessages.css';
 
 function FriendPhoto({ name, photo }) {
@@ -83,7 +84,7 @@ export function FriendChatsDirectory({ session, onSelect }) {
   </section>;
 }
 
-export function FriendConversation({ session, friend, transactions = [], onBack }) {
+export function FriendConversation({ session, friend, transactions = [], importAccounts = [], onImport, onBack }) {
   const [thread, setThread] = useState(null);
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
@@ -98,6 +99,18 @@ export function FriendConversation({ session, friend, transactions = [], onBack 
   const picked = accessibleTxs.find(tx => String(tx.id) === selected);
   const card = transactionShareCard(picked, { description: includeDescription, category: includeCategory });
   const identity = session?.user?.id;
+  const [decisions, setDecisions] = useState(null);
+  const importAvailable = Boolean(onImport && identity);
+  useEffect(() => {
+    setDecisions(null);
+    if (!importAvailable) return undefined;
+    const controller = new AbortController();
+    chatRequest(session, 'decisions', { connectionId: friend.id }, controller.signal).then(result => {
+      if (!controller.signal.aborted && result.atomicImport === true && Array.isArray(result.decisions))
+        setDecisions(Object.fromEntries(result.decisions.filter(d => ['accepted','declined','imported'].includes(d.status)).map(d => [d.messageId,d.status])));
+    }).catch(() => { /* missing migration or rollout gate: informational cards only */ });
+    return () => controller.abort();
+  }, [session, identity, friend.id, importAvailable]);
   const load = useCallback((signal) => {
     if (typeof document !== 'undefined' && document.hidden) return;
     chatRequest(session, 'open', { connectionId: friend.id }, signal).then(result => {
@@ -143,6 +156,9 @@ export function FriendConversation({ session, friend, transactions = [], onBack 
       {thread?.messages?.length === 0 && <p className="friends-note">{tr('Say hello! Only you and this friend can see these messages.')}</p>}
       {thread?.messages?.map(message => <article key={message.id} className={'friend-chat-bubble' + (message.senderId === identity ? ' mine' : '')}>
         {message.kind === 'transaction' ? <SharedCard card={message.card} /> : <p dir="auto">{message.body}</p>}
+        {importAvailable && decisions !== null && message.kind === 'transaction' && message.senderId !== identity &&
+          <FriendImportControls key={`${identity}:${friend.id}:${message.id}`} session={session} connectionId={friend.id} message={message}
+            initialStatus={decisions[message.id] || 'unreviewed'} accounts={importAccounts} onImport={onImport} />}
         <time dateTime={message.createdAt}>{stamp(message.createdAt)}</time>
       </article>)}
       <span ref={end} />

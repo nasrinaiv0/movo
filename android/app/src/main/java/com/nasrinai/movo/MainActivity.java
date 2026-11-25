@@ -9,6 +9,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(MovoNativePlugin.class);
+        registerPlugin(MovoWindowPlugin.class);
         super.onCreate(savedInstanceState);
         // Owner decision 2026-11-12: people may take screenshots of MOVO (FLAG_SECURE is no longer set while the
         // app is in use). The recent-apps preview still must not show balances, card details or QR codes:

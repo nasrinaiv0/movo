@@ -34,8 +34,8 @@ function checkReleaseContract({ capacitor, project, info, icon, codemagic }) {
     'Xcode build number must be positive for both iPhone configurations');
   assert(phoneSettings.every(settings => /^\d+(?:\.\d+){1,2}$/.test(setting(settings, 'MARKETING_VERSION') || '')),
     'Xcode marketing version must be a valid dotted version');
-  assert(phoneSettings.every(settings => setting(settings, 'TARGETED_DEVICE_FAMILY') === '1'),
-    'MOVO is an iPhone-only release');
+  assert(phoneSettings.every(settings => setting(settings, 'TARGETED_DEVICE_FAMILY') === '"1,2"'),
+    'MOVO must support both iPhone and iPad');
   assert(phoneSettings.every(settings => setting(settings, 'ASSETCATALOG_COMPILER_APPICON_NAME') === 'AppIcon'),
     'AppIcon asset is not selected in Xcode');
 
@@ -52,6 +52,11 @@ function checkReleaseContract({ capacitor, project, info, icon, codemagic }) {
   }
   assert(info.includes('<string>MOVO</string>'), 'App display name is missing');
   assert(info.includes('<string>movo</string>'), 'Native callback URL scheme is missing');
+  for (const key of ['UISupportedInterfaceOrientations', 'UISupportedInterfaceOrientations~ipad']) {
+    const orientations = info.match(new RegExp('<key>' + key + '</key>\\s*<array>([\\s\\S]*?)</array>'))?.[1] || '';
+    assert(['Portrait', 'LandscapeLeft', 'LandscapeRight'].every(value => orientations.includes('UIInterfaceOrientation' + value)),
+      'Portrait and landscape must be supported for ' + key);
+  }
   assert(icon && icon.images && icon.images.some(image => image.platform === 'ios'
     && image.size === '1024x1024' && image.filename),
   'Universal 1024×1024 App Store icon asset missing');

@@ -20,7 +20,8 @@ export function readChrome(doc = document) {
   const actionButtons = header ? Array.from(header.querySelectorAll(isHome ? '.header-action-buttons button' : '.header-actions .round-button')) : [];
   const fallbackActions = header && !isHome && !actionButtons.length ? Array.from(header.querySelectorAll('.header-actions > button')) : [];
   const actions = actionButtons.length ? actionButtons : fallbackActions;
-  const navItems = Array.from(doc.querySelectorAll('nav.bottom-nav .nav-item'));
+  const rail = doc.querySelector('nav.side-nav');
+  const navItems = Array.from(doc.querySelectorAll(rail ? 'nav.side-nav button' : 'nav.bottom-nav .nav-item'));
   const overlay = !!doc.querySelector('[aria-modal="true"], .search-overlay');
   return {
     overlay,
@@ -37,9 +38,11 @@ export function readChrome(doc = document) {
     },
     dock: {
       // Hidden during setup too: the web nav is locked (App.js setupDone) until the Terms are accepted.
-      hidden: overlay || !navItems.length || !!doc.querySelector('nav.bottom-nav.is-locked'),
-      active: navItems.findIndex(b => b.classList.contains('nav-active')),
-      tabs: navItems.map(b => ({ disabled: b.disabled || b.getAttribute('aria-disabled') === 'true', label: b.getAttribute('aria-label') || '', badge: !!b.querySelector('.nav-badge'), original: b.classList.contains('nav-center'), svg: b.querySelector('svg') })),
+      hidden: overlay || !navItems.length || !!doc.querySelector('nav.bottom-nav.is-locked, nav.side-nav.is-locked'),
+      placement: rail ? 'leading' : 'bottom',
+      direction: doc.querySelector('.movo-app')?.getAttribute('dir') || doc.documentElement.dir || 'ltr',
+      active: navItems.findIndex(b => b.classList.contains('nav-active') || b.classList.contains('active')),
+      tabs: navItems.map(b => ({ disabled: b.disabled || b.getAttribute('aria-disabled') === 'true', label: b.getAttribute('aria-label') || b.getAttribute('title') || b.textContent.trim(), badge: !!b.querySelector('.nav-badge'), original: b.classList.contains('nav-center') || b.dataset.navTarget === 'NasrinAI', svg: b.querySelector('svg') })),
     },
     buttons: { back, actions, tabs: navItems },
   };
@@ -129,7 +132,7 @@ export function startNativeChrome() {
   const schedule = () => { clearTimeout(timer); timer = setTimeout(sync, 50); };
 
   const observer = new MutationObserver(schedule);
-  observer.observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true, attributeFilter: ['class', 'aria-label', 'aria-current', 'aria-modal', 'disabled', 'aria-disabled', 'data-appearance'] });
+  observer.observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true, attributeFilter: ['class', 'dir', 'aria-label', 'aria-current', 'aria-modal', 'disabled', 'aria-disabled', 'data-appearance'] });
   const tap = MovoNative.addListener('chromeTap', ({ kind, index }) => {
     const target = kind === 'back' ? buttons.back : kind === 'action' ? buttons.actions[index] : kind === 'tab' ? buttons.tabs[index] : null;
     if (!target?.isConnected || target.disabled || target.getAttribute('aria-disabled') === 'true') return;

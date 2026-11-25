@@ -1,6 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { FriendChatsDirectory, FriendConversation } from './FriendMessages';
+import FriendImportControls from './FriendImportControls';
 import { chatRequest } from '../lib/friendChat';
 
 jest.mock('../lib/friendChat', () => ({ ...jest.requireActual('../lib/friendChat'), chatRequest: jest.fn() }));
@@ -91,4 +92,30 @@ test('inbox polls status without retransferring cached profile photos', async ()
     expect(el.querySelector('.friend-chat-unread').textContent).toBe('1');
     close();
   } finally { jest.useRealTimers(); }
+});
+
+
+test('atomic controls require explicit consent and account mapping; lost response retries same payload', async () => {
+  const owner = '123ea9e7-ced2-422c-83ca-e21111111112';
+  const mid = '123ea9e7-ced2-422c-83ca-e21111111113';
+  const bank = '123ea9e7-ced2-422c-83ca-e21111111114';
+  const owned = { user: { id: owner }, access_token: 'synthetic' };
+  const message = { id: mid, senderId: 'other', kind: 'transaction', card: { type: 'expense', currency: 'PHP', date: '2026-11-23', amount: 42.25 } };
+  const save = jest.fn().mockRejectedValueOnce(new Error('timeout')).mockResolvedValueOnce({ ownerId: owner, messageId: mid, transactionId: mid, status: 'imported', refreshed: true });
+  chatRequest.mockResolvedValue({ messageId: mid, status: 'accepted' });
+  const { el, close } = await mount(<FriendImportControls session={owned} connectionId={connection.id} message={message} initialStatus="unreviewed"
+    accounts={[{ id: bank, user_id: owner, account_type: 'bank', currency: 'PHP', name: 'Owned bank' }, { id: mid, user_id: 'other', account_type: 'bank', currency: 'PHP', name: 'Foreign bank' }]} onImport={save} />);
+  const button = label => [...el.querySelectorAll('button')].find(b => b.textContent.includes(label));
+  expect(save).not.toHaveBeenCalled();
+  await click(button('Accept'));
+  expect(button('Save to my transactions').disabled).toBe(true);
+  expect(el.textContent).not.toContain('Foreign bank');
+  change(el.querySelector('select'), bank);
+  await click(button('Save to my transactions'));
+  expect(el.querySelector('select').disabled).toBe(true);
+  await click(button('Retry same import'));
+  expect(save).toHaveBeenCalledTimes(2);
+  expect(save.mock.calls[0][0]).toEqual(save.mock.calls[1][0]);
+  expect(el.textContent).toContain('Imported to your records');
+  close();
 });

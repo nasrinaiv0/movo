@@ -1,0 +1,79 @@
+/* Window geometry, not model names. This sheet loads after the shared phone/tablet styles. */
+.native-chrome .side-nav { display: none !important; }
+.native-chrome .movo-app:is(.layout-tablet, .layout-desktop) {
+  --side-w: var(--native-rail-width, 76px);
+  --workspace-top: calc(var(--native-top-height, 70px) + env(safe-area-inset-top));
+}
+.native-chrome .movo-app:is(.layout-tablet, .layout-desktop) .screen {
+  padding-block-end: max(32px, env(safe-area-inset-bottom));
+}
+
+/* Native date inputs and translated clock labels must wrap before they widen a compact dialog. */
+.movo-app.movo-app .tx-sheet .tx-meta { flex-wrap: wrap; }
+.movo-app.movo-app .tx-sheet .tx-meta > * { flex: 1 1 10rem; min-inline-size: 0; max-inline-size: 100%; }
+.movo-app.movo-app .tx-sheet .tx-meta input { min-inline-size: 0; max-inline-size: 100%; }
+.movo-app.movo-app .tx-sheet .tx-clock { white-space: normal; overflow-wrap: anywhere; }
+.movo-app .sheet.tx-sheet { container: movo-transaction / inline-size; }
+@container movo-transaction (max-width: 340px) {
+  .movo-app .tx-sheet .tx-top { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px; }
+  .movo-app .tx-sheet .tx-top > .tx-seg { grid-column: 1 / -1; grid-row: 2; }
+  .movo-app .tx-sheet .tx-top > .tx-round:first-child { grid-column: 1; grid-row: 1; }
+  .movo-app .tx-sheet .tx-top > .tx-round:last-child { grid-column: 3; grid-row: 1; }
+}
+/* Older WKWebViews retain the compact-window fallback when container queries are unavailable. */
+@supports not (container-type: inline-size) {
+  @media (max-width: 340px) {
+    .movo-app .tx-sheet .tx-top { flex-wrap: wrap; }
+    .movo-app .tx-sheet .tx-top > .tx-seg { order: 1; flex-basis: 100%; }
+  }
+}
+
+/* A separating hinge or tabletop fold must not cut through a form, card or touch target.
+   Keep the existing app mounted in the largest unobstructed pane; only its scroller changes. */
+.movo-app.layout-pane {
+  position: fixed; inset: auto; left: var(--pane-x); top: var(--pane-y);
+  width: var(--pane-width); height: var(--pane-height); min-height: 0;
+  transform: translateZ(0); overflow: hidden;
+  --workspace-gutter: 18px; --dialog-gutter: 12px;
+}
+.movo-app.layout-pane > .app-shell {
+  height: 100%; min-height: 0; max-width: none; margin: 0;
+  overflow: auto; overscroll-behavior: contain; scrollbar-width: thin;
+}
+.movo-app.layout-pane:is(.layout-tablet, .layout-desktop) > .app-shell {
+  margin-inline-start: var(--side-w); width: calc(100% - var(--side-w));
+}
+.movo-app.layout-pane .screen { width: 100%; max-width: 100%; min-height: 100%; }
+.movo-app.layout-pane :is(.scenery, .bottom-fade) { width: 100%; max-width: none; }
+.movo-app.layout-pane .side-nav { max-height: 100%; overflow-y: auto; }
+.movo-app.layout-pane .bottom-nav { width: calc(100% - 24px); max-width: 456px; }
+.movo-app.layout-pane.movo-app > :is(.sheet-backdrop, .confirm-layer, .search-overlay) {
+  inset: 0; width: 100%; height: 100%; padding: 8px;
+}
+.movo-app.layout-pane.movo-app > .sheet-backdrop > .sheet.sheet {
+  min-width: 0; max-width: min(100%, 696px); max-height: calc(100% - 16px);
+  overflow: auto; overscroll-behavior: contain;
+}
+.movo-app.layout-pane.movo-app :is(.toast, .logged-burst) { left: 50%; max-width: calc(100% - 24px); }
+.movo-app.layout-pane.movo-app .movo-ai-chat .movo-ai-composer {
+  left: 50%; width: calc(100% - 24px); max-width: 760px;
+}
+.movo-app.layout-pane.movo-app .sheet :is(.tx-form, .acct-form) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.movo-app.layout-pane.movo-app .sheet .tx-form > * {
+  grid-column: 1 / -1; grid-row: auto;
+}
+.movo-app.layout-pane.movo-app .sheet :is(.tx-main, .tx-side, .acct-preview, .acct-panel, .tx-bottom) {
+  grid-column: 1 / -1; min-width: 0;
+}
+
+/* Compact landscape and resized windows must retain reachable navigation and scrollable actions. */
+@media (max-height: 500px) {
+  .movo-app .side-nav { overflow-y: auto; }
+  .movo-app .side-brand { margin-bottom: 4px; }
+  .movo-app .sheet.sheet { max-height: calc(100dvh - 16px); }
+}
+@media (pointer: coarse) {
+  .movo-app :is(.side-item, .back-button, .round-button, .sheet-close) { min-width: 44px; min-height: 44px; }
+}

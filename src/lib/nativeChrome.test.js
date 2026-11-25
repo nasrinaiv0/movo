@@ -17,6 +17,24 @@ test('a root screen gives a title, its header buttons and the dock tabs', () => 
   expect(s.dock.tabs.map(t => [t.label, t.badge, t.original])).toEqual([['Home', true, false], ['Wallet', false, false], ['NasrinAI', false, true]]);
 });
 
+test('a wide window mirrors every sidebar action with reading direction and account/setup gates intact', () => {
+  const doc = page(`<div class="movo-app" dir="rtl"><main class="screen"><header class="screen-header"><h1>Wallet</h1></header></main>
+    <nav class="side-nav"><button class="side-item active" data-nav-target="Wallet" aria-label="Wallet"><svg></svg></button>
+    <button class="side-item" data-nav-target="NasrinAI" aria-label="NasrinAI"><svg></svg></button>
+    <button class="side-item side-add" title="Add transaction" disabled><svg></svg></button>
+    <button class="side-item" title="Settings"><svg></svg></button></nav></div>`);
+  const state = readChrome(doc);
+  expect(state.dock).toMatchObject({ hidden: false, placement: 'leading', direction: 'rtl', active: 0 });
+  expect(state.dock.tabs.map(tab => tab.label)).toEqual(['Wallet', 'NasrinAI', 'Add transaction', 'Settings']);
+  expect(state.dock.tabs[1].original).toBe(true);
+  expect(state.dock.tabs[2].disabled).toBe(true);
+  expect(state.buttons.tabs).toHaveLength(4);
+  doc.querySelector('nav').classList.add('is-locked');
+  expect(readChrome(doc).dock.hidden).toBe(true);
+  doc.body.insertAdjacentHTML('beforeend', '<section role="dialog" aria-modal="true"></section>');
+  expect(readChrome(doc).dock.hidden).toBe(true);
+});
+
 test('a sub screen has a back button; Home keeps its greeting and sends only its action buttons', () => {
   let s = readChrome(page(`<main class="screen"><header class="screen-header sub"><button class="back-button" aria-label="Back"><svg></svg></button><h1>Help Center</h1><div class="header-actions"></div></header></main>`));
   expect(s.top).toMatchObject({ title: 'Help Center', back: true, actions: [] });

@@ -170,13 +170,23 @@ final class GlassChrome: NSObject {
     private var contentHeight: NSLayoutConstraint!
     private var titleAfterBack: NSLayoutConstraint!
     private var titleAtEdge: NSLayoutConstraint!
+    private var topLeading: NSLayoutConstraint!
 
     private let dockGlass = GlassSurface(radius: 31)
     private let dockStack = UIStackView()
+    private let dockScroll = UIScrollView()
+    private var bottomConstraints: [NSLayoutConstraint] = []
+    private var railConstraints: [NSLayoutConstraint] = []
+    private var bottomStackConstraints: [NSLayoutConstraint] = []
+    private var railStackConstraints: [NSLayoutConstraint] = []
+    private var railPlacement = false
     private let selection = UIView()
     private var tabButtons: [ChromeButton] = []
     private var activeTab = -1
     private var showSelection = false
+
+    var railWidth: CGFloat { railPlacement ? 76 : 0 }
+    var topBarHeight: CGFloat { contentHeight.constant + 14 }
 
     init(host: UIView, emit: @escaping ([String: Any]) -> Void) {
         self.host = host
@@ -226,11 +236,12 @@ final class GlassChrome: NSObject {
         let content = UILayoutGuide()
         topBar.addLayoutGuide(content)
         contentHeight = content.heightAnchor.constraint(equalToConstant: 56)
+        topLeading = topBar.leadingAnchor.constraint(equalTo: host.safeAreaLayoutGuide.leadingAnchor)
         titleAfterBack = titleLabel.leadingAnchor.constraint(equalTo: backGlass.trailingAnchor, constant: 12)
         titleAtEdge = titleLabel.leadingAnchor.constraint(equalTo: topBar.leadingAnchor, constant: 20)
         NSLayoutConstraint.activate([
             topBar.topAnchor.constraint(equalTo: host.topAnchor),
-            topBar.leadingAnchor.constraint(equalTo: host.safeAreaLayoutGuide.leadingAnchor),
+            topLeading,
             topBar.trailingAnchor.constraint(equalTo: host.safeAreaLayoutGuide.trailingAnchor),
             content.topAnchor.constraint(equalTo: host.safeAreaLayoutGuide.topAnchor),
             contentHeight,
@@ -266,8 +277,13 @@ final class GlassChrome: NSObject {
     private func buildDock(in host: UIView) {
         dockGlass.alpha = 0
         host.addSubview(dockGlass)
-        dockGlass.contentView.addSubview(selection)
-        dockGlass.contentView.addSubview(dockStack)
+        dockScroll.translatesAutoresizingMaskIntoConstraints = false
+        dockScroll.showsHorizontalScrollIndicator = false
+        dockScroll.showsVerticalScrollIndicator = false
+        dockScroll.contentInsetAdjustmentBehavior = .never
+        dockGlass.contentView.addSubview(dockScroll)
+        dockScroll.addSubview(selection)
+        dockScroll.addSubview(dockStack)
         dockStack.translatesAutoresizingMaskIntoConstraints = false
         dockStack.axis = .horizontal
         dockStack.distribution = .fillEqually
@@ -276,19 +292,33 @@ final class GlassChrome: NSObject {
         selection.isUserInteractionEnabled = false
         dockGlass.onLayout = { [weak self] in self?.placeSelection(animated: false) }
 
-        let nearSafeBottom = dockGlass.bottomAnchor.constraint(equalTo: host.safeAreaLayoutGuide.bottomAnchor, constant: 4)
-        nearSafeBottom.priority = .defaultHigh
-        NSLayoutConstraint.activate([
-            dockGlass.leadingAnchor.constraint(equalTo: host.safeAreaLayoutGuide.leadingAnchor, constant: 20),
-            dockGlass.trailingAnchor.constraint(equalTo: host.safeAreaLayoutGuide.trailingAnchor, constant: -20),
+        let fittingWidth = dockStack.widthAnchor.constraint(equalTo: dockScroll.frameLayoutGuide.widthAnchor)
+        fittingWidth.priority = .defaultHigh
+        bottomConstraints = [
+            dockGlass.leadingAnchor.constraint(equalTo: host.safeAreaLayoutGuide.leadingAnchor, constant: 12),
+            dockGlass.trailingAnchor.constraint(equalTo: host.safeAreaLayoutGuide.trailingAnchor, constant: -12),
             dockGlass.heightAnchor.constraint(equalToConstant: 62),
-            nearSafeBottom,
-            dockGlass.bottomAnchor.constraint(lessThanOrEqualTo: host.bottomAnchor, constant: -12),
-            dockStack.topAnchor.constraint(equalTo: dockGlass.contentView.topAnchor),
-            dockStack.bottomAnchor.constraint(equalTo: dockGlass.contentView.bottomAnchor),
-            dockStack.leadingAnchor.constraint(equalTo: dockGlass.contentView.leadingAnchor, constant: 6),
-            dockStack.trailingAnchor.constraint(equalTo: dockGlass.contentView.trailingAnchor, constant: -6)
+            dockGlass.bottomAnchor.constraint(equalTo: host.safeAreaLayoutGuide.bottomAnchor, constant: -8)
+        ]
+        railConstraints = [
+            dockGlass.leadingAnchor.constraint(equalTo: host.safeAreaLayoutGuide.leadingAnchor, constant: 6),
+            dockGlass.widthAnchor.constraint(equalToConstant: 64),
+            dockGlass.topAnchor.constraint(equalTo: host.safeAreaLayoutGuide.topAnchor, constant: 8),
+            dockGlass.bottomAnchor.constraint(equalTo: host.safeAreaLayoutGuide.bottomAnchor, constant: -8)
+        ]
+        bottomStackConstraints = [fittingWidth, dockStack.heightAnchor.constraint(equalTo: dockScroll.frameLayoutGuide.heightAnchor)]
+        railStackConstraints = [dockStack.widthAnchor.constraint(equalTo: dockScroll.frameLayoutGuide.widthAnchor)]
+        NSLayoutConstraint.activate([
+            dockScroll.topAnchor.constraint(equalTo: dockGlass.contentView.topAnchor, constant: 6),
+            dockScroll.bottomAnchor.constraint(equalTo: dockGlass.contentView.bottomAnchor, constant: -6),
+            dockScroll.leadingAnchor.constraint(equalTo: dockGlass.contentView.leadingAnchor, constant: 6),
+            dockScroll.trailingAnchor.constraint(equalTo: dockGlass.contentView.trailingAnchor, constant: -6),
+            dockStack.topAnchor.constraint(equalTo: dockScroll.contentLayoutGuide.topAnchor),
+            dockStack.bottomAnchor.constraint(equalTo: dockScroll.contentLayoutGuide.bottomAnchor),
+            dockStack.leadingAnchor.constraint(equalTo: dockScroll.contentLayoutGuide.leadingAnchor),
+            dockStack.trailingAnchor.constraint(equalTo: dockScroll.contentLayoutGuide.trailingAnchor)
         ])
+        NSLayoutConstraint.activate(bottomConstraints + bottomStackConstraints)
     }
 
     // MARK: Updates from the web app
@@ -342,6 +372,17 @@ final class GlassChrome: NSObject {
     }
 
     private func applyDock(_ dock: JSObject) {
+        host?.semanticContentAttribute = (dock["direction"] as? String) == "rtl" ? .forceRightToLeft : .forceLeftToRight
+        let leading = (dock["placement"] as? String) == "leading"
+        if leading != railPlacement {
+            NSLayoutConstraint.deactivate(bottomConstraints + bottomStackConstraints + railConstraints + railStackConstraints)
+            railPlacement = leading
+            dockStack.axis = leading ? .vertical : .horizontal
+            dockStack.distribution = leading ? .fill : .fillEqually
+            topLeading.constant = leading ? railWidth : 0
+            NSLayoutConstraint.activate(leading ? railConstraints + railStackConstraints : bottomConstraints + bottomStackConstraints)
+            dockScroll.setContentOffset(.zero, animated: false)
+        }
         setVisible(dockGlass, !flag(dock["hidden"]))
         let tabs = (dock["tabs"] as? JSArray ?? []).compactMap { $0 as? JSObject }
         while tabButtons.count < tabs.count {
@@ -376,7 +417,7 @@ final class GlassChrome: NSObject {
             return
         }
         let button = tabButtons[activeTab]
-        let frame = dockStack.convert(button.frame, to: dockGlass.contentView).insetBy(dx: 2, dy: 6)
+        let frame = dockStack.convert(button.frame, to: dockScroll).insetBy(dx: 2, dy: 4)
         let update = {
             self.selection.frame = frame
             self.selection.alpha = 1

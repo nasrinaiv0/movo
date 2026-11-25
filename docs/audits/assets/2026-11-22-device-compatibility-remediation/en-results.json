@@ -1,0 +1,441 @@
+{
+  "browser": "156.0.8078.79",
+  "language": "en",
+  "fontSize": "default",
+  "syntheticDataOnly": true,
+  "externalRequestsBlocked": true,
+  "nativeDeviceAcceptance": false,
+  "segmentSource": "injected browser segments API; real app hook and CSS",
+  "expectedExpense": 12.34,
+  "actualBalanceAfterResizeAndReload": 87.91,
+  "pageErrors": [],
+  "results": [
+    {
+      "step": "draft-280x653",
+      "window": {
+        "width": 280,
+        "height": 653
+      },
+      "bodyWidth": 280,
+      "view": "Wallet",
+      "pane": null,
+      "dialogs": [
+        {
+          "x": 8,
+          "y": 8,
+          "width": 264,
+          "height": 637,
+          "scrollWidth": 262,
+          "clientWidth": 262
+        }
+      ]
+    },
+    {
+      "step": "draft-344x882",
+      "window": {
+        "width": 344,
+        "height": 882
+      },
+      "bodyWidth": 344,
+      "view": "Wallet",
+      "pane": null,
+      "dialogs": [
+        {
+          "x": 8,
+          "y": 8,
+          "width": 328,
+          "height": 866,
+          "scrollWidth": 326,
+          "clientWidth": 326
+        }
+      ]
+    },
+    {
+      "step": "draft-466x678",
+      "window": {
+        "width": 466,
+        "height": 678
+      },
+      "bodyWidth": 466,
+      "view": "Wallet",
+      "pane": null,
+      "dialogs": [
+        {
+          "x": 8,
+          "y": 8,
+          "width": 450,
+          "height": 662,
+          "scrollWidth": 448,
+          "clientWidth": 448
+        }
+      ]
+    },
+    {
+      "step": "draft-674x898",
+      "window": {
+        "width": 674,
+        "height": 898
+      },
+      "bodyWidth": 674,
+      "view": "Wallet",
+      "pane": null,
+      "dialogs": [
+        {
+          "x": 122,
+          "y": 69.828125,
+          "width": 430,
+          "height": 820.171875,
+          "scrollWidth": 428,
+          "clientWidth": 428
+        }
+      ]
+    },
+    {
+      "step": "draft-768x1024",
+      "window": {
+        "width": 768,
+        "height": 1024
+      },
+      "bodyWidth": 768,
+      "view": "Wallet",
+      "pane": null,
+      "dialogs": [
+        {
+          "x": 36,
+          "y": 246.40625,
+          "width": 696,
+          "height": 523.171875,
+          "scrollWidth": 694,
+          "clientWidth": 694
+        }
+      ]
+    },
+    {
+      "step": "draft-890x626",
+      "window": {
+        "width": 890,
+        "height": 626
+      },
+      "bodyWidth": 890,
+      "view": "Wallet",
+      "pane": null,
+      "dialogs": [
+        {
+          "x": 97,
+          "y": 49.40625,
+          "width": 696,
+          "height": 527.171875,
+          "scrollWidth": 694,
+          "clientWidth": 694
+        }
+      ]
+    },
+    {
+      "step": "draft-1024x768",
+      "window": {
+        "width": 1024,
+        "height": 768
+      },
+      "bodyWidth": 1024,
+      "view": "Wallet",
+      "pane": null,
+      "dialogs": [
+        {
+          "x": 164,
+          "y": 120.40625,
+          "width": 696,
+          "height": 527.171875,
+          "scrollWidth": 694,
+          "clientWidth": 694
+        }
+      ]
+    },
+    {
+      "step": "draft-674x370",
+      "window": {
+        "width": 674,
+        "height": 370
+      },
+      "bodyWidth": 674,
+      "view": "Wallet",
+      "pane": null,
+      "dialogs": [
+        {
+          "x": 122,
+          "y": 8,
+          "width": 430,
+          "height": 354,
+          "scrollWidth": 428,
+          "clientWidth": 428
+        }
+      ]
+    },
+    {
+      "step": "vertical-hinge-draft",
+      "window": {
+        "width": 1060,
+        "height": 900
+      },
+      "bodyWidth": 1060,
+      "view": "Wallet",
+      "pane": {
+        "x": 0,
+        "y": 0,
+        "width": 520,
+        "height": 900
+      },
+      "dialogs": [
+        {
+          "x": 8,
+          "y": 71.828125,
+          "width": 504,
+          "height": 820.171875,
+          "scrollWidth": 502,
+          "clientWidth": 502
+        }
+      ]
+    },
+    {
+      "step": "larger-right-pane-draft",
+      "window": {
+        "width": 1060,
+        "height": 900
+      },
+      "bodyWidth": 1060,
+      "view": "Wallet",
+      "pane": {
+        "x": 520,
+        "y": 0,
+        "width": 540,
+        "height": 900
+      },
+      "dialogs": [
+        {
+          "x": 528,
+          "y": 71.828125,
+          "width": 524,
+          "height": 820.171875,
+          "scrollWidth": 522,
+          "clientWidth": 522
+        }
+      ]
+    },
+    {
+      "step": "tabletop-draft",
+      "window": {
+        "width": 900,
+        "height": 720
+      },
+      "bodyWidth": 900,
+      "view": "Wallet",
+      "pane": {
+        "x": 0,
+        "y": 0,
+        "width": 900,
+        "height": 350
+      },
+      "dialogs": [
+        {
+          "x": 102,
+          "y": 16,
+          "width": 696,
+          "height": 318,
+          "scrollWidth": 694,
+          "clientWidth": 694
+        }
+      ]
+    },
+    {
+      "step": "tabletop-saved-wallet",
+      "window": {
+        "width": 900,
+        "height": 720
+      },
+      "bodyWidth": 900,
+      "view": "Wallet",
+      "pane": {
+        "x": 0,
+        "y": 0,
+        "width": 900,
+        "height": 350
+      },
+      "dialogs": []
+    },
+    {
+      "step": "home-390",
+      "window": {
+        "width": 390,
+        "height": 844
+      },
+      "bodyWidth": 390,
+      "view": "Home",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "wallet-390",
+      "window": {
+        "width": 390,
+        "height": 844
+      },
+      "bodyWidth": 390,
+      "view": "Wallet",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "transactions-390",
+      "window": {
+        "width": 390,
+        "height": 844
+      },
+      "bodyWidth": 390,
+      "view": "Transactions",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "menu-390",
+      "window": {
+        "width": 390,
+        "height": 844
+      },
+      "bodyWidth": 390,
+      "view": "Menu",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "home-768",
+      "window": {
+        "width": 768,
+        "height": 1024
+      },
+      "bodyWidth": 768,
+      "view": "Home",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "wallet-768",
+      "window": {
+        "width": 768,
+        "height": 1024
+      },
+      "bodyWidth": 768,
+      "view": "Wallet",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "transactions-768",
+      "window": {
+        "width": 768,
+        "height": 1024
+      },
+      "bodyWidth": 768,
+      "view": "Transactions",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "menu-768",
+      "window": {
+        "width": 768,
+        "height": 1024
+      },
+      "bodyWidth": 768,
+      "view": "Menu",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "home-1024",
+      "window": {
+        "width": 1024,
+        "height": 768
+      },
+      "bodyWidth": 1024,
+      "view": "Home",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "wallet-1024",
+      "window": {
+        "width": 1024,
+        "height": 768
+      },
+      "bodyWidth": 1024,
+      "view": "Wallet",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "transactions-1024",
+      "window": {
+        "width": 1024,
+        "height": 768
+      },
+      "bodyWidth": 1024,
+      "view": "Transactions",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "menu-1024",
+      "window": {
+        "width": 1024,
+        "height": 768
+      },
+      "bodyWidth": 1024,
+      "view": "Menu",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "home-1440",
+      "window": {
+        "width": 1440,
+        "height": 900
+      },
+      "bodyWidth": 1440,
+      "view": "Home",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "wallet-1440",
+      "window": {
+        "width": 1440,
+        "height": 900
+      },
+      "bodyWidth": 1440,
+      "view": "Wallet",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "transactions-1440",
+      "window": {
+        "width": 1440,
+        "height": 900
+      },
+      "bodyWidth": 1440,
+      "view": "Transactions",
+      "pane": null,
+      "dialogs": []
+    },
+    {
+      "step": "menu-1440",
+      "window": {
+        "width": 1440,
+        "height": 900
+      },
+      "bodyWidth": 1440,
+      "view": "Menu",
+      "pane": null,
+      "dialogs": []
+    }
+  ]
+}

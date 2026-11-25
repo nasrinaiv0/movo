@@ -1,3 +1,59 @@
+## 2026-11-25 — isolated MOVO recovery integration (before commit)
+
+Reconcile frozen #335 and #346 from pinned heads without changing either branch. Preserve both documentation histories, exact existing flags, native vault and ledger behavior. Prepared native evidence corrections: 24 local mocked/unit tests passed; check blob identities and wire portable tests into CI; isolate completed iPhone before iPad. Full audit JSON evidence in existing PR CI; no dependency upgrade without advisories. Full migration fingerprints compared (11 exact, 4 whitespace, 19 differing, 7 missing stored SQL, 9 unmatched); zero five ledger-preflight violations; no production migration, paid provisioning, merge, deployment or flag change. Loan erasure guard remains a separate staging review/test commit. Fresh CI, actual native/browser artifacts, backup and independent review mandatory.
+
+## 2026-11-24 — #346 CSV regression assertion correction (before commit)
+
+Source inspection confirms parseCsvTransactions returns {transactions, errors}, not rows. Correct the new test accessor and assert an empty error list. No application behavior changed. Fresh CI remains required.
+
+## 2026-11-24 — #346 shared-date export and edit consistency correction (before commit)
+
+Exact predecessor 591dd2f7c645 Phase 1 passed 21 translation tests, 278 suites / 1815 full regression tests and five additional tests. Real browser artifact 14924470593 passed 18 combinations and visually confirmed corrected light/dark and UTF-8, 44px visible save. Source audit reproduces two defects: CSV exported normalized display-only local wall time rather than original UTC timestamp; an unchanged shared date-only edit saved local noon as an instant (e.g. Kiritimati Nov 30 noon becomes Nov 29 22:00 UTC). Preserve raw timestamp in CSV; JSON raw backup was already correct, add explicit regression. For canonical share provenance + UTC-noon rows, keep date-only UTC noon when the edit clock stays at noon, including deliberate calendar date change; explicit clock change follows existing local-instant semantics. Retain original receipt and canonical writer, no schema or accounting change. Add unit coverage and browser fixture checks across Manila/Kiritimati/Los Angeles. Existing generic CSV/JSON restore is a separate additive import, not restoration of private chat consent or receipt; no new import behavior. Fresh exact-head checks required. Limitation: UTC-noon encoding cannot distinguish a later explicit real instant that happens to equal UTC noon; avoid adding schema or feature changes under current freeze. No remote rollout, migrations, merge, paid resources or production changes.
+
+## 2026-11-24 — #346 visual evidence fixture correction (before commit)
+
+Exact head 2792fbee passed all 18 functional Chromium cases (run 45400876232; artifact 14922763881), but actual screenshot review found light styling in both modes and encoding artifacts because the fixture omitted MOVO's theme class and UTF-8 declaration. Correct fixture-only wrapper and HTML/HTTP charset, explicitly verify computed background brightness, full save-button visibility and 44px minimum height, scroll to save before capture, and fail on mojibake. No app CSS, accounting, API or database change. Re-run exact-head visual and translation gates before acceptance. All four actual Wear screenshots on #335 646d5eb0 passed, and a local real SIGTERM/SIGINT synthetic compiler test using exact R8 source blob 63e0a0081e198d871358071903cf636aa73ae5c7 restored both configuration files and stopped the child; full latest R8 and signed iOS still separate gates. No production changes or flag activation.
+
+## 2026-11-24 — #346 isolated recipient browser acceptance and date projection (before commit)
+
+Exact predecessor 7e0834186479 passed Phase 1 (including translation coverage), financial tenant isolation, IAP, hybrid sync, container. Identified deterministic date-only UI defect: persisted 12:00 UTC maps to the next calendar day at UTC+14. Preserve canonical occurred_at, money, sync and receipt, derive a local wall-calendar noon presentation only for rows with matching movo-friend:<id> provenance and exact canonical UTC noon; ordinary timestamps unchanged. Date display/grouping uses normalized date; CSV/raw ledger storage and edited-date behavior need separate release review. Add focused unit tests and isolated real FriendConversation fixture with synthetic server decisions and import receipt, loopback-only HTTP, no remote credentials, mocked mutation backend (not end-to-end database). Test consent, mapping, lost response, reload recovery, owner switch, three timezones including UTC+14, light/dark mobile/desktop; attach actual browser images. No persistent local draft introduced; receipt recovered from server on reopening, unresolved mapping remains server-fenced. Both rollout flags remain disabled. Independent review and exact-head CI required; no merge, remote migration or production change.
+
+## 2026-11-24 — #346 recipient import translation coverage correction
+
+Before commit: exact head 9c58b3e5 Phase 1 run 45399148838 failed only the reported catalogue coverage gate for 13 new strings. Supply all 11 full-language translations in the existing catalogue format (English source plus Filipino, Arabic, Chinese, Spanish, Italian, German, French, Portuguese, Japanese, Korean and Hindi). Preserve translation coverage assertions, consent and accounting behavior. Isolated finance run 45399148402 passed five ordered revocation/erasure scenarios and duplicate import. Fresh exact-head CI required; full 97-language market review remains pending. No rollout flag or production change.
+
+## 2026-11-24 — #346 atomic import UI and revocation race hardening (before commit)
+
+Preserve canonical writer and authenticated expected-owner RPC. Acquire auth.users owner FOR UPDATE (same as clear/finish erasure, conflicts with FK key-share for pending erasure request), require verified nonanonymous owner and recheck pending status after lock. Add ordered two-session decline-first, import-first, remove-first, erasure-first and erase-after-import tests with overlap marker; test existing duplicate and rollback suites unchanged. UI explicitly gates both REACT_APP_MOVO_ATOMIC_FRIEND_IMPORT and MOVO_ATOMIC_FRIEND_IMPORT_ENABLED; neither flag is configured or activated, no preview/production resource changes. Server projects only decision IDs; no service finance write grant. Client incoming-only controls require consent, current owner-owned same-currency account mapping, verified cloud access and no pending local changes. Direct RPC (no local fallback), immutable in-memory retry mapping and validated receipt; refresh canonical records only after confirmed receipt. No durable offline import draft; lost connection recovery after reopening uses server decision state, and after removal fails closed. Date-only label retained; international ledger calendar display review remains. Add API flag and synthetic UI tests. Do not release before exact-head CI, actual browser/native and independent Claude review. No remote migration or merge.
+
+## 2026-11-24 — #346 isolated SQL parser fix
+
+Before commit: exact-head b9eb3bd3 local PostgreSQL run 45397084965 job 138455616695 reported syntax error at end of input on the PL/pgSQL IF comparison with a bare CASE. Parenthesize the expression; no authority, ledger, consent, or test assertion change. Re-run full disposable CI. No remote migration or release.
+
+## 2026-11-24 — #346 atomic recipient import candidate (before commit)
+
+Replace the unshipped decision migration's post-hoc confirmation with a fail-closed atomic recipient RPC. Keep authenticated identity and expected-owner fence, account-erasure guard, private decision/connection/message locks, same canonical sync operation advisory lock and existing writer (no second ledger); exact server card amount/type/currency/date and selected owner accounts, ordered locks, canonical receipt and decision committed together. Replay only from an imported decision with the matching durable sync payload; prior generic operations collide; after friendship deletion recovery fails closed and existing ledger remains. Date-only policy is explicitly noon UTC, pending client display and legal review. Offline draft/client activation remains HOLD; no new service-role finance grants. SQL tests cover denial, rollback, replay, altered mapping, date, owner, ledger count, deletion and grants. Add two independent session duplicate test; decline-vs-import ordering and complete UI/recovery still require acceptance. Do not deploy or apply remotely. Independent Claude/security/accounting review required. Fresh isolated CI required; no claim that these changes have passed yet.
+
+## 2026-11-24 — #346 isolated capability migration rehearsal
+
+Before staging commit: reuse #341's exact decision SQL, tenant test and draft legal note; keep app/API integration on HOLD pending owner/session fencing, accept/decline versus write race, confirmation retry, date semantics, legal and independent review. Dry-run source replay succeeded for all existing client/API files except the newer SQL runner, which is reconciled manually. Existing disposable localhost PostgreSQL service harness now excludes three known pending migrations from the baseline, asserts absence, then applies friend chat, recipient decisions and atomic loans in dependency order after existing PR274 rehearsal. Preserve all financial and security suites and concurrent loan tests. No production data, remote migration or application release. Fresh CI required.
+
+## 2026-11-24 — #335 in-activity Wear failure evidence and centered scrolling
+
+Before commit: previous 200% font Espresso scrollTo failures did not preserve active-screen evidence (post-scenario screenshot is clock/launcher). Replace edge-aligned scrollTo in test with centered actual ScrollView positioning, retain full global visibility, round corner, text fit and 48dp geometry checks, add actual font scale and foreground assertion, retain real Espresso click/handoff assertion. Capture PNG and viewport geometry inside ActivityScenario on failure before teardown, pull diagnostics on both font passes; remove stale test-only files between passes. No production layout change until actual geometry demonstrates a defect. No assertion weakened; fresh isolated CI required. R8 cancellation cleanup is separate. No merge, production mutation or remote migration.
+
+## 2026-11-24 — #335 R8 cancellation restoration correction
+
+Before commit: exact predecessor 845694dc6dc3 run 45395261382 job 138449469548 completed cancelled. Log 12:44:37 shows analyzer interrupted mid-build, then tracked settings.gradle and proguard-rules.pro contained the temporary override and baseline keep rule. Cancellation, not a normal-completion restoration mismatch. Handle SIGTERM as an interruption so Python finally restores bytes, terminate the isolated child process group on interruption, preserve real failures, and add cancellation-only explicit two-file fallback restore with git diff proof. Do not start emulators on a canceled workflow; preserve diagnostic uploads. No compiler or release keep-rule changes. Add unit tests for signal and child cleanup; actual fresh R8 CI required. Separate historical emulator disconnect remains unproven fixed. Small-watch compile passed but 200% font failed; artifact 14922091115 shows system clock after ActivityScenario ended, which is not proof of the in-test window state. Do not weaken wearable geometry checks. No production change or merge.
+
+## 2026-11-24 — #335 Wear CI foreground and Maven rate-limit correction
+
+Before commit: exact head 845694dc6dc3 run 45395261440 reproduced small-watch Maven Central HTTP 429 (job 138449256860), and large-watch 200% font scroll failure with Wear system AllAppsLauncherActivity in focus (job 138449256208). Artifact 14921700538 contains the real default-font MOVO screen and startup overlay, no enlarged-font screenshot. Serialize matrix jobs, reuse Gradle cache, retry only explicit 429 up to three compile attempts; no dependency or compiler substitution. Remove second-pass HOME, explicitly launch MOVO and require foreground within 30 seconds, remove the disposable stale screenshot and require both images nonempty; capture focused window and screenshot on failure. Preserve all geometry, text, handoff and test exit assertions. Workflow-only; signed iOS, ledger, and app files untouched. Fresh exact-head CI required; no merge/remote migration/production change. Existing R8 emulator loss remains separate and must be diagnosed from its current run.
+
+## 2026-11-24 — #335 exact-main reconciliation and signed iPad acceptance
+
+Before staging commit: main 72ae8398, prior head 04a5033f; exact-context patches for App.js, Xcode project, iOS workflow and this log; preserve both histories, existing accounting/vault and all unrelated main blobs. Reuse the main signed XCTest for iPhone and iPad with separate result bundles and screenshot attachments; expand test target device family. Keep unsigned compile/launch diagnostics distinct from actual signed acceptance. Wear and R8 reruns remain pending; no weakened assertions, no production change, no remote SQL. [Engineering handover](engineering/updates/2026-11-24-adaptive-main-reconciliation.md).
+
 ## 2026-11-24 — #342 iOS acceptance Keychain signing
 
 After the compile fix the XCTest reached the app, but it showed MOVO's fail-closed "Saved financial records are locked" screen: the acceptance build was unsigned, so the simulator app could not use the Keychain that holds the finance vault key. The XCTest step now builds with an ad hoc local signature for the simulator only. Assertions and vault behaviour are unchanged; workflow-only change.
@@ -47,6 +103,41 @@ Compared trees against the previous main SHA. Only the append-only progress regi
 ## 2026-11-24 — Loan/debt receiving-account routing (#342)
 
 Selection automatically enables proceeds; clearing or opting out disables it. Preserve historical liabilities and repayment preferences. Existing accounting RPC posts proceeds; no extra balance write. Added UI and isolated SQL regressions. Initial CI flagged fixture dollar quoting and per-commit documentation; fixed both in a documented consolidated implementation commit. Exact-head acceptance pending; no production change.
+## 2026-11-24 — #335 Wear round-screen padding
+
+Once the Wear acceptance test could focus MOVO, it found a real layout bug: the Quick Log button's corners were clipped by the round screen. The round padding was only applied from a window-insets listener, which API 34 legacy windows never call because the decor consumes the insets. The padding is now applied in `onCreate`, rounded up, and still widened for system insets. The failure message now includes the measured geometry; the assertion is unchanged.
+
+With the padding fix, both Wear tests passed on the large round profile. The screenshot pull then failed because the Gradle test task uninstalls the app (and its files) afterwards; the workflow now keeps the APKs installed after the run.
+
+On the small round profile the enlarged-text run was then covered by Wear OS's charging screen (the emulator reports AC power). The workflow now reports an unplugged battery before each run and uses a long screen-off timeout instead.
+
+## 2026-11-24 — #335 Wear acceptance window focus
+
+Both round-watch jobs failed before any layout assertion: Espresso reported `RootViewWithoutFocusException`, and MOVO's window stayed invisible on the fresh Wear emulator. The workflow now finishes the emulator's first-run setup, keeps it awake and returns it to the watch face before the tests. It also logs the focused window and the instrumentation XML on failure. Test assertions are unchanged; workflow-only change.
+
+## 2026-11-24 — Wear emulator window-focus remediation (#335)
+
+Real build and Capacitor sync now complete; both round-device runs reached instrumentation. Small-round report showed Espresso RootViewWithoutFocusException (invisible decor root); the handoff recovery test passed. Keep disposable emulator awake, wake/dismiss keyguard before each font-scale run and hold the test activity screen on. Preserve Espresso interaction, geometry and screenshot assertions; no production app behavior change. Exact-head rerun pending.
+
+## 2026-11-24 — Wear clean checkout full sync (#335)
+
+Latest runner failed during Capacitor copy because ./build is absent. Match the existing Android native-security workflow: build real web assets and run cap sync android before the Wear Gradle task. Retain generated file assertion and all native tests. No fake build folder or reduced acceptance. No production change.
+
+## 2026-11-24 — Wear acceptance clean-checkout repair (#335)
+
+The updated Wear runner reached Capacitor but failed with ENOENT writing capacitor.plugins.json. Create the generated app assets directory before dependency generation, preserving the Cordova Gradle assertion and native acceptance gates. Exact-head checks pending; no production change.
+
+## 2026-11-24 — #335 integration and Wear CI preparation
+
+Preserve current main AGP 9, transfer currency and preference sync safeguards, plus the existing adaptive-device changes. Generate the required Capacitor Android dependency project before Wear Gradle. Native and hosted validation pending; no production change.
+
+## 2026-11-22 — Verify the window bridge in minified Android releases
+
+Expand the mandatory paired R8 contract to call the reflected window bridge before and after activity recreation, validate positive viewport dimensions and reject unexpected non-geometry fields. Native compile and both emulator variants must pass on this head; no application, finance or production behavior changed. [Acceptance handover](engineering/updates/2026-11-22-adaptive-device-compatibility.md).
+
+## 2026-11-22 — Adaptive phone, foldable and wearable interfaces
+
+Implement read-only fold geometry and safe panes without remounting transaction forms, adaptive native iOS navigation with iPad/landscape packaging, and round-screen/scalable-text watch companions. Preserve all finance, account, purchase and storage paths. Local full JavaScript run: 267 suites / 1,786 tests; typecheck and strict original-only build pass. English/default and Arabic/largest-text browser runs pass 56 checks; native CI acceptance is tracked in the [implementation handover](engineering/updates/2026-11-22-adaptive-device-compatibility.md); physical devices, Duo SDK/poses, signed pairing and live hosting remain separate release gates.
 ## 2026-11-24 — PR #345 CI repair
 
 Original head `bdff6446`: GitHub per-commit documentation gate rejected two code-only commits; Vercel reported 1,804 passing tests and one failing legacy exact Menu tile expectation in App.test.js. Consolidate only this PR's three original commits into one documented commit, retain the direct shortcut and its unit test, update the full-app assertion and verify tab switch/close. No guard changes. No production or data changes. CI and actual visual acceptance pending. [Engineering update](engineering/updates/2026-11-24-menu-plans-limits.md).
