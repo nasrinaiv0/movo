@@ -116,10 +116,12 @@ jobs:
           force-avd-creation: true
           ram-size: 4096M
           disable-linux-hw-accel: false
-          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           script: python3 scripts/r8/emulator_smoke.py --disposable-emulator --variant baseline --output "$R8_OUTPUT"
+      # Keep both fresh AVD results even when the first fails. No failure is ignored.
       - name: Offline emulator acceptance on DEFAULT release candidate
-        if: ${{ !cancelled() && steps.default-build.outcome == 'success' && steps.baseline-acceptance.outcome == 'success' }}
+        id: candidate-acceptance
+        if: ${{ !cancelled() && steps.default-build.outcome == 'success' }}
         timeout-minutes: 25
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
@@ -131,8 +133,19 @@ jobs:
           force-avd-creation: true
           ram-size: 4096M
           disable-linux-hw-accel: false
-          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           script: python3 scripts/r8/emulator_smoke.py --disposable-emulator --variant candidate --output "$R8_OUTPUT"
+      - name: Require both actual emulator acceptance results
+        if: ${{ always() && !cancelled() && steps.default-build.outcome == 'success' }}
+        env:
+          BASELINE_OUTCOME: ${{ steps.baseline-acceptance.outcome }}
+          CANDIDATE_OUTCOME: ${{ steps.candidate-acceptance.outcome }}
+        run: |
+          set -euo pipefail
+          test "$BASELINE_OUTCOME" = success
+          test "$CANDIDATE_OUTCOME" = success
+          test -s "$R8_OUTPUT/default/baseline/device/passed.txt"
+          test -s "$R8_OUTPUT/default/candidate/device/passed.txt"
       - name: Record runner resources after emulator failure
         if: failure() && steps.default-build.outcome == 'success'
         run: |

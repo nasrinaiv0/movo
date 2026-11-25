@@ -33,5 +33,24 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIn("git restore --source=HEAD --worktree -- android/settings.gradle android/app/proguard-rules.pro", step)
         self.assertIn("no acceptance credit", step)
 
+    def test_both_variants_use_the_same_supported_renderer(self):
+        for variant in ("baseline", "candidate"):
+            step = self.step("Offline emulator acceptance on DEFAULT release " + variant)
+            self.assertIn("-gpu swiftshader -feature -Vulkan", step)
+            self.assertNotIn("swiftshader_indirect", step)
+            self.assertIn("force-avd-creation: true", step)
+
+    def test_candidate_runs_independently_but_pair_remains_mandatory(self):
+        step = self.step("Offline emulator acceptance on DEFAULT release candidate")
+        self.assertIn("id: candidate-acceptance", step)
+        self.assertIn("!cancelled() && steps.default-build.outcome == 'success'", step)
+        self.assertNotIn("steps.baseline-acceptance.outcome == 'success'", step)
+        self.assertNotIn("continue-on-error", step)
+        gate = self.step("Require both actual emulator acceptance results")
+        self.assertIn('test "$BASELINE_OUTCOME" = success', gate)
+        self.assertIn('test "$CANDIDATE_OUTCOME" = success', gate)
+        for variant in ("baseline", "candidate"):
+            self.assertIn('test -s "$R8_OUTPUT/default/' + variant + '/device/passed.txt"', gate)
+
 if __name__ == "__main__":
     unittest.main()

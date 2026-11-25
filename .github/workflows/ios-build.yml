@@ -117,6 +117,7 @@ jobs:
         run: |
           python3 scripts/test-ios-simulator-smoke.py
           python3 scripts/test-ios-toolchain.py
+          python3 -m unittest discover -s scripts -p 'test_ios_failure_diagnostics.py' -v
           python3 -m unittest discover -s scripts -p 'test_native_evidence.py' -v
           python3 -m unittest discover -s scripts -p 'test_integrated_harness.py' -v
       - name: Boot iPhone Simulator and launch MOVO
@@ -196,5 +197,17 @@ jobs:
           path: |
             ${{ runner.temp }}/movo-ipad-smoke/
             ${{ runner.temp }}/movo-duo-smoke/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Collect bounded CoreSimulator failure diagnostics
+        if: ${{ failure() && !cancelled() }}
+        run: python3 scripts/ios_failure_diagnostics.py --output "$RUNNER_TEMP/movo-ios-failure-diagnostics"
+      - name: Upload failure diagnostics without granting acceptance
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: movo-ios-failure-diagnostics
+          path: ${{ runner.temp }}/movo-ios-failure-diagnostics/
           if-no-files-found: ignore
           retention-days: 7

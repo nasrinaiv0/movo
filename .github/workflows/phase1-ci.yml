@@ -21,6 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -36,6 +37,8 @@ jobs:
           python3 -m unittest discover -s scripts -p 'test_native_evidence.py' -v
           python3 -m unittest discover -s scripts -p 'test_integrated_harness.py' -v
           python3 scripts/r8/test_workflow_contract.py
+          python3 -m unittest discover -s scripts -p 'test_ios_failure_diagnostics.py' -v
+          node --test scripts/security/resolve-url-candidate.test.cjs
           python3 -m unittest discover -s scripts/r8 -p 'test_emulator_safety.py' -v
       - name: Install locked dependencies (pinned npm 11)
         run: npx --yes npm@11.19.1 ci
@@ -71,3 +74,50 @@ jobs:
         run: npm test -- --runInBand --roots api --testMatch '**/*.test.js' --runTestsByPath api/account/retention.test.js
       - name: Production build
         run: node scripts/validate-public-api-origin.cjs && CI=true npx react-scripts build && node scripts/build-offline-worker.cjs
+
+      # Diagnostic candidate only. Keep the normal lockfile, build and hard production audit unchanged.
+      - name: Evaluate isolated dev-only resolve-url-loader candidate
+        id: postcss-candidate
+        timeout-minutes: 8
+        continue-on-error: true
+        env:
+          MOVO_CANDIDATE_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          EVIDENCE="$RUNNER_TEMP/movo-postcss-candidate-evidence"
+          mkdir -p "$EVIDENCE"
+          printf 'incomplete\n' > "$EVIDENCE/status.txt"
+          SCRATCH=$(mktemp -d "$RUNNER_TEMP/movo-postcss-candidate.XXXXXX")
+          trap 'status=$?; printf "%s\n" "$status" > "$EVIDENCE/status.txt"; rm -rf -- "$SCRATCH"' EXIT
+          git archive "$MOVO_CANDIDATE_HEAD" | tar -x -C "$SCRATCH"
+          node scripts/security/resolve-url-candidate.cjs prepare "$SCRATCH"
+          cd "$SCRATCH"
+          npx --yes npm@11.19.1 install --package-lock-only --ignore-scripts --no-audit --no-fund --fetch-retries=1 --fetch-timeout=30000
+          cp package.json package-lock.json "$EVIDENCE/"
+          node "$GITHUB_WORKSPACE/scripts/security/resolve-url-candidate.cjs" verify-lock "$GITHUB_WORKSPACE/package-lock.json" package-lock.json
+          set +e
+          npx --yes npm@11.19.1 audit --json --package-lock-only > "$EVIDENCE/audit.json"
+          AUDIT_STATUS=$?
+          npx --yes npm@11.19.1 audit --omit=dev --json --package-lock-only > "$EVIDENCE/audit-production.json"
+          PROD_STATUS=$?
+          set -e
+          printf '%s\n' "$AUDIT_STATUS" > "$EVIDENCE/audit-exit-code.txt"
+          printf '%s\n' "$PROD_STATUS" > "$EVIDENCE/audit-production-exit-code.txt"
+          test "$AUDIT_STATUS" -eq 0 || test "$AUDIT_STATUS" -eq 1
+          test "$PROD_STATUS" -eq 0
+          node "$GITHUB_WORKSPACE/scripts/security/resolve-url-candidate.cjs" verify-audit "$RUNNER_TEMP/movo-dependency-audit/audit.json" "$EVIDENCE/audit.json" "$EVIDENCE/audit-production.json"
+          npx --yes npm@11.19.1 ci --ignore-scripts --no-audit --no-fund
+          npm run i18n
+          npm run typecheck
+          CI=true npm test -- --runInBand
+          CI=true ./node_modules/.bin/react-scripts build
+          node scripts/build-offline-worker.cjs
+          git -C "$GITHUB_WORKSPACE" diff --exit-code -- package.json package-lock.json
+      - name: Upload isolated dependency candidate (not an approved dependency change)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: movo-postcss-remediation-candidate
+          path: ${{ runner.temp }}/movo-postcss-candidate-evidence/
+          if-no-files-found: ignore
+          retention-days: 7
