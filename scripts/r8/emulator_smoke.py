@@ -12,6 +12,7 @@ import sys
 # The shared host-only evidence helper is in the parent scripts directory.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_evidence import EvidenceError, require_r8_capture
+from host_diagnostics import record_stage
 
 PACKAGE = "com.nasrinai.movo"
 TEST_PACKAGE = PACKAGE + ".test"
@@ -122,7 +123,8 @@ def instrument(folder, method, legal, phase=None):
         args.extend(["-e", "movoPersistencePhase", phase])
     print("Starting instrumentation: " + label, flush=True)
     try:
-        result = adb(*args, RUNNER, timeout=240)
+        with record_stage(folder, label):
+            result = adb(*args, RUNNER, timeout=240)
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as error:
         # A disconnected emulator may disappear before end-of-run capture. Keep
         # the failed stage's stdout AND stderr while retaining the original error.

@@ -41,6 +41,11 @@ jobs:
           node --test scripts/security/check-advisory-regression.test.cjs
           python3 -m unittest discover -s scripts/r8 -p 'test_instrumentation_failure_evidence.py' -v
           python3 -m unittest discover -s scripts/r8 -p 'test_emulator_safety.py' -v
+          python3 scripts/check_android_toolchain.py
+          python3 -m unittest discover -s scripts -p 'test_android_toolchain.py' -v
+          python3 -m unittest discover -s scripts/r8 -p 'test_host_diagnostics.py' -v
+          node --test scripts/security/once-candidate.test.cjs
+          bash scripts/security/run-once-candidate.sh --check-npm-config
       - name: Install locked dependencies (pinned npm 11)
         run: npx --yes npm@11.19.1 ci
       - name: Validate Android public auth configuration contract
@@ -81,3 +86,38 @@ jobs:
         run: npm test -- --runInBand --roots api --testMatch '**/*.test.js' --runTestsByPath api/account/retention.test.js
       - name: Production build
         run: node scripts/validate-public-api-origin.cjs && CI=true npx react-scripts build && node scripts/build-offline-worker.cjs
+      # Diagnostic experiment only; a failing/incomplete candidate is never adopted.
+      - name: Isolated once proxy-chain compatibility experiment
+        if: ${{ success() && github.event.pull_request.number == 347 }}
+        timeout-minutes: 8
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          BASE=94d744e6acf9fef0be436c1b30e2ad084f0b34b7
+          SCRATCH=$(mktemp -d "$RUNNER_TEMP/movo-once-source.XXXXXX")
+          OUT="$RUNNER_TEMP/movo-once-candidate"
+          cleanup() {
+            git -C "$GITHUB_WORKSPACE" worktree remove --force "$SCRATCH/source" 2>/dev/null || true
+            rm -rf -- "$SCRATCH"
+          }
+          trap cleanup EXIT
+          git worktree add --detach "$SCRATCH/source" "$BASE"
+          mkdir -m 700 "$SCRATCH/home"
+          (umask 077; : > "$SCRATCH/home/user.npmrc"; : > "$SCRATCH/home/global.npmrc")
+          cd "$SCRATCH"
+          RC=0
+          timeout --signal=TERM --kill-after=20s 6m env -i PATH="$PATH" HOME="$SCRATCH/home" LANG=C.UTF-8 NPM_CONFIG_REGISTRY=https://registry.npmjs.org/ NPM_CONFIG_IGNORE_SCRIPTS=true NPM_CONFIG_USERCONFIG="$SCRATCH/home/user.npmrc" NPM_CONFIG_GLOBALCONFIG="$SCRATCH/home/global.npmrc" NPM_CONFIG_FETCH_RETRIES=1 NPM_CONFIG_FETCH_TIMEOUT=30000 MOVO_ONCE_RUNNER="$GITHUB_WORKSPACE/scripts/security/run-once-candidate.sh" MOVO_ONCE_SOURCE="$SCRATCH/source" MOVO_ONCE_OUTPUT="$OUT" npx --yes --package npm@11.19.1 --call 'bash "$MOVO_ONCE_RUNNER" "$MOVO_ONCE_SOURCE" "$MOVO_ONCE_OUTPUT"' || RC=$?
+          mkdir -p "$OUT"
+          printf '%s\n' "$RC" > "$OUT/ci-exit.txt"
+          exit "$RC"
+      - name: Verify diagnostic did not change the staging lock
+        if: ${{ always() && !cancelled() }}
+        run: git diff --exit-code -- package.json package-lock.json
+      - name: Upload isolated once experiment evidence
+        if: ${{ always() && github.event.pull_request.number == 347 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: movo-once-candidate
+          path: ${{ runner.temp }}/movo-once-candidate/
+          if-no-files-found: warn
+          retention-days: 7

@@ -7,6 +7,8 @@ on:
       - "android/**"
       - "scripts/r8/**"
       - "scripts/native_evidence.py"
+      - "scripts/check_android_toolchain.py"
+      - "scripts/test_android_toolchain.py"
       - "scripts/test_native_evidence.py"
       - "scripts/test_integrated_harness.py"
       - ".github/workflows/android-r8-experiment.yml"
@@ -39,6 +41,8 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: .nvmrc
+      - name: Verify pinned Android toolchain before native build
+        run: python3 scripts/check_android_toolchain.py
       - name: Install SDK 36 and Python analyzer dependency
         run: |
           set -euo pipefail
