@@ -1,16 +1,4 @@
 {
-  "@jest/core": {
-    "severity": "low",
-    "advisories": [],
-    "via": [
-      "jest-config",
-      "jest-runner"
-    ],
-    "nodes": [
-      "node_modules/@jest/core"
-    ],
-    "advisorySeverity": {}
-  },
   "@svgr/plugin-svgo": {
     "severity": "high",
     "advisories": [],
@@ -33,19 +21,6 @@
     ],
     "advisorySeverity": {}
   },
-  "@tootallnate/once": {
-    "severity": "low",
-    "advisories": [
-      "GHSA-vpq2-c234-7xj6"
-    ],
-    "via": [],
-    "nodes": [
-      "node_modules/@tootallnate/once"
-    ],
-    "advisorySeverity": {
-      "GHSA-vpq2-c234-7xj6": "low"
-    }
-  },
   "css-select": {
     "severity": "high",
     "advisories": [],
@@ -54,86 +29,6 @@
     ],
     "nodes": [
       "node_modules/svgo/node_modules/css-select"
-    ],
-    "advisorySeverity": {}
-  },
-  "http-proxy-agent": {
-    "severity": "low",
-    "advisories": [],
-    "via": [
-      "@tootallnate/once"
-    ],
-    "nodes": [
-      "node_modules/http-proxy-agent"
-    ],
-    "advisorySeverity": {}
-  },
-  "jest": {
-    "severity": "low",
-    "advisories": [],
-    "via": [
-      "@jest/core",
-      "jest-cli"
-    ],
-    "nodes": [
-      "node_modules/jest"
-    ],
-    "advisorySeverity": {}
-  },
-  "jest-cli": {
-    "severity": "low",
-    "advisories": [],
-    "via": [
-      "@jest/core",
-      "jest-config"
-    ],
-    "nodes": [
-      "node_modules/jest-cli"
-    ],
-    "advisorySeverity": {}
-  },
-  "jest-config": {
-    "severity": "low",
-    "advisories": [],
-    "via": [
-      "jest-environment-jsdom",
-      "jest-runner"
-    ],
-    "nodes": [
-      "node_modules/jest-config"
-    ],
-    "advisorySeverity": {}
-  },
-  "jest-environment-jsdom": {
-    "severity": "low",
-    "advisories": [],
-    "via": [
-      "jsdom"
-    ],
-    "nodes": [
-      "node_modules/jest-environment-jsdom"
-    ],
-    "advisorySeverity": {}
-  },
-  "jest-runner": {
-    "severity": "low",
-    "advisories": [],
-    "via": [
-      "jest-environment-jsdom"
-    ],
-    "nodes": [
-      "node_modules/jest-runner"
-    ],
-    "advisorySeverity": {}
-  },
-  "jsdom": {
-    "severity": "low",
-    "advisories": [],
-    "via": [
-      "http-proxy-agent"
-    ],
-    "nodes": [
-      "node_modules/jsdom"
     ],
     "advisorySeverity": {}
   },
@@ -155,7 +50,6 @@
     "advisories": [],
     "via": [
       "@svgr/webpack",
-      "jest",
       "webpack-dev-server"
     ],
     "nodes": [

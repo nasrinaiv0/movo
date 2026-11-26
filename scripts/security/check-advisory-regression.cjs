@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const baseline = require('./advisory-baseline.json');
 const severity = ['info', 'low', 'moderate', 'high', 'critical'];
-const forbidden = new Set(['GHSA-7fh5-64p2-3v2j','GHSA-qx2v-qp2m-jg93','GHSA-6g55-p6wh-862q','GHSA-fxqj-rqcc-2cmp','GHSA-r28c-9q8g-f849']);
+const forbidden = new Set(['GHSA-7fh5-64p2-3v2j','GHSA-qx2v-qp2m-jg93','GHSA-6g55-p6wh-862q','GHSA-fxqj-rqcc-2cmp','GHSA-r28c-9q8g-f849','GHSA-vpq2-c234-7xj6']);
 function verify(report, lock) {
   assert(report && report.auditReportVersion === 2 && !report.error, 'invalid registry audit');
   assert(report.vulnerabilities && typeof report.vulnerabilities === 'object' && !Array.isArray(report.vulnerabilities), 'missing vulnerabilities');
@@ -35,7 +35,7 @@ function verify(report, lock) {
   }
   for (const s of severity) assert.equal(counts[s],actual[s], `inconsistent ${s} count`);
   assert.equal(counts.total,Object.keys(report.vulnerabilities).length,'inconsistent audit total');
-  for (const [name,version] of [['resolve-url-loader','5.0.0'],['postcss','8.5.32']]) {
+  for (const [name,version] of [['resolve-url-loader','5.0.0'],['postcss','8.5.32'],['@tootallnate/once','2.0.1']]) {
     const entries=Object.entries(lock.packages).filter(([key])=>key.endsWith('/node_modules/'+name)||key==='node_modules/'+name);
     assert(entries.length,`missing ${name}`);
     for (const [key,entry] of entries) assert(entry.dev===true && entry.version===version,`unexpected ${key} version or production exposure`);

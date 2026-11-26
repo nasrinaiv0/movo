@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {verify}=require('./check-advisory-regression.cjs');
-const lock={lockfileVersion:3,packages:{'':{},'node_modules/resolve-url-loader':{version:'5.0.0',dev:true},'node_modules/postcss':{version:'8.5.32',dev:true},'node_modules/svgo/node_modules/nth-check':{version:'1.0.2',dev:true}}};
+const lock={lockfileVersion:3,packages:{'':{},'node_modules/resolve-url-loader':{version:'5.0.0',dev:true},'node_modules/postcss':{version:'8.5.32',dev:true},'node_modules/@tootallnate/once':{version:'2.0.1',dev:true},'node_modules/svgo/node_modules/nth-check':{version:'1.0.2',dev:true}}};
 const entry={name:'nth-check',severity:'high',nodes:['node_modules/svgo/node_modules/nth-check'],via:[{url:'https://github.com/advisories/GHSA-rp65-9cf3-cjxr',severity:'high'}]};
 const make=(entries={})=>{const counts={info:0,low:0,moderate:0,high:0,critical:0,total:Object.keys(entries).length};for(const x of Object.values(entries))counts[x.severity]++;return {auditReportVersion:2,vulnerabilities:entries,metadata:{vulnerabilities:counts}};};
 test('accept known findings and reductions',()=>{verify(make({'nth-check':entry}),lock);verify(make(),lock);});
@@ -17,3 +17,6 @@ test('reject dev chain production exposure',()=>{const x=structuredClone(lock);d
 test('reject a new installation path for an already-known advisory',()=>{const x=structuredClone(lock);x.packages['node_modules/nth-check']={version:'1.0.2',dev:true};assert.throws(()=>verify(make({'nth-check':{...entry,nodes:[...entry.nodes,'node_modules/nth-check']}}),x),/new affected path/);});
 test('reject a known affected path no longer dev-only',()=>{const x=structuredClone(lock);delete x.packages[entry.nodes[0]].dev;assert.throws(()=>verify(make({'nth-check':entry}),x),/not dev-only/);});
 test('reject absent, empty and duplicate affected paths',()=>{for(const nodes of [undefined,[],[...entry.nodes,...entry.nodes]])assert.throws(()=>verify(make({'nth-check':{...entry,nodes}}),lock),/invalid affected paths/);});
+test('reject restored once version even if registry report is clean',()=>{const x=structuredClone(lock);x.packages['node_modules/@tootallnate/once'].version='1.1.2';assert.throws(()=>verify(make(),x));});
+test('reject restored nested vulnerable once and production exposure',()=>{for(const invalid of [{version:'1.1.2',dev:true},{version:'2.0.1',dev:false}]){const x=structuredClone(lock);x.packages['node_modules/http-proxy-agent/node_modules/@tootallnate/once']=invalid;assert.throws(()=>verify(make(),x));}});
+test('reject resolved once advisory and dependent jest finding',()=>{for(const name of ['@tootallnate/once','jest']){assert.throws(()=>verify(make({[name]:{name,severity:'low',nodes:['node_modules/'+name],via:[{url:'https://github.com/advisories/GHSA-vpq2-c234-7xj6',severity:'low'}]}}),lock),/new affected dependency/);}});

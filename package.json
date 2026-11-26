@@ -78,6 +78,9 @@
     "resolve-url-loader": {
       ".": "5.0.0",
       "postcss": "8.5.32"
+    },
+    "http-proxy-agent@4.0.1": {
+      "@tootallnate/once": "2.0.1"
     }
   }
 }

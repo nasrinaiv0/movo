@@ -1,3 +1,7 @@
+## 2026-11-26 — #347 verified once dependency integration (before commit)
+
+Exact predecessor 6b4870266baa80168b7201bf82d19c109c93eddb. Verified artifact 15076018329 (14 manifest checksums; 2 proxy tests; 1833 regression tests; zero production findings), exact one dev path change, 17 -> 8 affected entries (one unique advisory removed, nine propagated entries). Tightened baseline and lock regression gate; 15/15 local tests, actual candidate accepted, original audit rejected. Retire once-only scratch experiment, retain actual loopback proxy tests in normal CI. Document isolated SVG/nth-check/webpack follow-up, no unverified upgrade. Active R8/Wear evidence must be preserved before advancing. See docs/engineering/updates/2026-11-26-once-integration-and-modernization.md. Frozen PRs and production safeguards maintained.
+
 ## 2026-11-26 — #347 portable harness import correction (before commit)
 
 Exact predecessor 4edc79d2cbb95b5133f507be3186bee90a85efd8. Phase1 run 45728975642 failed at integrated harness import (host_diagnostics not found), before dependency install. Reproduced exact error via isolated importlib; use parent namespace r8.host_diagnostics and add subprocess regression. 13/13 available local host/evidence tests passed; full integrated CI pending. No change to native acceptance criteria or package lock. See docs/engineering/updates/2026-11-26-r8-host-import-regression.md. Preserve all production safeguards and frozen PRs.
