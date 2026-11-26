@@ -1,3 +1,7 @@
+## 2026-11-26 — #347 portable harness import correction (before commit)
+
+Exact predecessor 4edc79d2cbb95b5133f507be3186bee90a85efd8. Phase1 run 45728975642 failed at integrated harness import (host_diagnostics not found), before dependency install. Reproduced exact error via isolated importlib; use parent namespace r8.host_diagnostics and add subprocess regression. 13/13 available local host/evidence tests passed; full integrated CI pending. No change to native acceptance criteria or package lock. See docs/engineering/updates/2026-11-26-r8-host-import-regression.md. Preserve all production safeguards and frozen PRs.
+
 ## 2026-11-26 — #347 requested Android toolchain and isolated continuation (before commit)
 
 Exact predecessor 94d744e6acf9fef0be436c1b30e2ad084f0b34b7: AGP already 9.5.1; Gradle 9.6.0 wrapper -> requested 9.6.1 with official tagged wrapper JAR/launchers and distribution SHA-256. 7/7 local pin tests; native runtime not verified. Integrate tested host telemetry (12/12 local native diagnostic tests), exact once experiment tools (8/8 policy tests and npm config preflight; local registry DNS blocked), bounded existing Phase1 diagnostic only, no package adoption. Predecessor R8 fails shared emulator transport, iPad XCTest still active at preparation. Preserve all hard acceptance criteria and frozen #335/#346. See docs/engineering/updates/2026-11-26-android-toolchain-and-continuation.md. No production change, merge, paid provisioning, flags or migration. Fresh CI required.

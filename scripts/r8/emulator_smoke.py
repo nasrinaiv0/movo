@@ -12,7 +12,7 @@ import sys
 # The shared host-only evidence helper is in the parent scripts directory.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_evidence import EvidenceError, require_r8_capture
-from host_diagnostics import record_stage
+from r8.host_diagnostics import record_stage
 
 PACKAGE = "com.nasrinai.movo"
 TEST_PACKAGE = PACKAGE + ".test"
