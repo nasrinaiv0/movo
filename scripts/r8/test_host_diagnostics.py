@@ -50,3 +50,59 @@ class TestHostDiagnostics(unittest.TestCase):
         result = subprocess.run([sys.executable, '-I', '-c', code, str(harness)],
                                 capture_output=True, text=True, timeout=15)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_resolve_v2_nested_mount_and_ancestor_limits(self):
+        proc=self.root/'proc';mount=self.root/'cg';member=proc/'12';selfdir=proc/'self'
+        member.mkdir(parents=True);selfdir.mkdir();(mount/'service'/'emulator').mkdir(parents=True)
+        (member/'cgroup').write_text('0::/host/service/emulator\n')
+        (selfdir/'mountinfo').write_text(f'1 2 0:1 /host {mount} rw - cgroup2 cgroup rw\n')
+        (mount/'service'/'emulator'/'memory.events').write_text('oom 3\noom_kill 2\nother 99\n')
+        (mount/'service'/'memory.max').write_text('4096\n')
+        from host_diagnostics import memory_group
+        d=memory_group(proc,member);self.assertEqual(d['version'],2);self.assertEqual(d['levels'][0]['memory.events'],{'oom':3,'oom_kill':2});self.assertEqual(d['levels'][1]['memory.max'],4096);self.assertNotIn(str(mount),json.dumps(d))
+
+    def test_resolve_v1_memory_controller(self):
+        proc=self.root/'proc';mount=self.root/'memory';member=proc/'12';selfdir=proc/'self'
+        member.mkdir(parents=True);selfdir.mkdir();(mount/'task').mkdir(parents=True)
+        (member/'cgroup').write_text('5:cpu:/other\n8:memory:/task\n')
+        (selfdir/'mountinfo').write_text(f'1 2 0:1 / {mount} rw - cgroup cgroup rw,memory\n')
+        (mount/'task'/'memory.failcnt').write_text('4\n');(mount/'task'/'memory.oom_control').write_text('under_oom 1\noom_kill 2\n')
+        from host_diagnostics import memory_group
+        d=memory_group(proc,member);self.assertEqual(d['version'],1);self.assertEqual(d['levels'][0]['memory.failcnt'],4);self.assertEqual(d['levels'][0]['memory.oom_control']['oom_kill'],2)
+
+    def test_unavailable_and_traversal_never_fabricate_zero(self):
+        proc=self.root/'proc';member=proc/'12';selfdir=proc/'self';member.mkdir(parents=True);selfdir.mkdir()
+        (selfdir/'mountinfo').write_text(f'1 2 0:1 / {self.root} rw - cgroup2 cgroup rw\n')
+        from host_diagnostics import memory_group
+        for line in ['0::/../escape\n','0::/missing\n','0::relative\n']:
+            (member/'cgroup').write_text(line);self.assertEqual(memory_group(proc,member),{'unavailable':True})
+
+    def test_wait_status_only_for_zombie_and_field_52(self):
+        from host_diagnostics import wait_status
+        stat=['Z']+['0']*49
+        for raw,expected in [(9,{'signal':9,'core_dump':False}),(139,{'signal':11,'core_dump':True}),(256,{'exit_code':1}),(0,{'exit_code':0})]:
+            stat[49]=str(raw);self.assertEqual(wait_status(stat),expected)
+        self.assertIsNone(wait_status(stat[:20]));stat[0]='S';self.assertIsNone(wait_status(stat))
+
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'requires Linux procfs')
+    def test_actual_unreaped_child_wait_status(self):
+        import os
+        import signal
+        from host_diagnostics import wait_status
+        child=subprocess.Popen([sys.executable,'-c','import time; time.sleep(30)'])
+        try:
+            child.send_signal(signal.SIGTERM)
+            os.waitid(os.P_PID,child.pid,os.WEXITED|os.WNOWAIT)
+            stat=(Path('/proc')/str(child.pid)/'stat').read_text().rsplit(')',1)[1].split()
+            self.assertEqual(wait_status(stat),{'signal':signal.SIGTERM,'core_dump':False})
+        finally:
+            child.wait(timeout=5)
+
+    def test_ancestor_limit_reports_truncation(self):
+        proc=self.root/'proc';member=proc/'12';selfdir=proc/'self';member.mkdir(parents=True);selfdir.mkdir()
+        mount=self.root/'cg';nested=mount.joinpath(*(['a']*8));nested.mkdir(parents=True)
+        (member/'cgroup').write_text('0::/'+'/'.join(['a']*8)+'\n')
+        (selfdir/'mountinfo').write_text(f'1 2 0:1 / {mount} rw - cgroup2 cgroup rw\n')
+        (nested/'memory.current').write_text('123\n')
+        from host_diagnostics import memory_group
+        result=memory_group(proc,member);self.assertEqual(len(result['levels']),8);self.assertTrue(result['truncated'])
