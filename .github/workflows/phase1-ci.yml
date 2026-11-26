@@ -40,6 +40,7 @@ jobs:
           python3 -m unittest discover -s scripts -p 'test_ios_failure_diagnostics.py' -v
           node --test scripts/security/check-advisory-regression.test.cjs
           node --test scripts/security/modernization-experiment.test.cjs
+          python3 -m unittest discover -s scripts/security -p 'test_svg_acceptance.py' -v
           python3 -m unittest discover -s scripts/r8 -p 'test_instrumentation_failure_evidence.py' -v
           python3 -m unittest discover -s scripts/r8 -p 'test_emulator_safety.py' -v
           python3 scripts/check_android_toolchain.py
@@ -87,45 +88,3 @@ jobs:
         run: npm test -- --runInBand --roots api --testMatch '**/*.test.js' --runTestsByPath api/account/retention.test.js
       - name: Production build
         run: node scripts/validate-public-api-origin.cjs && CI=true npx react-scripts build && node scripts/build-offline-worker.cjs
-      # Optional isolated diagnostics. Failure or timeout is never acceptance.
-      - name: Run isolated SVG, nth-check and webpack compatibility experiments
-        if: ${{ success() && github.event.pull_request.number == 347 }}
-        continue-on-error: true
-        timeout-minutes: 12
-        run: |
-          set -euo pipefail
-          BASE=763eee52b7b908ace7d8b1b66ce9652bd8e80862
-          TMP=$(mktemp -d "$RUNNER_TEMP/movo-modernization.XXXXXX")
-          OUT="$RUNNER_TEMP/movo-modernization-evidence"
-          mkdir -m 700 "$OUT" "$TMP/home"
-          cleanup() {
-            git -C "$GITHUB_WORKSPACE" worktree remove --force "$TMP/source" 2>/dev/null || true
-            rm -rf -- "$TMP"
-          }
-          trap cleanup EXIT
-          git worktree add --detach "$TMP/source" "$BASE"
-          (umask 077; : > "$TMP/home/user.npmrc"; : > "$TMP/home/global.npmrc")
-          cd "$TMP"
-          for mode in nth svg webpack; do
-            RC=0
-            timeout --signal=TERM --kill-after=15s 200s env -i PATH="$PATH" HOME="$TMP/home" LANG=C.UTF-8 NPM_CONFIG_REGISTRY=https://registry.npmjs.org/ NPM_CONFIG_IGNORE_SCRIPTS=true NPM_CONFIG_USERCONFIG="$TMP/home/user.npmrc" NPM_CONFIG_GLOBALCONFIG="$TMP/home/global.npmrc" NPM_CONFIG_FETCH_RETRIES=1 NPM_CONFIG_FETCH_TIMEOUT=30000 MOVO_RUNNER="$GITHUB_WORKSPACE/scripts/security/run-modernization-experiment.sh" MOVO_MODE="$mode" MOVO_SOURCE="$TMP/source" MOVO_OUT="$OUT/$mode" npx --yes --package npm@11.19.1 --call 'bash "$MOVO_RUNNER" "$MOVO_MODE" "$MOVO_SOURCE" "$MOVO_OUT"' > "$OUT/$mode-execution.txt" 2>&1 || RC=$?
-            mkdir -p "$OUT/$mode"
-            printf '%s\n' "$RC" > "$OUT/$mode/ci-exit.txt"
-            printf '%s: %s\n' "$mode" "$RC"
-          done
-          for mode in nth svg webpack; do
-            test "$(cat "$OUT/$mode/ci-exit.txt")" = 0
-            test "$(cat "$OUT/$mode/status.txt")" = 0
-            (cd "$OUT/$mode" && sha256sum -c SHA256SUMS.txt)
-          done
-      - name: Verify diagnostic did not change integrated lock
-        if: ${{ always() && !cancelled() }}
-        run: git diff --exit-code -- package.json package-lock.json
-      - name: Upload isolated modernization evidence
-        if: ${{ always() && github.event.pull_request.number == 347 }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: movo-modernization-candidates
-          path: ${{ runner.temp }}/movo-modernization-evidence/
-          if-no-files-found: warn
-          retention-days: 7

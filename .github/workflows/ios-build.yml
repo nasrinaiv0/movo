@@ -40,6 +40,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: ios-build-${{ github.ref }}
@@ -47,11 +48,25 @@ concurrency:
 
 jobs:
   build-ios:
+    name: build-ios${{ matrix.variant == 'svg-candidate' && ' (svg-candidate)' || '' }}
     runs-on: macos-26
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        variant: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 347 && github.event.pull_request.head.repo.full_name == github.repository && fromJSON('["baseline","svg-candidate"]') || fromJSON('["baseline"]') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ matrix.variant == 'svg-candidate' && github.event.pull_request.head.sha || github.sha }}
+      - name: Prepare isolated exact SVG candidate
+        if: matrix.variant == 'svg-candidate'
+        uses: ./.github/actions/svg-candidate-acceptance
+        with:
+          head: ${{ github.event.pull_request.head.sha }}
       - name: Set up Node.js 26 (Capacitor 8 requires Node 22+)
         uses: actions/setup-node@v4
         with:
@@ -149,7 +164,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: movo-iphone-simulator-smoke
+          name: movo-iphone-simulator-smoke${{ matrix.variant == 'svg-candidate' && '-svg-candidate' || '' }}
           path: ${{ runner.temp }}/movo-ios-smoke/
           if-no-files-found: ignore
           retention-days: 7
@@ -193,7 +208,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: movo-ipad-duo-simulator-smoke
+          name: movo-ipad-duo-simulator-smoke${{ matrix.variant == 'svg-candidate' && '-svg-candidate' || '' }}
           path: |
             ${{ runner.temp }}/movo-ipad-smoke/
             ${{ runner.temp }}/movo-duo-smoke/
@@ -207,7 +222,20 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: movo-ios-failure-diagnostics
+          name: movo-ios-failure-diagnostics${{ matrix.variant == 'svg-candidate' && '-svg-candidate' || '' }}
           path: ${{ runner.temp }}/movo-ios-failure-diagnostics/
           if-no-files-found: ignore
+          retention-days: 7
+      - name: Verify SVG candidate provenance after acceptance
+        if: always() && !cancelled() && matrix.variant == 'svg-candidate'
+        env:
+          MOVO_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/security/prepare-svg-acceptance.py --verify-only --checkout "$GITHUB_WORKSPACE" --evidence "$RUNNER_TEMP/movo-svg-provenance.json" --head "$MOVO_EXPECTED_HEAD"
+      - name: Upload candidate provenance separately
+        if: always() && matrix.variant == 'svg-candidate'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: movo-svg-provenance-ios
+          path: ${{ runner.temp }}/movo-svg-provenance.json
+          if-no-files-found: error
           retention-days: 7

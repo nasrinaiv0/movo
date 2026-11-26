@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: movo-r8-experiment-${{ github.event.pull_request.number || github.ref }}
@@ -23,8 +24,14 @@ concurrency:
 
 jobs:
   controlled-comparison:
+    name: controlled-comparison${{ matrix.variant == 'svg-candidate' && ' (svg-candidate)' || '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        variant: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 347 && github.event.pull_request.head.repo.full_name == github.repository && fromJSON('["baseline","svg-candidate"]') || fromJSON('["baseline"]') }}
     env:
       R8_OUTPUT: ${{ github.workspace }}/tmp/r8-experiment
     steps:
@@ -33,6 +40,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Prepare isolated exact SVG candidate
+        if: matrix.variant == 'svg-candidate'
+        uses: ./.github/actions/svg-candidate-acceptance
+        with:
+          head: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # verified v4
         with:
           distribution: temurin
@@ -120,7 +132,7 @@ jobs:
           force-avd-creation: true
           ram-size: 4096M
           disable-linux-hw-accel: false
-          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-window -gpu lavapipe -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           script: python3 scripts/r8/emulator_smoke.py --disposable-emulator --variant baseline --output "$R8_OUTPUT"
       # Keep both fresh AVD results even when the first fails. No failure is ignored.
       - name: Offline emulator acceptance on DEFAULT release candidate
@@ -137,7 +149,7 @@ jobs:
           force-avd-creation: true
           ram-size: 4096M
           disable-linux-hw-accel: false
-          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-window -gpu lavapipe -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           script: python3 scripts/r8/emulator_smoke.py --disposable-emulator --variant candidate --output "$R8_OUTPUT"
       - name: Require both actual emulator acceptance results
         if: ${{ always() && !cancelled() && steps.default-build.outcome == 'success' }}
@@ -161,7 +173,7 @@ jobs:
         if: always() && steps.default-build.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: movo-r8-emulator-${{ github.event.pull_request.head.sha || github.sha }}
+          name: movo-r8-emulator-${{ github.event.pull_request.head.sha || github.sha }}${{ matrix.variant == 'svg-candidate' && '-svg-candidate' || '' }}
           path: |
             tmp/r8-experiment/legal-fixture.json
             tmp/r8-experiment/default/*/device/
@@ -172,10 +184,23 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: movo-r8-experiment-${{ github.event.pull_request.head.sha || github.sha }}
+          name: movo-r8-experiment-${{ github.event.pull_request.head.sha || github.sha }}${{ matrix.variant == 'svg-candidate' && '-svg-candidate' || '' }}
           path: tmp/r8-experiment/
           if-no-files-found: error
           retention-days: 7
       - name: Remove disposable signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/r8-test.jks"
+      - name: Verify SVG candidate provenance after acceptance
+        if: always() && !cancelled() && matrix.variant == 'svg-candidate'
+        env:
+          MOVO_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/security/prepare-svg-acceptance.py --verify-only --checkout "$GITHUB_WORKSPACE" --evidence "$RUNNER_TEMP/movo-svg-provenance.json" --head "$MOVO_EXPECTED_HEAD"
+      - name: Upload candidate provenance separately
+        if: always() && matrix.variant == 'svg-candidate'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: movo-svg-provenance-r8
+          path: ${{ runner.temp }}/movo-svg-provenance.json
+          if-no-files-found: error
+          retention-days: 7

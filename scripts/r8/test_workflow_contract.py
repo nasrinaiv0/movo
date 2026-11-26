@@ -36,7 +36,7 @@ class WorkflowContractTests(unittest.TestCase):
     def test_both_variants_use_the_same_supported_renderer(self):
         for variant in ("baseline", "candidate"):
             step = self.step("Offline emulator acceptance on DEFAULT release " + variant)
-            self.assertIn("-gpu swiftshader -feature -Vulkan", step)
+            self.assertIn("-gpu lavapipe -feature -Vulkan", step)
             self.assertNotIn("swiftshader_indirect", step)
             self.assertIn("force-avd-creation: true", step)
 
