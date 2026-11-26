@@ -1,3 +1,7 @@
+## 2026-11-26 — #347 actual R8 telemetry and isolated modernization (before commit)
+
+Parent 763eee52b7b908ace7d8b1b66ce9652bd8e80862 retains exact once artifact. R8 predecessor 6b487026 baseline QEMU became zombie during wallet/OAuth, candidate all five stages pass, four actual app images verified; paired gate remains failed and root cause unknown. Prepare and run three independent diagnostic candidates via existing Phase1 job with bounded time, no adoption. 22/22 local fixture tests and shell syntax passed; actual registry/compatibility pending. Preserve mandatory audits and native assertions. See docs/engineering/updates/2026-11-26-modernization-execution-and-r8-telemetry.md. No production changes or frozen branch updates.
+
 ## 2026-11-26 — #347 verified once dependency integration (before commit)
 
 Exact predecessor 6b4870266baa80168b7201bf82d19c109c93eddb. Verified artifact 15076018329 (14 manifest checksums; 2 proxy tests; 1833 regression tests; zero production findings), exact one dev path change, 17 -> 8 affected entries (one unique advisory removed, nine propagated entries). Tightened baseline and lock regression gate; 15/15 local tests, actual candidate accepted, original audit rejected. Retire once-only scratch experiment, retain actual loopback proxy tests in normal CI. Document isolated SVG/nth-check/webpack follow-up, no unverified upgrade. Active R8/Wear evidence must be preserved before advancing. See docs/engineering/updates/2026-11-26-once-integration-and-modernization.md. Frozen PRs and production safeguards maintained.
