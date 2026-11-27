@@ -104,6 +104,7 @@ CREATE TABLE auth.users (
   email_confirmed_at timestamptz,
   phone_confirmed_at timestamptz,
   is_anonymous boolean NOT NULL DEFAULT false,
+  last_sign_in_at timestamptz,
   created_at timestamptz DEFAULT now()
 );
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
@@ -128,7 +129,10 @@ CREATE FUNCTION storage.foldername(name text) RETURNS text[] LANGUAGE sql IMMUTA
     ELSE string_to_array(regexp_replace(name,'/[^/]*$',''),'/') END
 $$;
 GRANT USAGE ON SCHEMA auth, public, storage TO authenticated, anon, service_role;
-GRANT SELECT ON auth.users TO authenticated, service_role;
+-- Match the hosted service's existing column grants. Broad mock SELECT hid
+-- the workspace RPC's missing is_anonymous dependency in production.
+GRANT SELECT (id, created_at, last_sign_in_at, email_confirmed_at, phone_confirmed_at)
+  ON auth.users TO service_role;
 GRANT ALL ON storage.buckets, storage.objects TO authenticated, service_role;
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 """
@@ -469,7 +473,7 @@ def main():
         upgrade_versions = ("20261111133000", "20261111133100", "20261111133200")
         # Rehearse the three observed missing capabilities plus the local-only workspace proposal separately.
         # This is a repository-derived approximation, not a production dump.
-        pending_versions = ("20261123131500", "20261123170000", "20261124030000", "20261127114611")
+        pending_versions = ("20261123131500", "20261123170000", "20261124030000", "20261127114611", "20261127212047")
         pending = [migration for migration in migrations if migration.name[:14] in pending_versions]
         if tuple(migration.name[:14] for migration in pending) != pending_versions:
             raise RuntimeError("Unexpected pending friend/loan/workspace migration sequence")
@@ -512,6 +516,21 @@ def main():
           end $$;
         """, "pending capabilities absent before isolated upgrade")
         for migration in pending:
+            if migration.name[:14] == "20261127212047":
+                sql(r"""
+                  begin;
+                  set local role service_role;
+                  do $$ begin
+                    begin
+                      perform public.movo_friend_workspace(
+                        '00000000-0000-4000-8000-00000000a199','outgoing_requests','{}');
+                      raise exception 'Hosted Auth permission gap was not reproduced';
+                    exception when insufficient_privilege then
+                      if SQLERRM not like '%users%' then raise; end if;
+                    end;
+                  end $$;
+                  rollback;
+                """, "hosted column-only Auth grants reproduce workspace permission failure before fix")
             sql(migration.read_text(), "pending capability upgrade: " + migration.name)
         sql((ROOT / "supabase/tests/security_definer_tenant_isolation.test.sql").read_text(),
             "12 SECURITY DEFINER cross-tenant denials and owner-only controls")

@@ -1,4 +1,12 @@
 begin;
+do $$ begin
+ if not has_column_privilege('service_role','auth.users','is_anonymous','SELECT')
+   or has_column_privilege('service_role','auth.users','is_anonymous','UPDATE')
+   or has_column_privilege('service_role','auth.users','raw_user_meta_data','SELECT')
+   or has_column_privilege('anon','auth.users','is_anonymous','SELECT')
+   or has_column_privilege('authenticated','auth.users','is_anonymous','SELECT')
+ then raise exception 'Workspace Auth visibility must remain column-scoped and server-only'; end if;
+end $$;
 insert into auth.users(id,email,email_confirmed_at) values
  ('00000000-0000-4000-8000-00000000a101','workspace-a@example.test',now()),
  ('00000000-0000-4000-8000-00000000a102','workspace-b@example.test',now()),
