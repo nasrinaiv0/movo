@@ -66,21 +66,30 @@ public final class WearLayoutTest {
     private boolean showsRenderedAction(Bitmap shot, Rect bounds, int tint) {
         if (bounds.isEmpty() || bounds.left < 0 || bounds.top < 0
                 || bounds.right > shot.getWidth() || bounds.bottom > shot.getHeight()) return false;
-        int insetX = Math.max(1, bounds.width() / 6);
-        int insetY = Math.max(1, bounds.height() / 6);
-        int stepX = Math.max(1, (bounds.width() - 2 * insetX) / 8);
-        int stepY = Math.max(1, (bounds.height() - 2 * insetY) / 8);
-        int matching = 0, samples = 0;
-        for (int y = bounds.top + insetY; y < bounds.bottom - insetY; y += stepY) {
-            for (int x = bounds.left + insetX; x < bounds.right - insetX; x += stepX) {
-                int pixel = shot.getPixel(x, y);
-                if (Math.abs(Color.red(pixel) - Color.red(tint)) <= 20
-                        && Math.abs(Color.green(pixel) - Color.green(tint)) <= 20
-                        && Math.abs(Color.blue(pixel) - Color.blue(tint)) <= 20) matching++;
-                samples++;
+        // Android 14 UiAutomation can return a GPU-backed screenshot. Pixel reads
+        // require a software copy; keep the original real capture for the artifact.
+        Bitmap pixels = shot.getConfig() == Bitmap.Config.HARDWARE
+                ? shot.copy(Bitmap.Config.ARGB_8888, false) : shot;
+        assertNotNull("Readable screenshot copy", pixels);
+        try {
+            int insetX = Math.max(1, bounds.width() / 6);
+            int insetY = Math.max(1, bounds.height() / 6);
+            int stepX = Math.max(1, (bounds.width() - 2 * insetX) / 8);
+            int stepY = Math.max(1, (bounds.height() - 2 * insetY) / 8);
+            int matching = 0, samples = 0;
+            for (int y = bounds.top + insetY; y < bounds.bottom - insetY; y += stepY) {
+                for (int x = bounds.left + insetX; x < bounds.right - insetX; x += stepX) {
+                    int pixel = pixels.getPixel(x, y);
+                    if (Math.abs(Color.red(pixel) - Color.red(tint)) <= 20
+                            && Math.abs(Color.green(pixel) - Color.green(tint)) <= 20
+                            && Math.abs(Color.blue(pixel) - Color.blue(tint)) <= 20) matching++;
+                    samples++;
+                }
             }
+            return samples > 0 && matching * 4 >= samples;
+        } finally {
+            if (pixels != shot) pixels.recycle();
         }
-        return samples > 0 && matching * 4 >= samples;
     }
 
     private Bitmap actionScreenshot(ActivityScenario<WearActivity> scenario) {
@@ -102,8 +111,13 @@ public final class WearLayoutTest {
             });
             Bitmap shot = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
             if (shot != null) {
-                if (showsRenderedAction(shot, bounds, tint[0])) return shot;
-                shot.recycle();
+                boolean accepted = false;
+                try {
+                    accepted = showsRenderedAction(shot, bounds, tint[0]);
+                    if (accepted) return shot;
+                } finally {
+                    if (!accepted) shot.recycle();
+                }
             }
             SystemClock.sleep(100);
         } while (SystemClock.uptimeMillis() < deadline);
