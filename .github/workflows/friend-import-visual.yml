@@ -48,6 +48,12 @@ jobs:
           npm run i18n
           MOVO_UI_QA_ENTRY=friend NODE_ENV=development node scripts/ui-qa/build.cjs
           NODE_PATH="$RUNNER_TEMP/movo-ui-tools/node_modules" QA_OUTPUT="$RUNNER_TEMP/movo-friend-ui" node scripts/ui-qa/friend-import.cjs
+      - name: Render standalone Friends workspace with isolated synthetic services
+        env:
+          MOVO_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          MOVO_UI_QA_ENTRY=workspace NODE_ENV=development node scripts/ui-qa/build.cjs
+          NODE_PATH="$RUNNER_TEMP/movo-ui-tools/node_modules" QA_OUTPUT="$RUNNER_TEMP/movo-friend-ui/workspace" node scripts/ui-qa/friends-workspace.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -28,7 +28,7 @@ const owner='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-822
  });
  await new Promise(resolve=>server.listen(4176,'127.0.0.1',resolve));let browser;const results=[];
  try{
-  browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+  browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.MOVO_CHROMIUM_EXECUTABLE?{executablePath:process.env.MOVO_CHROMIUM_EXECUTABLE}:{})});
   for(const timezoneId of ['Asia/Manila','Pacific/Kiritimati','America/Los_Angeles'])for(const width of [320,390,1280])for(const mode of ['light','dark']){
    states.clear();requests.length=0;const page=await browser.newPage({viewport:{width,height:844},timezoneId,colorScheme:mode,reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
    const prefix=timezoneId.replaceAll('/','-')+'-'+width+'-'+mode;

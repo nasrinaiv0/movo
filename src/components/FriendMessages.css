@@ -3,51 +3,81 @@
 .friend-chat-inbox-row { display:flex; align-items:center; gap:12px; min-height:64px; width:100%; border:0; background:var(--field); color:var(--text); padding:10px 12px; border-radius:18px; text-align:left; font:inherit; }
 .friend-chat-inbox-text { flex:1; min-width:0; display:grid; gap:4px; }
 .friend-chat-inbox-text strong,.friend-chat-inbox-text small { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-.friend-chat-inbox-text small { color:var(--text-2,var(--muted)); font-size:12px; }
+.friend-chat-inbox-text small { color:var(--text-2,var(--muted)); font-size:.75rem; }
 .friend-chat-avatar { display:grid; place-items:center; flex:0 0 44px; width:44px; height:44px; border-radius:50%; overflow:hidden; background:var(--field); color:var(--text); font-weight:700; }
 .friend-chat-avatar img { width:100%; height:100%; display:block; object-fit:cover; }
-.friend-chat-unread { min-width:23px; height:23px; display:grid; place-items:center; padding:0 4px; border-radius:24px; background:var(--accent); color:var(--on-accent,#fff); font-size:12px; font-weight:700; }
+.friend-chat-unread { min-width:23px; height:23px; display:grid; place-items:center; padding:0 4px; border-radius:24px; background:var(--accent); color:var(--on-accent,#fff); font-size:.75rem; font-weight:700; }
 .friend-chat-heading { display:flex; align-items:center; gap:10px; min-width:0; padding:4px 0 10px; border-bottom:1px solid var(--line); }
 .friend-chat-heading > div { display:grid; gap:3px; min-width:0; }
 .friend-chat-heading strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.friend-chat-heading small { color:var(--muted); font-size:11px; }
+.friend-chat-heading small { color:var(--muted); font-size:.6875rem; }
 .friend-chat-back { flex:none; display:grid; place-items:center; width:42px; height:42px; border:0; background:transparent; color:var(--text); border-radius:14px; }
 .friend-chat-messages { display:flex; flex-direction:column; gap:10px; min-height:170px; max-height:min(52dvh,490px); padding:10px 2px; overflow-y:auto; overscroll-behavior:contain; }
-.friend-chat-bubble { align-self:flex-start; max-width:min(85%,360px); padding:11px 14px 8px; background:var(--field); border-radius:18px 18px 18px 5px; overflow-wrap:anywhere; }
-.friend-chat-bubble.mine { align-self:flex-end; border-radius:18px 18px 5px 18px; background:var(--accent); color:var(--on-accent,#fff); }
-.friend-chat-bubble p { margin:0; white-space:pre-wrap; font-size:14px; line-height:1.5; }
-.friend-chat-bubble time { display:block; margin-top:5px; text-align:right; opacity:.7; font-size:10px; }
+.friend-chat-bubble { align-self:flex-start; max-width:min(85%,360px); padding:11px 14px 8px; background:var(--field); border-radius:18px; border-end-start-radius:5px; overflow-wrap:anywhere; }
+.friend-chat-bubble.mine { align-self:flex-end; border-radius:18px; border-end-end-radius:5px; border-end-start-radius:18px; background:var(--accent); color:var(--on-accent,#fff); }
+.friend-chat-bubble p { margin:0; white-space:pre-wrap; font-size:.875rem; line-height:1.5; }
+.friend-chat-bubble time { display:block; margin-top:5px; text-align:end; opacity:.7; font-size:.625rem; }
 .friend-chat-composer { display:flex; align-items:center; gap:9px; border-radius:18px; padding:5px 6px 5px 15px; background:var(--field); }
-.friend-chat-composer input { flex:1; width:0; min-height:40px; background:transparent; border:0; outline:0; color:var(--text); font:inherit; font-size:15px; }
+.friend-chat-composer input { flex:1; width:0; min-height:40px; background:transparent; border:0; outline:0; color:var(--text); font:inherit; font-size:.9375rem; }
 .friend-chat-send { flex:none; display:grid; place-items:center; width:42px; height:42px; background:var(--accent); color:var(--on-accent,#fff); border:0; border-radius:14px; }
 .friend-chat-send:disabled { opacity:.4; }
 .friend-chat-toggle { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:44px; border:0; border-radius:14px; background:var(--field); color:var(--text); font:inherit; font-weight:600; }
 .friend-chat-picker { display:grid; gap:10px; padding:12px; border-radius:20px; background:var(--field); }
-.friend-chat-picker > label:not(.friend-chat-checkbox) { display:grid; gap:8px; font-size:12px; font-weight:650; }
+.friend-chat-picker > label:not(.friend-chat-checkbox) { display:grid; gap:8px; font-size:.75rem; font-weight:650; }
 .friend-chat-picker select { min-width:0; width:100%; min-height:44px; border:0; border-radius:12px; padding:10px; background:var(--surface,var(--card)); color:var(--text); font:inherit; }
-.friend-chat-checkbox { display:flex; align-items:center; gap:10px; min-height:36px; font-size:13px; }
+.friend-chat-checkbox { display:flex; align-items:center; gap:10px; min-height:36px; font-size:.8125rem; }
 .friend-chat-checkbox input { width:18px; height:18px; accent-color:var(--accent); }
 .friend-shared-transaction { display:grid; gap:5px; min-width:160px; border:1px solid var(--line); border-radius:14px; padding:12px; background:var(--surface,var(--card)); color:var(--text); }
-.friend-shared-transaction strong { font-size:20px; letter-spacing:-.04em; }
-.friend-shared-transaction small { font-size:11px; color:var(--muted); }
-.friend-shared-kind { font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+.friend-shared-transaction strong { font-size:1.25rem; letter-spacing:-.04em; }
+.friend-shared-transaction small { font-size:.6875rem; color:var(--muted); }
+.friend-shared-kind { font-size:.6875rem; text-transform:uppercase; letter-spacing:.04em; }
 .friend-chat-picker .primary-button { min-height:48px; }
-.friend-chat-disclosure { font-size:11px; line-height:1.5; }
+.friend-chat-disclosure { font-size:.6875rem; line-height:1.5; }
 .friends-chat-action { min-height:40px; display:flex; align-items:center; gap:5px; border:0; border-radius:13px; padding:0 10px; background:var(--field); color:var(--text); font-weight:650; }
 .friend-chat-back:focus-visible,.friend-chat-inbox-row:focus-visible,.friend-chat-toggle:focus-visible,.friend-chat-send:focus-visible,.friends-chat-action:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 @media(prefers-reduced-motion:no-preference) {
-  .friend-chat-bubble { animation:friend-bubble-in 170ms cubic-bezier(.2,.7,.2,1) both; }
+  .friend-chat-bubble.just-arrived { animation:friend-bubble-in 170ms cubic-bezier(.2,.7,.2,1) both; }
   @keyframes friend-bubble-in { from { opacity:.6; transform:translateY(5px) scale(.98); } to { opacity:1; transform:none; } }
 }
 @media(max-width:430px){.friend-chat-messages{max-height:44dvh}.friend-chat-bubble{max-width:90%}}
 
 /* Atomic import controls: compact, accessible, solid surfaces. */
 .friend-import-controls{display:grid;gap:8px;min-width:0;margin-top:8px}
-.friend-import-controls label{display:grid;gap:4px;font-size:12px;min-width:0}
+.friend-import-controls label{display:grid;gap:4px;font-size:.75rem;min-width:0}
 .friend-import-controls select{min-height:44px;max-width:100%;width:100%;font:inherit;border:1px solid var(--line);border-radius:10px;background:var(--surface,var(--card));color:var(--text);padding:8px}
 .friend-import-actions{display:flex;flex-wrap:wrap;gap:6px}
 .friend-import-controls button{min-height:44px;min-width:0;flex:1 1 auto;white-space:normal;overflow-wrap:anywhere;font:inherit;border:0;border-radius:12px;padding:8px 10px;background:var(--surface,var(--card));color:var(--text)}
 .friend-import-controls button.primary-button{background:var(--accent);color:var(--on-accent,#fff)}
 .friend-import-controls button:disabled{opacity:.55}
 .friend-import-controls button:focus-visible,.friend-import-controls select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.friend-import-controls p{font-size:12px;line-height:1.45;margin:0}
+.friend-import-controls p{font-size:.75rem;line-height:1.45;margin:0}
+.friend-chat-profile { display:flex; flex:1; gap:12px; align-items:center; text-align:start; min-width:0; min-height:48px; padding:0; border:0; color:var(--text); background:transparent; font:inherit; }
+.friend-chat-profile > span:not(.friend-chat-avatar) { display:grid; flex:1; min-width:0; gap:4px; }
+.friend-chat-profile > svg { flex:none; }
+.friend-chat-profile:disabled { opacity:1; cursor:default; }
+.friend-chat-inbox-meta { display:grid; justify-items:end; gap:6px; flex:none; }
+.friend-chat-inbox-meta time { font-size:.6875rem; color:var(--muted); }
+.friend-chat-inbox-row { text-align:start; min-height:80px; background:transparent; border-radius:16px; }
+.friend-chat-inbox-row[aria-current],.friend-chat-inbox-row:hover { background:var(--field); }
+.friend-chat-inbox-text strong { font-size:1rem; letter-spacing:-.02em; }
+.friend-chat-inbox-text small { font-size:.8125rem; line-height:1.5; }
+.friend-chat-day { align-self:center; text-align:center; font-size:.6875rem; color:var(--muted); margin-block:8px; }
+.friend-chat-back,.friend-chat-send { width:48px; height:48px; }
+.friend-chat-checkbox { min-height:44px; }
+.friend-chat-bubble p { font-size:.9375rem; }
+.friend-chat-composer:focus-within { outline:2px solid var(--accent); outline-offset:2px; }
+.friend-jump-latest { justify-self:center; min-height:44px; padding:8px 16px; border:0; border-radius:24px; background:var(--field); color:var(--text); font:inherit; }
+.friend-inbox-skeleton { display:grid; gap:12px; }
+.friend-inbox-skeleton > span { display:block; height:72px; background:var(--field); border-radius:16px; }
+
+.friend-chat-heading:focus { outline:none; }
+.friend-chat-heading strong { font-size:1rem; letter-spacing:-.02em; }
+.friend-chat-bubble.grouped { margin-top:-6px; }
+.friend-chat-composer { padding:6px; gap:4px; border-radius:22px; }
+.friend-chat-composer .friend-chat-toggle { flex:none; width:48px; min-height:48px; border-radius:16px; background:transparent; color:var(--muted); }
+.friend-chat-composer .friend-chat-toggle[aria-expanded="true"] { background:var(--surface,var(--card)); color:var(--accent); }
+.friend-chat-composer input { padding-inline:6px; }
+.friend-chat-disclosure { justify-self:center; max-width:52ch; }
+.friend-chat-disclosure summary { display:flex; justify-content:center; align-items:center; gap:6px; min-height:44px; cursor:pointer; font-size:.75rem; color:var(--muted); list-style:none; }
+.friend-chat-disclosure summary::-webkit-details-marker { display:none; }
+.friend-chat-disclosure p { margin:4px 4px 12px; font-size:.75rem; line-height:1.6; }

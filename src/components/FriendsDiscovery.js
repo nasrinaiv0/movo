@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { t as tr } from '../lib/i18n';
 
-export default function FriendsDiscovery({ directory, busy, run, reload }) {
+export default function FriendsDiscovery({ directory, busy, run, reload, section = 'all' }) {
   const [search, setSearch] = useState('');
   const [results, setResults] = useState(null);
   const [requested, setRequested] = useState([]);
@@ -10,7 +10,7 @@ export default function FriendsDiscovery({ directory, busy, run, reload }) {
   const validHandle = value => /^[a-z0-9_]{3,24}$/.test(value.trim().toLowerCase());
 
   return <div className="friends-content">
-    <form className="friends-form" onSubmit={event => {
+    {section !== 'settings' && <><form className="friends-form" onSubmit={event => {
       event.preventDefault();
       if (validHandle(search)) run('search', { handle: search }, result => setResults(result.people));
     }}>
@@ -29,7 +29,8 @@ export default function FriendsDiscovery({ directory, busy, run, reload }) {
         </button>
       </li>)}
     </ul>}
-    <form className="friends-form friends-directory-settings" onSubmit={event => {
+    </>}
+    {section !== 'search' && <><form className="friends-form friends-directory-settings" onSubmit={event => {
       event.preventDefault();
       if (validHandle(handle)) run('set_directory', { handle, discoverable }, reload);
     }}>
@@ -46,5 +47,6 @@ export default function FriendsDiscovery({ directory, busy, run, reload }) {
           onClick={() => run('unblock', { blockId: person.id }, reload)}>{tr('Unblock')}</button>
       </li>)}</ul>
     </div>}
+    </>}
   </div>;
 }

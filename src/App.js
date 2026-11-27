@@ -1,7 +1,9 @@
 import { useProfilePhoto } from './lib/useProfilePhoto';
 import { rawLedgerTimestamp, sharedCalendarDate, sharedLedgerDisplayDate, sharedLedgerEditedTimestamp } from './lib/sharedLedgerDate';
 import { Preferences } from '@capacitor/preferences';
-import FriendsSheet, { FriendsContent } from './components/FriendsSheet';
+import FriendsWorkspace from './components/FriendsWorkspace';
+import { useFriendInbox } from './components/FriendMessages';
+import { useFriendsController } from './components/FriendsController';
 import FriendFinanceSummary from './components/FriendFinanceSummary';
 import NavTierDefs from './components/NavTierDefs';
 import { captureFriendInvite, saveFriendInvite } from './lib/friends';
@@ -193,11 +195,11 @@ const DEFAULTS = {
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
   accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedRevision: '', legalAcceptedAt: '', homeHero: 'plain', homeHeroDefaultNone: true, cloudPlanNoticeDay: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
-const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Friends: 'Menu', FriendSummary: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
+const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Friends: 'Menu', FriendConversation: 'Menu', FriendProfile: 'Menu', FriendsProfile: 'Menu', FriendsDiscovery: 'Menu', FriendsInvite: 'Menu', FriendsJoin: 'Menu', FriendsSettings: 'Menu', FriendSummary: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 // Screens reachable while setup is unfinished (see setupDone in App).
 const SETUP_SCREENS = new Set(['Home', 'Sign in', 'TermsOfService', 'PrivacyPolicy']);
 const SETUP_READING = new Set(['Sign in', 'TermsOfService', 'PrivacyPolicy']);
-const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Friends: 2, FriendSummary: 3, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
+const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Friends: 2, FriendConversation: 3, FriendProfile: 4, FriendsProfile: 3, FriendsDiscovery: 3, FriendsInvite: 4, FriendsJoin: 4, FriendsSettings: 4, FriendSummary: 5, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Menu: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Menu', 'grid', 'Menu']];
 const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', creditLimit: '', owedNow: '', currency: '', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit', linkedBankId: '' };
@@ -1372,7 +1374,7 @@ function App() {
   const go = useCallback((next, params = {}) => {
     if (!setupDoneRef.current && !SETUP_SCREENS.has(next)) return;
     if (params.filter) setTxFilter(params.filter);
-    if (next === 'FriendSummary' && params.friend) setSelectedFriend(params.friend);
+    if (['FriendSummary', 'FriendConversation', 'FriendProfile'].includes(next) && params.friend) setSelectedFriend(params.friend);
     if (next === 'FinancialPlanning') setPlanTab(params.tab || 'overview');
     const prev = viewRef.current; const dPrev = DEPTH[prev] ?? 0; const dNext = DEPTH[next] ?? 0;
     // A return to the page below (device Back, swipe, or an on-screen back arrow to the previous page).
@@ -1383,7 +1385,7 @@ function App() {
     }
     setMotion(dNext > dPrev ? 'push' : dNext < dPrev ? 'pop' : (ORDER[next] ?? 0) > (ORDER[prev] ?? 0) ? 'tab-right' : (ORDER[next] ?? 0) < (ORDER[prev] ?? 0) ? 'tab-left' : 'fade');
     if (!backMoveRef.current) screenTrailRef.current.visit(prev, next);
-    if (edgeSwipeOnRef.current && prev !== next && prev !== 'FriendSummary' && prev !== 'Friends' && typeof document !== 'undefined') {
+    if (edgeSwipeOnRef.current && prev !== next && !prev.startsWith('Friend') && typeof document !== 'undefined') {
       const snaps = pageSnapsRef.current; const main = document.querySelector('main.screen');
       if (main) {
         snaps.delete(prev);
@@ -2490,6 +2492,31 @@ function App() {
   const [locked, setLocked] = useState(() => lockState().enabled && process.env.NODE_ENV !== 'test');
   reviewGateRef.current = { ready: setupDone && !locked, sheet: !!sheet };
   const friendIdentity = session?.user?.id || 'guest';
+  useEffect(() => { setSelectedFriend(null); }, [friendIdentity, locked]);
+  const friendsRoutes = { chats: 'Friends', list: 'Friends', chat: 'FriendConversation', detail: 'FriendProfile', profile: 'FriendsProfile', search: 'FriendsDiscovery', invite: 'FriendsInvite', join: 'FriendsJoin', settings: 'FriendsSettings' };
+  const friendsMode = Object.keys(friendsRoutes).find(mode => friendsRoutes[mode] === view) || 'chats';
+  const navigateFriends = (mode, friend) => go(friendsRoutes[mode] || 'Friends', friend ? { friend: { ...friend, owner: friendIdentity } } : {});
+  const friendsActive = !locked && (Object.values(friendsRoutes).includes(view) || view === 'FriendSummary');
+  const friendInbox = useFriendInbox(locked ? null : session, friendsActive);
+  function clearFriendInvite() { saveFriendInvite(''); setFriendInvite(''); openedFriendInvite.current = ''; }
+  const friendDrafts = useRef({ owner: friendIdentity, values: new Map() });
+  if (friendDrafts.current.owner !== friendIdentity || locked || !friendsActive) friendDrafts.current = { owner: friendIdentity, values: new Map() };
+  const removeFriendLocally = id => {
+    if (!id) return;
+    friendInbox.remove(id);
+    friendDrafts.current.values.delete(`${friendIdentity}:${id}`);
+    setSelectedFriend(current => current?.id === id ? null : current);
+  };
+  useEffect(() => {
+    if (selectedFriend?.owner === friendIdentity && Array.isArray(friendInbox.friends)
+      && !friendInbox.friends.some(friend => friend.id === selectedFriend.id)) {
+      friendDrafts.current.values.delete(`${friendIdentity}:${selectedFriend.id}`);
+      setSelectedFriend(null);
+    }
+  }, [friendIdentity, selectedFriend, friendInbox.friends]);
+  const friendsController = useFriendsController({ session: locked ? null : session, enabled: friendsActive,
+    routeMode: friendsMode, onNavigate: navigateFriends, inviteToken: view === 'FriendsJoin' ? friendInvite : '',
+    onConnectionRemoved: removeFriendLocally, onConnectionsChanged: friendInbox.reload, confirmAction: confirm, onInviteHandled: clearFriendInvite });
   // Explicit staging build opt-in; never enable on an existing production preview.
   const friendImportEnabled = process.env.REACT_APP_MOVO_ATOMIC_FRIEND_IMPORT === 'true'
     && Boolean(session?.user?.id && session.access_token && cloudMode && can('cloudWrite') && !locked);
@@ -2521,13 +2548,9 @@ function App() {
     const visit = friendIdentity + ':' + friendInvite;
     if (openedFriendInvite.current === visit) return;
     openedFriendInvite.current = visit;
-    setSheet({ name: 'friends', invite: friendInvite });
-  }, [friendInvite, authReady, setupDone, locked, sheet, view, friendIdentity]);
-  const clearFriendInvite = () => {
-    saveFriendInvite('');
-    setFriendInvite('');
-    openedFriendInvite.current = '';
-  };
+    go('FriendsJoin');
+  }, [friendInvite, authReady, setupDone, locked, sheet, view, friendIdentity, go]);
+
 
   useEffect(() => {
     let hiddenAt = 0;
@@ -3088,14 +3111,17 @@ function App() {
       case 'Archive': return <Archive c={c} />;
       case 'Transactions': return <Transactions c={txScreen} />;
       case 'Profile': return <Profile c={c} />;
-      case 'Friends': return <>
-        <SubHeader title={tr('Friends')} onBack={() => goBack('Profile')} />
-        <div className="friends-page"><FriendsContent key={friendIdentity} session={session} transactions={txs} importAccounts={friendImportEnabled ? accountsView : []} onImport={friendImportEnabled ? importFriendTransaction : undefined} onSignIn={() => go('Sign in')}
-          onOpenSummary={openFriendSummary} /></div>
-      </>;
+      case 'Friends': case 'FriendConversation': case 'FriendProfile': case 'FriendsProfile':
+      case 'FriendsDiscovery': case 'FriendsInvite': case 'FriendsJoin': case 'FriendsSettings':
+        return <FriendsWorkspace controller={friendsController} session={session}
+          friend={selectedFriend?.owner === friendIdentity ? selectedFriend : null} user={user}
+          transactions={txs} importAccounts={friendImportEnabled ? accountsView : []} onImport={friendImportEnabled ? importFriendTransaction : undefined}
+          inbox={friendInbox} drafts={friendDrafts.current.values} onNavigate={navigateFriends} onBack={() => goBack(view === 'Friends' ? 'Profile' : 'Friends')}
+          onSignIn={() => go('Sign in')} onEditProfile={() => go('EditProfile')} onOpenSummary={openFriendSummary}
+          onHelp={() => go('HelpCenter')} onPrivacy={() => go('PrivacyPolicy')} onAccountSettings={() => go('Settings')} />;
       case 'FriendSummary': return !locked && selectedFriend?.owner === friendIdentity && session?.access_token
         ? <FriendFinanceSummary key={`${friendIdentity}:${selectedFriend.id}`} friend={selectedFriend} session={session}
-          c={c} finance={{ months, statsFor, breakdownFor, budgets, currency: base }} onClose={() => goBack('Friends')} />
+          c={c} finance={{ months, statsFor, breakdownFor, budgets, currency: base }} onConnectionRemoved={removeFriendLocally} onClose={() => goBack('Friends')} />
         : <SubHeader title={tr('Summary')} onBack={() => goBack('Friends')} />;
       case 'Menu': return <Menu c={c} />;
       case 'Subscriptions': return <Subscriptions c={c} />;
@@ -3233,10 +3259,6 @@ function App() {
         </div>
       </Sheet>}
 
-      {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session} transactions={txs} importAccounts={friendImportEnabled ? accountsView : []} onImport={friendImportEnabled ? importFriendTransaction : undefined}
-        inviteToken={sheet.invite} onClose={() => { clearFriendInvite(); setSheet(null); }}
-        onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite}
-        onOpenSummary={friend => { clearFriendInvite(); openFriendSummary(friend); }} />}
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
       {sheet?.name === 'language' && <LanguageSheet value={prefs.language || ''} onClose={() => setSheet(null)}
         onPick={code => { setPref('language', code); setSheet(null); }} />}

@@ -1,6 +1,9 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { FriendSummaryCards } from './FriendFinanceSummary';
+import FriendFinanceSummary, { FriendSummaryCards } from './FriendFinanceSummary';
+import { friendsRequest } from '../lib/friends';
+import { ConfirmProvider } from './ConfirmDialog';
+jest.mock('../lib/friends', () => ({ ...jest.requireActual('../lib/friends'), friendsRequest: jest.fn() }));
 import { buildFriendSummary } from '../lib/friendSummary';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -56,4 +59,37 @@ test('weekly flow and current figures exclude transfers and raw ledger fields', 
     month: '2026-10', today: new Date('2026-11-17T12:00:00Z'), selected: ['savings', 'flow', 'planning'], note: '',
   });
   expect(snapshot).toEqual({ month: '2026-10', currency: 'PHP', asOf: '2026-11-17', sections: { savings: 78, flow: [-8, 0, 0, 0, 0] } });
+});
+
+
+async function mountSummary({ session, onClose, removed }) {
+  const container = document.createElement('div'); document.body.appendChild(container);
+  const root = createRoot(container);
+  const page = (auth, close) => <ConfirmProvider value={async () => true}><FriendFinanceSummary key={auth.user.id} session={auth}
+    friend={{ id: 'connection', name: 'Synthetic friend' }} c={{}} finance={{}} onClose={close} onConnectionRemoved={removed} /></ConfirmProvider>;
+  await act(async () => root.render(page(session, onClose)));
+  return { container, switchOwner: async (auth, close) => { await act(async () => root.render(page(auth, close))); },
+    close: () => { act(() => root.unmount()); container.remove(); } };
+}
+
+test('a late block response cannot navigate or clear a different account after the summary unmounts', async () => {
+  let finishBlock;
+  friendsRequest.mockImplementation(async (_session, action) => action === 'block' ? new Promise(resolve => { finishBlock = resolve; }) : { sharedWithYou: null });
+  const oldClose = jest.fn(), newClose = jest.fn(), removed = jest.fn();
+  const { container, switchOwner, close } = await mountSummary({ session: { user: { id: 'owner-a' }, access_token: 'a' }, onClose: oldClose, removed });
+  await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent === 'Block user').click());
+  const signal = friendsRequest.mock.calls.find(call => call[1] === 'block')[3];
+  await switchOwner({ user: { id: 'owner-b' }, access_token: 'b' }, newClose);
+  expect(signal.aborted).toBe(true);
+  await act(async () => finishBlock({ ok: true }));
+  expect(oldClose).not.toHaveBeenCalled(); expect(newClose).not.toHaveBeenCalled(); expect(removed).not.toHaveBeenCalled(); close();
+});
+
+test('a confirmed block clears the current connection cache before leaving its summary', async () => {
+  friendsRequest.mockImplementation(async (_session, action) => action === 'summary' ? { sharedWithYou: null } : { ok: true });
+  const removed = jest.fn(), onClose = jest.fn();
+  const { container, close } = await mountSummary({ session: { user: { id: 'owner-a' }, access_token: 'a' }, onClose, removed });
+  await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent === 'Block user').click());
+  expect(removed).toHaveBeenCalledWith('connection'); expect(onClose).toHaveBeenCalledTimes(1);
+  expect(removed.mock.invocationCallOrder[0]).toBeLessThan(onClose.mock.invocationCallOrder[0]); close();
 });

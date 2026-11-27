@@ -1,0 +1,759 @@
+{
+  "fixture": "actual components; loopback synthetic services; browser evidence only",
+  "head": "7c45f931f257c3c8e3dd597ef6bc5bf8d1276b60",
+  "motionFramesMs": [
+    16.59999999999991,
+    16.700000000000045,
+    16.700000000000045,
+    16.59999999999991,
+    16.700000000000045,
+    16.600000000000136,
+    16.699999999999818,
+    16.700000000000045,
+    16.700000000000045,
+    16.59999999999991,
+    16.700000000000045,
+    16.700000000000045,
+    16.59999999999991,
+    16.700000000000045,
+    16.600000000000136,
+    16.699999999999818,
+    16.700000000000045,
+    16.600000000000136,
+    16.699999999999818,
+    16.600000000000136,
+    16.700000000000045,
+    16.699999999999818,
+    16.700000000000045,
+    16.700000000000045,
+    16.59999999999991,
+    16.600000000000136,
+    16.700000000000045,
+    16.699999999999818,
+    16.700000000000045,
+    16.700000000000045,
+    16.59999999999991,
+    16.700000000000045,
+    16.600000000000136,
+    16.699999999999818,
+    16.600000000000136,
+    16.799999999999955,
+    16.59999999999991,
+    16.700000000000045,
+    16.600000000000136,
+    16.699999999999818,
+    16.700000000000045,
+    16.600000000000136,
+    16.699999999999818,
+    16.700000000000045
+  ],
+  "sourceHashes": {
+    "package.json": "c1cdd6d6f3eba1c15813a431d8a0dc801e4c8d50b8def8505d49583f7b4d95f7",
+    "package-lock.json": "6dfb2438f5d7f5917ae8a2e98d4ade82e2aa76b7e5a0395cf6b20073c6e0b4f6",
+    "src/App.js": "a28b3b9bcc85fb58564fef32c79cb5494e96180d7aefd44f25be4a1dfa0d8d22",
+    "src/App.css": "f28b8f0e04df4d26e60263ba39f8bf80b99b28f6b6559f65b145916d4d054ace",
+    "src/components/FriendsWorkspace.js": "e1f3bcc1f1ed23d56560f58ee4ea6b3f52df16d69d1b672707a144c8a7192383",
+    "src/components/FriendsSheet.js": "7cdf553d53346ca0626a816f3201323a00f5e50dff805ee8689b610519ce3339",
+    "src/components/FriendsWorkspace.css": "dac22006420ca344963658675813c5e3fc7fde7406b9036aaecdfd76aa97b380",
+    "src/components/FriendsController.js": "bdae2aa0ae7eacd844435e39f3cfa1ff6a9bfd6a8f3749f3ecee03474868731e",
+    "src/components/FriendInvitations.js": "a43d02ab32ffc4c82a6b02b8a5ebb85979bb9d32b9557052b51fd9819aff3edd",
+    "src/components/FriendMessages.js": "c7a06326dc1cb524026e8268aa772996055e4605e7f01436784391c23c32e83f",
+    "src/components/FriendMessages.css": "27ab27afbe6c83db06885e0963a0b592b155770770c0aabe062ecaaa0f666933",
+    "src/components/FriendsDiscovery.js": "2e2441f7372db0ac6b7b99a54fd9e5fb18ecd2fecfb1fc41ef6a5725eab9ccd8",
+    "src/components/FriendFinanceSummary.js": "929672cddcb6351da83a6b28eeaf5c8aaf0e704aef007ea715403cbb76ec6c91"
+  },
+  "bundle": {
+    "bytes": 2337376,
+    "gzipBytes": 493370,
+    "sha256": "c33c9b3b869995ea65e42875e00776b2d7936341e3d863c6b3fee5f8f3c22c46"
+  },
+  "results": [
+    {
+      "width": 320,
+      "mode": "light",
+      "inboxReadyMs": 614,
+      "requests": 27,
+      "frameMaxMs": 16.800000000000068,
+      "frameMedianMs": 16.699999999999932,
+      "heapBytes": 22307182,
+      "screens": 8
+    },
+    {
+      "width": 320,
+      "mode": "dark",
+      "inboxReadyMs": 405,
+      "requests": 27,
+      "frameMaxMs": 16.800000000000068,
+      "frameMedianMs": 16.699999999999932,
+      "heapBytes": 21314196,
+      "screens": 8
+    },
+    {
+      "width": 390,
+      "mode": "light",
+      "inboxReadyMs": 541,
+      "requests": 27,
+      "frameMaxMs": 16.799999999999955,
+      "frameMedianMs": 16.600000000000023,
+      "heapBytes": 22285542,
+      "screens": 8
+    },
+    {
+      "width": 390,
+      "mode": "dark",
+      "inboxReadyMs": 503,
+      "requests": 27,
+      "frameMaxMs": 16.799999999999955,
+      "frameMedianMs": 16.699999999999932,
+      "heapBytes": 22386351,
+      "screens": 8
+    },
+    {
+      "width": 768,
+      "mode": "light",
+      "inboxReadyMs": 710,
+      "requests": 27,
+      "frameMaxMs": 16.700000000000045,
+      "frameMedianMs": 16.699999999999932,
+      "heapBytes": 21734710,
+      "screens": 8
+    },
+    {
+      "width": 768,
+      "mode": "dark",
+      "inboxReadyMs": 698,
+      "requests": 27,
+      "frameMaxMs": 16.700000000000045,
+      "frameMedianMs": 16.700000000000045,
+      "heapBytes": 21446329,
+      "screens": 8
+    },
+    {
+      "width": 1280,
+      "mode": "light",
+      "inboxReadyMs": 696,
+      "requests": 27,
+      "frameMaxMs": 16.700000000000045,
+      "frameMedianMs": 16.699999999999932,
+      "heapBytes": 22331332,
+      "screens": 8
+    },
+    {
+      "width": 1280,
+      "mode": "dark",
+      "inboxReadyMs": 666,
+      "requests": 27,
+      "frameMaxMs": 16.700000000000045,
+      "frameMedianMs": 16.699999999999932,
+      "heapBytes": 22412870,
+      "screens": 8
+    }
+  ],
+  "productionComparison": {
+    "baselineProduction": {
+      "mainGzipBytes": 459045,
+      "allJsGzipBytes": 1871664,
+      "allCssGzipBytes": 127971,
+      "mainSha256": "383b87d91d6ee1d49883a454906f97c61423542bf7f7b67b523c8fce0408e16a"
+    },
+    "candidateProduction": {
+      "mainGzipBytes": 463910,
+      "allJsGzipBytes": 1885335,
+      "allCssGzipBytes": 129578,
+      "mainSha256": "c4566595772534cbd291e23fdffbc3755c0cb9ef6e80472adb065e27de6af7c7"
+    },
+    "gzip": "Python gzip level 9, mtime=0; baseline rebuilt from 96e10c2 with its own generated catalogs and the same unchanged exact-lock dependencies. Local uncommitted source identified by sourceHashes; not a fresh-head CI claim."
+  },
+  "screenshots": [
+    {
+      "file": "1280-dark-chats.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "1812b0f6db710afd8c91382857c69d955ee07281a2fc7535228cdd39b79d005f"
+    },
+    {
+      "file": "1280-dark-conversation.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "e89fc4b2d3de0507853507b4d85c1baf15bddf1027704f5975484ae0e6751ac0"
+    },
+    {
+      "file": "1280-dark-discovery.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "1e79381344cb40b328a860d458e5788c243508d37de6dd6e42f5b57b8be49344"
+    },
+    {
+      "file": "1280-dark-friend-profile.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "036d0e7ae16429f7623a28819d4691ec2e07f105a64531763c77bb6d147827a8"
+    },
+    {
+      "file": "1280-dark-invite-review.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "5c341999eea8a5e021b0c949c8a02f1f3c7dc25dc24ba88250be7f7356cf2ee8"
+    },
+    {
+      "file": "1280-dark-my-profile.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "72ab3c9f708f20d3efdbaf06978adf81c6da8c818b5c9ce23f60515222e0b2e4"
+    },
+    {
+      "file": "1280-dark-qr.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "62e6418d5a553ec194b4810a7e22ded539052f3a251f087cb7055c3c881ccea8"
+    },
+    {
+      "file": "1280-dark-settings.png",
+      "size": [
+        1280,
+        1033
+      ],
+      "sha256": "90ae1e0b5731d19d4457ac6680bd71abe910dcaf308782b387fc91358804a1d6"
+    },
+    {
+      "file": "1280-light-chats.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "ecdd75127b15c28c7d4bddbd5d78877fbfac2dfc641cd708567cb115aab3ce9a"
+    },
+    {
+      "file": "1280-light-conversation.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "a3340c1e9e6b3daa15c0c384e4eb78ae09335a6a113d9686458c8644a9046c4d"
+    },
+    {
+      "file": "1280-light-discovery.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "fe5a0120db80aec0e009146423de63487e3cc9ba8400d849d4b24186e308ec6b"
+    },
+    {
+      "file": "1280-light-friend-profile.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "19dbb26074f659687580a25b887db943b27e04393921d75cfe5fde148381a5fb"
+    },
+    {
+      "file": "1280-light-invite-review.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "ebe50c4083ed9ecf0340723a8834bfb732782382a4d8d13fcc5bc32efc5c6d23"
+    },
+    {
+      "file": "1280-light-my-profile.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "e19e11104dd7300d6223dfdaa4c4db040cabdbc5747599bf83b33604f456e350"
+    },
+    {
+      "file": "1280-light-qr.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "7ee3260bea002a6ea8356ad4ddceecb7bccfd426abf81bf3b7aa47a03283daf1"
+    },
+    {
+      "file": "1280-light-settings.png",
+      "size": [
+        1280,
+        1033
+      ],
+      "sha256": "485996e903e27944b21aeb65436505b6e9041567f23fa41be3e301ecd3a64e22"
+    },
+    {
+      "file": "1280-window-360-pane.png",
+      "size": [
+        1280,
+        900
+      ],
+      "sha256": "2cc47da4138fd2c5a6986c674734aa576c67283f80c4cb0062b3649e6a708202"
+    },
+    {
+      "file": "320-dark-200-percent.png",
+      "size": [
+        320,
+        1206
+      ],
+      "sha256": "806912efba402e78aa4fb07284ef757f43eab004b27bc6f56d753b6a1acd0fe4"
+    },
+    {
+      "file": "320-dark-chats.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "9b641c59a9db119f8bac8556971a8a049fb828101c3503e29fc491af10a6305b"
+    },
+    {
+      "file": "320-dark-conversation-200-percent.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "0f7f59a8e44b3086b04c6a8a2c5565150743a4996bc2c14ea75a6d34c11e7d1c"
+    },
+    {
+      "file": "320-dark-conversation-rtl.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "8d58dc29ca5349fb1a34b96622cff6419bb38791a2766b469a6098747e6a5cdd"
+    },
+    {
+      "file": "320-dark-conversation.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "4d071cad1fd936005f6996b1dc249e639ef91f3ffb24656858519925844ea484"
+    },
+    {
+      "file": "320-dark-discovery.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "942771fd7de83eec967978615bef75411d810b997e8979a03aa4f40a8807cd1b"
+    },
+    {
+      "file": "320-dark-friend-profile.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "2377b180d28d0c867a615d6f0869379e6630304eee0f28e29a4008cff32e99a2"
+    },
+    {
+      "file": "320-dark-invite-review.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "73e00b21256abc7ece0fb7fcddb49a3a9b9491ee4a6f820bc3960cebde550267"
+    },
+    {
+      "file": "320-dark-my-profile.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "c29a2c94a05697afc53ef5d0cad243b2c5f74ce1d7169bc1fd4cc87c4a1774b3"
+    },
+    {
+      "file": "320-dark-qr.png",
+      "size": [
+        320,
+        940
+      ],
+      "sha256": "73e6b832e23b3f54179029fd09bc561e064c6ed740bed9ff4d7aa3723216c7b9"
+    },
+    {
+      "file": "320-dark-rtl.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "0e3615c4db45bdcbbce0feca89e7667a8ead6bf65328d3aadcf168b3961627b6"
+    },
+    {
+      "file": "320-dark-settings.png",
+      "size": [
+        320,
+        1076
+      ],
+      "sha256": "ffcc408fd57923495e4eb3d444b762f3943826a709e81eb44d87f504e3e8ff06"
+    },
+    {
+      "file": "320-light-chats.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "ea176c8f0683a0d49f598997b0712e38e0b7ffedc235db977f6db37833881230"
+    },
+    {
+      "file": "320-light-conversation.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "59d2a8b03c39d2fa5604e6ccd251e6fde02098b501d09bdfa2de3be5c8926121"
+    },
+    {
+      "file": "320-light-discovery.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "2f0af152f9c4f1289cf58493003d7d274c90fba044405147e2cf3770568a9c6e"
+    },
+    {
+      "file": "320-light-friend-profile.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "9468778bea1f63ebba8f9a46c586469ecc63513998d5fce97fcf17855639ec68"
+    },
+    {
+      "file": "320-light-invite-review.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "2d0b136b3ab4fd2eb6dcd34b7461802038e5ab9e35d1def80c8cbce6aed7432e"
+    },
+    {
+      "file": "320-light-my-profile.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "7bf66a11aaa2f839c6815bd6c14972ae777651b2f8a0b2602eb58f735ae905ca"
+    },
+    {
+      "file": "320-light-qr.png",
+      "size": [
+        320,
+        940
+      ],
+      "sha256": "34e98a998a832816b274d49a4f95a301e258d883311ab95035c592ba1527b8dd"
+    },
+    {
+      "file": "320-light-settings.png",
+      "size": [
+        320,
+        1076
+      ],
+      "sha256": "722bae5e95d3b7915334eea4728b4f227bf8fdfd55a58d31e5e179c5b4325545"
+    },
+    {
+      "file": "390-dark-chats.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "1a172af83fc92c4826350f28bc607ad9ee51c77cc1bd085cff755b8c05dfbd7b"
+    },
+    {
+      "file": "390-dark-conversation.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "76280308953fcca548ec302c89678f884237ac1509ddaf13894de83435bf7f98"
+    },
+    {
+      "file": "390-dark-discovery.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "0f223b34f1faa0fd3597c4b64f9dc270010cd528a9379232c7b8006df4040f90"
+    },
+    {
+      "file": "390-dark-friend-profile.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "49d4e398e1c4ea2d332b0368d201a051c7298460f91b3f5c6a8dd721659095e4"
+    },
+    {
+      "file": "390-dark-invite-review.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "82708f3263f0bee643085cf5a59263ec6b91f75a1911a942eec1754b4a25dd0e"
+    },
+    {
+      "file": "390-dark-my-profile.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "698cdc0b5a7280cb7f39d2a28f68a6f99a47efd2a6d694578f61bacf93d9f398"
+    },
+    {
+      "file": "390-dark-qr.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "34ab6dddf5edb20688ff625700997cbe7c0d2463ec39e0c8b2308a0b019dfd5e"
+    },
+    {
+      "file": "390-dark-settings.png",
+      "size": [
+        390,
+        1050
+      ],
+      "sha256": "198e4ece0dfdbbaab612c9847301324daf5c258d02562de35c4d6b724f20a4c6"
+    },
+    {
+      "file": "390-light-chats.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "00649c326ce488510e8cf049a30de3d40e3c286801f7aec797a07d4ce117571f"
+    },
+    {
+      "file": "390-light-conversation.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "8fa56c35a13511f8fcdef959c2d38a0f9dfea67e5d809ed45d40d0981e96218f"
+    },
+    {
+      "file": "390-light-discovery.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "4a944add837bc8daf0c6a2270081e235e150fd9d7c5a9e0d52892e104ad00fdc"
+    },
+    {
+      "file": "390-light-friend-profile.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "334398fe0b406b9f98a35f8ecc6277e4fcc6b1bb49c4490741f9d2db741a09a9"
+    },
+    {
+      "file": "390-light-invite-review.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "33a88abcc37942f60d393714bf0b4e3e603bc586ca0666ceeecab63d16f223aa"
+    },
+    {
+      "file": "390-light-my-profile.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "a968bc4cbf2b6a09f5eece8039993ef2652a14023266d8d99d29d656a8fe1648"
+    },
+    {
+      "file": "390-light-qr.png",
+      "size": [
+        390,
+        900
+      ],
+      "sha256": "81c6dce4f8d0bccbac6896322bd5ff2622fc47da214ed059853338afbf8c7649"
+    },
+    {
+      "file": "390-light-settings.png",
+      "size": [
+        390,
+        1050
+      ],
+      "sha256": "54b1b4cd618c99d0ddcc566a843a9813490c6955466e3506c395624eaff9ab95"
+    },
+    {
+      "file": "768-dark-chats.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "414d236f3b1109e82ccbed309cdcff62b2b2753e28431b86f65ca9729a490802"
+    },
+    {
+      "file": "768-dark-conversation.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "352ce08b60d2b14cdf50aa3c46b09d36d850af1a0811a34e5294a427bffbbbf1"
+    },
+    {
+      "file": "768-dark-discovery.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "d75ae7d5eea966e21246df16c1ef050cc1b733767b67c1d0213e6c53dc2518d7"
+    },
+    {
+      "file": "768-dark-friend-profile.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "b686214b661814b4044cd1e90d83b4220eebf08f5601cd94e15a7aa65b4100c0"
+    },
+    {
+      "file": "768-dark-invite-review.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "ea0fb9b004b000c2ab42533dbe73121939f7ed5db2b5220c494c472eb301b76f"
+    },
+    {
+      "file": "768-dark-my-profile.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "3219be670a1eb91a27f727fb3a2ad47c8d74acc6d2baaa99e2fc42399d3c5d06"
+    },
+    {
+      "file": "768-dark-qr.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "14cde24241a086212663b02731ec4c38cea60342312d57c4856210025d2059b0"
+    },
+    {
+      "file": "768-dark-settings.png",
+      "size": [
+        768,
+        1031
+      ],
+      "sha256": "983824f98b906fd01f63e72f0420349fa081df7aee8f8aab1ff32df5815ceaca"
+    },
+    {
+      "file": "768-light-chats.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "9e89501ccbdda6a4fa9f46ba81ca35dc27697c3c105cd9845308bb2c08a814fe"
+    },
+    {
+      "file": "768-light-conversation.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "c516855ffcc9a24a62d80f578a211c91ac5354eb63fb1055fe2d6cd5140ea2e9"
+    },
+    {
+      "file": "768-light-discovery.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "31db30f66b84a8e8d13b7c8756c5e85746a95490289963bea5c5f048684ba291"
+    },
+    {
+      "file": "768-light-friend-profile.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "7b119be569dc885fb9b5e3d893902349a0f494e90f2813181746ed16a1e7565c"
+    },
+    {
+      "file": "768-light-invite-review.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "d33f77697f3f40ea2737657136fd6c068e67850a2f2f06664f4d1294f527fbc9"
+    },
+    {
+      "file": "768-light-my-profile.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "cf79d3d718e19d2b17682eb2c45f18408926be920ca3419f84827b79e37e7a6a"
+    },
+    {
+      "file": "768-light-qr.png",
+      "size": [
+        768,
+        900
+      ],
+      "sha256": "4a5dddaf05f4f1f6d2789d94d20f6f2efdbc4326cd7585664877226a69a62d9c"
+    },
+    {
+      "file": "768-light-settings.png",
+      "size": [
+        768,
+        1031
+      ],
+      "sha256": "e5ef862941a351c2f93484dcb03c0422e7012c48fbcf55c435fa855c0198c442"
+    },
+    {
+      "file": "empty-inbox.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "6f3a7824a8e5748dc275f67b08d3bdc1bdf9d77b0b39e20cef3ffd0eecf65150"
+    },
+    {
+      "file": "expired-session.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "8c6b2fdaceafba98ad95b4b88d9bdba895b3e45abb59a530024efc0528fe8cfe"
+    },
+    {
+      "file": "offline-discovery.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "b107bf6ce883649a993c8f0a3c19dab5dd4c4c0c3959fb9dcf1791e7beb58cb8"
+    },
+    {
+      "file": "service-unavailable.png",
+      "size": [
+        320,
+        900
+      ],
+      "sha256": "f3ae49d9b28e66e780bc74f204fb5cfe7e3501af31ecd3fd28c0127682a2336f"
+    }
+  ],
+  "limits": "Synthetic loopback, Chromium development fixture; 80-message candidate vs one-message predecessor render. Startup is descriptive, not a controlled speedup claim. 30 idle rAF samples per profile; separate 44 rAF samples during scroll/message arrival. Neither CPU, network nor memory is a mobile-device guarantee.",
+  "approvedContactSheet": {
+    "path": "after.png",
+    "sha256": "a7ddf6e0b7645d83b042cd8b6d9524e6578c106a5879a427e364c83c29e35d68",
+    "note": "Previously approved contact sheet retained byte-for-byte; final owner/navigation hardening changes no rendered design component."
+  }
+}
