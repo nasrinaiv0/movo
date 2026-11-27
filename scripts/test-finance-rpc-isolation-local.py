@@ -383,6 +383,80 @@ def verify_loan_erasure_races():
         """, "loan erasure clears receipts and financial rows " + mode)
 
 
+def verify_friend_workspace_concurrency():
+    """Keep cancellation/acceptance and report/removal linearizable on real sessions."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    import time
+    service = "set local role service_role; set local request.jwt.claims = '{\"role\":\"service_role\"}';"
+    def run(statement):
+        return command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE,
+            stdin="begin; set local lock_timeout='10s'; " + service + statement + " commit;").stdout.strip()
+    for index, mode in enumerate(("cancel_first", "accept_first", "duplicate_report", "report_first", "remove_first"), 1):
+        a = f"00000000-0000-4000-8000-00000000c{index}01"
+        b = f"00000000-0000-4000-8000-00000000c{index}02"
+        request = f"10000000-0000-4000-8000-00000000c{index}01"
+        connection = f"20000000-0000-4000-8000-00000000c{index}01"
+        message = f"30000000-0000-4000-8000-00000000c{index}01"
+        sql(f"""
+          insert into auth.users(id,email_confirmed_at) values('{a}',now()),('{b}',now());
+          insert into public.movo_friend_directory(owner_id,handle,discoverable)
+            values('{a}','workspace_race_a_{index}',true),('{b}','workspace_race_b_{index}',true);
+        """, "seed workspace ordering " + mode)
+        if mode in ("cancel_first", "accept_first"):
+            sql(f"insert into public.movo_friend_requests(id,sender,recipient) values('{request}','{a}','{b}');", "seed pending request")
+            cancel = f"select public.movo_friend_workspace('{a}','cancel_request','{{\"requestId\":\"{request}\"}}');"
+            accept = f"select public.movo_friend_social('{b}','accept_request','{{\"requestId\":\"{request}\"}}');"
+            first, second = (cancel, accept) if mode == "cancel_first" else (accept, cancel)
+        else:
+            sql(f"""
+              insert into public.movo_friend_connections(id,member_low,member_high,name_low,name_high) values('{connection}','{a}','{b}','A','B');
+              insert into public.movo_friend_messages(id,connection_id,sender_id,client_id,kind,body)
+                values('{message}','{connection}','{b}',gen_random_uuid(),'text','Synthetic report ordering');
+            """, "seed private message")
+            report = f"select public.movo_friend_workspace('{a}','report_message','{{\"connectionId\":\"{connection}\",\"messageId\":\"{message}\"}}');"
+            remove = f"select public.movo_friends('{b}','remove',null,null,'{connection}');"
+            if mode == "duplicate_report":
+                barrier = Barrier(2, timeout=10)
+                def report_once():
+                    barrier.wait()
+                    return run(report)
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    results = [future.result(timeout=30) for future in [executor.submit(report_once), executor.submit(report_once)]]
+                if not results[0] or results[0] != results[1]:
+                    raise RuntimeError("Concurrent message reports returned different receipts")
+                sql(f"""do $$ begin
+                  if (select count(*) from public.movo_friend_reports where reporter='{a}' and message_id='{message}')<>1
+                    or (select hits from public.movo_friend_rate_limits where owner_id='{a}' and action='report_message')<>1
+                  then raise exception 'duplicate report or rate penalty'; end if;
+                end $$;""", "concurrent report retry: one reference, one rate debit")
+                continue
+            first, second = (report, remove) if mode == "report_first" else (remove, report)
+        marker = 847100 + index
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first_future = executor.submit(run, first + f" select pg_advisory_xact_lock({marker}); select pg_sleep(1);")
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                held = command("psql", *CONN, "-X", "-Atq", "-d", DATABASE,
+                    stdin=f"select exists(select 1 from pg_locks where locktype='advisory' and classid=0 and objid={marker} and granted);").stdout.strip()
+                if held == "t": break
+                if first_future.done():
+                    first_future.result()
+                    raise RuntimeError("Workspace overlap ended early: " + mode)
+                time.sleep(0.05)
+            else: raise RuntimeError("Workspace ordering timed out: " + mode)
+            second_future = executor.submit(run, second)
+            first_future.result(timeout=30)
+            second_future.result(timeout=30)
+        expected = 1 if mode == "accept_first" else 0
+        sql(f"""do $$ begin
+          if exists(select 1 from public.movo_friend_requests where id='{request}')
+            or (select count(*) from public.movo_friend_connections where member_low='{a}' and member_high='{b}')<>{expected}
+            or exists(select 1 from public.movo_friend_reports where message_id='{message}')
+          then raise exception 'workspace ordering violated'; end if;
+        end $$;""", "ordered workspace result: " + mode)
+
+
 def main():
     command("createdb", *CONN, DATABASE)
     try:
@@ -393,12 +467,12 @@ def main():
         # Main already contains migrations newer than the staged PR. Rehearse
         # the upgrade from that deployed schema with only the three PR stages pending.
         upgrade_versions = ("20261111133000", "20261111133100", "20261111133200")
-        # Rehearse the three observed missing production capabilities separately.
+        # Rehearse the three observed missing capabilities plus the local-only workspace proposal separately.
         # This is a repository-derived approximation, not a production dump.
-        pending_versions = ("20261123131500", "20261123170000", "20261124030000")
+        pending_versions = ("20261123131500", "20261123170000", "20261124030000", "20261127114611")
         pending = [migration for migration in migrations if migration.name[:14] in pending_versions]
         if tuple(migration.name[:14] for migration in pending) != pending_versions:
-            raise RuntimeError("Unexpected pending friend/loan migration sequence")
+            raise RuntimeError("Unexpected pending friend/loan/workspace migration sequence")
         baseline = [migration for migration in migrations if migration.name[:14] not in upgrade_versions + pending_versions]
         upgrade = [migration for migration in migrations if migration.name[:14] in upgrade_versions]
         if tuple(migration.name[:14] for migration in upgrade) != upgrade_versions:
@@ -465,12 +539,15 @@ def main():
             "private friend chats: cross-user denial, projected cards, idempotency and block deletion")
         sql((ROOT / "supabase/tests/friend_transaction_import.test.sql").read_text(),
             "recipient consent, immutable import receipt, account mapping and cascade")
+        sql((ROOT / "supabase/tests/friend_workspace.test.sql").read_text(),
+            "owner-scoped outgoing requests, message report references and erasure")
         sql((ROOT / "supabase/tests/loan_payment_accounts.test.sql").read_text(),
             "loan payment account isolation, currency and single-ledger posting")
         sql((ROOT / "supabase/tests/atomic_loan_disbursement.test.sql").read_text(),
             "atomic loan disbursement, payload replay, rollback and account isolation")
         verify_atomic_loan_concurrency()
         verify_loan_erasure_races()
+        verify_friend_workspace_concurrency()
         verify_friend_import_concurrency()
         verify_friend_import_revocation_races()
         print("PASS isolated finance authorization: no customer database accessed")

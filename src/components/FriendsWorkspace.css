@@ -89,3 +89,14 @@
 .friends-profile-overview strong { color:var(--text); font-variant-numeric:tabular-nums; }
 
 .ios-interface .friends-workspace-thread .friend-conversation { height:calc(var(--ios-viewport-height,100dvh) - 160px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+.friends-outgoing { display:grid; gap:12px; padding-block:8px; }
+.friends-outgoing h3 { margin:0; font-size:1rem; }
+.friends-outgoing li > div { flex:1; min-width:0; display:grid; gap:4px; }
+.friends-outgoing small { color:var(--muted); font-size:.75rem; }
+.friend-chat-options { position:relative; flex:none; }
+.friend-chat-options summary { list-style:none; display:grid; place-items:center; width:48px; min-height:48px; cursor:pointer; border-radius:16px; }
+.friend-chat-options summary::-webkit-details-marker { display:none; }
+.friend-chat-options > button { position:absolute; inset-inline-end:0; top:100%; min-width:160px; min-height:48px; padding:12px; border:1px solid var(--line); border-radius:14px; color:var(--text); background:var(--surface,var(--card)); font:inherit; }
+.friend-report-guidance { display:flex; align-items:center; gap:12px; font-size:.8125rem; }
+.friend-report-guidance p { flex:1; }
+.friend-message-report { display:block; min-height:44px; padding:8px; margin-top:8px; border:1px solid var(--line); border-radius:12px; color:var(--text); background:var(--surface,var(--card)); font:inherit; font-size:.8125rem; }

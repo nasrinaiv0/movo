@@ -105,7 +105,7 @@ export function FriendChatsDirectory({ session, onSelect, onAdd, search = '', se
   </section>;
 }
 
-export function FriendConversation({ session, friend, transactions = [], importAccounts = [], onImport, onBack, onOpenProfile, drafts }) {
+export function FriendConversation({ session, friend, transactions = [], importAccounts = [], onImport, onBack, onOpenProfile, drafts, onReportMessage }) {
   const [thread, setThread] = useState(null);
   const seenMessages = useRef(null);
   const [arrivals, setArrivals] = useState(new Set());
@@ -115,6 +115,16 @@ export function FriendConversation({ session, friend, transactions = [], importA
   const draftKey = `${session?.user?.id || ''}:${friend.id}`;
   const [text, setText] = useState(() => drafts?.get(draftKey)?.text || '');
   const [picker, setPicker] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const reportMenu = useRef(null);
+  const reportCancel = useRef(null);
+  const wasReporting = useRef(false);
+  useEffect(() => { if (!onReportMessage) setReporting(false); }, [onReportMessage]);
+  useEffect(() => {
+    if (reporting) reportCancel.current?.focus();
+    else if (wasReporting.current) reportMenu.current?.querySelector('summary')?.focus();
+    wasReporting.current = reporting;
+  }, [reporting]);
   const [selected, setSelected] = useState('');
   const [includeDescription, setIncludeDescription] = useState(false);
   const [includeCategory, setIncludeCategory] = useState(false);
@@ -185,7 +195,7 @@ export function FriendConversation({ session, friend, transactions = [], importA
   useEffect(() => {
     readingPosition.current = drafts?.get(draftKey);
     seenMessages.current = null; setArrivals(new Set());
-    setThreadScope(scopeKey); setThread(null); setError(''); setText(drafts?.get(draftKey)?.text || ''); setSelected(''); setPicker(false); retryId.current = drafts?.get(draftKey)?.retryId || null; firstLoad.current = true; atLatest.current = true; setUnreadBoundary(null);
+    setThreadScope(scopeKey); setThread(null); setError(''); setText(drafts?.get(draftKey)?.text || ''); setSelected(''); setPicker(false); setReporting(false); retryId.current = drafts?.get(draftKey)?.retryId || null; firstLoad.current = true; atLatest.current = true; setUnreadBoundary(null);
     const controller = new AbortController();
     load(controller.signal);
     const onReturn = () => { if (!document.hidden) load(controller.signal); };
@@ -237,7 +247,12 @@ export function FriendConversation({ session, friend, transactions = [], importA
         <FriendPhoto name={visibleThread?.name || friend.name} photo={visibleThread?.photo || friend.photo} />
         <span><strong dir="auto" role="heading" aria-level={1}>{visibleThread?.name || friend.name}</strong><small>{tr('MOVO friend · private chat')}</small></span>{onOpenProfile && <Icon name="chevron" size={16} />}
       </button>
+      {onReportMessage && <details ref={reportMenu} className="friend-chat-options" onKeyDown={event => {
+        if (event.key === 'Escape') { event.currentTarget.open = false; event.currentTarget.querySelector('summary').focus(); }
+      }}><summary aria-label={tr('Conversation options')}><Icon name="more" size={20} /></summary>
+        <button type="button" onClick={event => { setReporting(true); event.currentTarget.closest('details').open = false; }}>{tr('Report a message')}</button></details>}
     </header>
+    {reporting && onReportMessage && <div className="friend-report-guidance"><p>{tr('Choose a received message to report.')}</p><button ref={reportCancel} type="button" className="friends-secondary" onClick={() => setReporting(false)}>{tr('Cancel')}</button></div>}
     <div ref={messages} className="friend-chat-messages" tabIndex={0} onScroll={() => {
       const node = messages.current; atLatest.current = node.scrollHeight - node.scrollTop - node.clientHeight < 64;
       if (atLatest.current) setShowLatest(false);
@@ -253,6 +268,9 @@ export function FriendConversation({ session, friend, transactions = [], importA
         {importAvailable && decisions !== null && message.kind === 'transaction' && message.senderId !== identity &&
           <FriendImportControls key={`${identity}:${friend.id}:${message.id}`} session={session} connectionId={friend.id} message={message}
             initialStatus={decisions[message.id] || 'unreviewed'} accounts={importAccounts} onImport={onImport} />}
+        {reporting && onReportMessage && message.senderId !== identity && <button type="button" className="friend-message-report" onClick={async () => {
+          const done = await onReportMessage?.(friend, message); if (isCurrent() && done) setReporting(false);
+        }}>{tr('Report this message')}</button>}
         <time className={grouped(message, visibleThread.messages[index + 1]) ? 'sr-only' : undefined} dateTime={message.createdAt} aria-label={new Date(message.createdAt).toLocaleString()}>{stamp(message.createdAt)}</time>
       </article></React.Fragment>)}
       <span ref={end} />

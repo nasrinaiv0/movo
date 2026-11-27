@@ -25,6 +25,8 @@ export function friendErrorMessage(error) {
     case 'friend_request_unavailable': return tr('This friend request is unavailable or expired.');
     case 'friend_connection_required': return tr('This friend connection is no longer available.');
     case 'invalid_friend_summary': return tr('Check the summary details and try again.');
+    case 'friend_message_unavailable': return tr('This message is no longer available.');
+    case 'message_reports_not_configured': return tr('Message reporting is being updated. Try again shortly.');
     case 'verified_account_required': return tr('Verify your account to use Friends.');
     default: return tr('Friends are unavailable right now. Try again.');
   }
@@ -146,9 +148,11 @@ export function useFriendsController({ session, inviteToken, onInviteHandled, ro
     setNotice('');
     try {
       const result = await friendsRequest(session, action, payload, scope.controller.signal);
-      if (current()) onSuccess?.(result);
+      if (current()) { onSuccess?.(result); return true; }
+      return false;
     } catch (cause) {
       if (current()) recordFailure(cause, setError);
+      return false;
     } finally {
       if (current()) { setBusy(false); lock.current = false; }
     }
@@ -232,13 +236,21 @@ export function useFriendsController({ session, inviteToken, onInviteHandled, ro
     });
   }
 
+  async function reportMessage(friend, message) {
+    if (!directory?.messageReportsAvailable || busy || !current() || message.senderId === owner) return false;
+    if (!(await confirm({ title: tr('Report this message?'),
+      message: tr('Record this message for MOVO review? Reporting does not block the person or send money.'),
+      confirmLabel: tr('Report to MOVO'), icon: 'shield' }))) return false;
+    return run('report_message', { connectionId: friend.id, messageId: message.id }, () => setNotice(tr('Report recorded.')));
+  }
+
   const nameField = <label className="friends-field"><span>{tr('Name friends will see')}</span>
     <input value={name} onChange={event => setName(event.target.value)} autoComplete="off" maxLength={80} required />
   </label>;
 
   return { sessionExpired, signedIn: signedIn && stateOwner === owner, friends: stateOwner === owner ? friends : null,
     directory: stateOwner === owner ? directory : null, directoryError, listError, error, notice, busy,
-    mode, showMode, run, reload, safetyAction, removeFriend, connectMethods, nameField, scanning, scanned,
+    mode, showMode, run, reload, safetyAction, removeFriend, reportMessage, connectMethods, nameField, scanning, scanned,
     setScanning, preview, setPreview, lookup, setLookup, incoming, setIncoming, openIncoming, acceptInvite,
     createInvite, validName, url, invite, hasActiveInvite, card, share, platform, setInvite, setActiveUntil,
     setRefresh, setNotice, onInviteHandled };

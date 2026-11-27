@@ -48,7 +48,8 @@ export default function FriendsWorkspace({ controller: c, session, friend, user,
         {mode === 'chats' && <div className="friends-workspace-welcome"><Icon name="message" size={40} /><h2>{tr('A little closer to your people')}</h2><p>{tr('Choose a conversation to catch up or share a transaction card.')}</p><p className="friends-note">{tr('Shared cards never move money.')}</p></div>}
         {(mode === 'chat' || mode === 'detail') && !friend && <div className="friends-workspace-state"><p>{tr('Choose a conversation to catch up or share a transaction card.')}</p><button type="button" className="primary-button" onClick={() => navigate('chats')}>{tr('Back to chats')}</button></div>}
         {mode === 'chat' && friend && <div className="friends-workspace-thread"><FriendConversation key={friend.id} session={session} friend={friend} onBack={onBack} onOpenProfile={() => navigate('detail', friend)}
-          transactions={transactions} importAccounts={importAccounts} onImport={onImport} drafts={drafts} /></div>}
+          transactions={transactions} importAccounts={importAccounts} onImport={onImport} drafts={drafts}
+          onReportMessage={c.directory?.messageReportsAvailable === true ? c.reportMessage : undefined} /></div>}
         {mode === 'detail' && friend && <div className="friends-workspace-body">
           <div className="friends-profile-hero"><FriendPhoto name={friend.name} photo={friend.photo} /><h2 dir="auto">{friend.name}</h2>{friend.handle && <p dir="ltr">@{friend.handle}</p>}<span className="friends-profile-status">{tr('MOVO friend')}</span></div>
           <button type="button" className="primary-button" onClick={() => navigate('chat', friend)}><Icon name="message" size={18} />{tr('Open chat')}</button>

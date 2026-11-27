@@ -2,14 +2,14 @@
 
 const { createHash, randomBytes } = require('node:crypto');
 const { clients, gate, send } = require('../lib/referralAuth');
-const { SOCIAL_ACTIONS, socialPayload } = require('../lib/friendSocial');
+const { SOCIAL_ACTIONS, WORKSPACE_ACTIONS, socialPayload } = require('../lib/friendSocial');
 
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const CONNECTION_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const INVITE_ACTIONS = new Set(['create', 'accept', 'preview', 'revoke', 'remove']);
 const ERRORS = { invite_unavailable: 404, own_invite: 409, friend_limit: 409,
   friend_handle_taken: 409, friend_request_received: 409, already_friends: 409, friend_rate_limit: 429,
-  friend_request_unavailable: 404, friend_connection_required: 404 };
+  friend_request_unavailable: 404, friend_connection_required: 404, friend_message_unavailable: 404, friend_access_unavailable: 403 };
 
 function upstreamError(res, action, error) {
   const code = /^[A-Z0-9]{5,10}$/.test(error?.code || '') ? error.code : 'UNKNOWN';
@@ -40,6 +40,8 @@ module.exports = async function handler(req, res) {
   if (req.method === 'POST' && !social && !INVITE_ACTIONS.has(action)) return send(res, 400, { error: 'invalid_action' });
   const payload = social ? socialPayload(action, body) : null;
   if (payload?.error) return send(res, ERRORS[payload.error] || 400, payload);
+  if (action === 'report_message' && process.env.MOVO_FRIEND_MESSAGE_REPORTS_ENABLED !== 'true')
+    return send(res, 503, { error: 'message_reports_not_configured' });
   const token = action === 'create' ? randomBytes(32).toString('base64url') : body.token;
   const name = typeof body.name === 'string' ? body.name.trim() : '';
   if (['preview', 'accept'].includes(action) && (typeof token !== 'string' || !TOKEN_PATTERN.test(token))) {
@@ -57,8 +59,18 @@ module.exports = async function handler(req, res) {
     if (!session.verified) return send(res, 403, { error: 'verified_account_required' });
     const args = { p_actor: session.userId, p_action: action };
     if (social) {
-      const { data, error } = await session.admin.rpc('movo_friend_social', { ...args, p_data: payload });
+      const { data, error } = await session.admin.rpc(WORKSPACE_ACTIONS.has(action) ? 'movo_friend_workspace' : 'movo_friend_social', { ...args, p_data: payload });
       if (error || !data) return upstreamError(res, action, error);
+      if (action === 'directory' && !data.error) {
+        let extra;
+        try { extra = await session.admin.rpc('movo_friend_workspace', { p_actor: session.userId, p_action: 'outgoing_requests', p_data: {} }); }
+        catch { extra = { error: { code: 'UNKNOWN' } }; }
+        if (extra.data?.error === 'friend_access_unavailable') return send(res, 403, { error: 'friend_access_unavailable' });
+        const available = !extra.error && Array.isArray(extra.data?.outgoing);
+        if (!available) console.warn('[movo-friends] request status unavailable', { code: /^[A-Z0-9]{5,10}$/.test(extra.error?.code || '') ? extra.error.code : 'UNKNOWN' });
+        return send(res, 200, { ...data, outgoing: available ? extra.data.outgoing : null, workspaceAvailable: available,
+          messageReportsAvailable: available && process.env.MOVO_FRIEND_MESSAGE_REPORTS_ENABLED === 'true' });
+      }
       if (action === 'summary' && data.yourShare && !data.error) {
         const own = await session.admin.from('movo_friend_summaries').select('snapshot')
           .eq('connection_id', payload.connectionId).eq('owner_id', session.userId).maybeSingle();

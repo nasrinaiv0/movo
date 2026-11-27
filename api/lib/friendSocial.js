@@ -1,7 +1,8 @@
 'use strict';
 
 const SOCIAL_ACTIONS = new Set(['directory', 'set_directory', 'search', 'request', 'accept_request', 'decline_request',
-  'summary', 'share_summary', 'revoke_summary', 'avatar', 'set_avatar', 'block', 'unblock', 'report']);
+  'outgoing_requests', 'cancel_request', 'report_message', 'summary', 'share_summary', 'revoke_summary', 'avatar', 'set_avatar', 'block', 'unblock', 'report']);
+const WORKSPACE_ACTIONS = new Set(['outgoing_requests', 'cancel_request', 'report_message']);
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const HANDLE = /^[a-z0-9_]{3,24}$/;
 const PHOTO = /^data:image\/jpeg;base64,\/[a-zA-Z0-9+/]+={0,2}$/;
@@ -100,8 +101,12 @@ function socialPayload(action, body) {
     }
     return action === 'set_directory' ? { handle, discoverable } : { handle };
   }
-  if (action === 'accept_request' || action === 'decline_request') {
+  if (action === 'accept_request' || action === 'decline_request' || action === 'cancel_request') {
     return typeof requestId === 'string' && UUID.test(requestId) ? { requestId } : { error: 'friend_request_unavailable' };
+  }
+  if (action === 'report_message') {
+    return typeof connectionId === 'string' && UUID.test(connectionId) && typeof body.messageId === 'string' && UUID.test(body.messageId)
+      ? { connectionId, messageId: body.messageId } : { error: 'friend_message_unavailable' };
   }
   if (action === 'unblock') {
     const { blockId } = body;
@@ -129,4 +134,4 @@ function socialPayload(action, body) {
   return {};
 }
 
-module.exports = { SOCIAL_ACTIONS, socialPayload };
+module.exports = { SOCIAL_ACTIONS, WORKSPACE_ACTIONS, socialPayload };

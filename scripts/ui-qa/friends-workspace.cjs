@@ -7,9 +7,9 @@ if(process.env.MOVO_EXPECTED_HEAD)assert.equal(actualHead,process.env.MOVO_EXPEC
 const output=process.env.QA_OUTPUT||'/tmp/movo-friends-workspace';
 const owner='11111111-1111-4111-8111-111111111111', other='22222222-2222-4222-8222-222222222222',cid='33333333-3333-4333-8333-333333333333';
 (async()=>{
- fs.mkdirSync(output,{recursive:true});let unavailable=false,scenario='normal',activeInviteUntil=null;const requests=[],sent=new Map();
+ fs.mkdirSync(output,{recursive:true});let unavailable=false,scenario='normal',activeInviteUntil=null,outgoing=[];const requests=[],sent=new Map(),reports=new Set();
  const friend={id:cid,name:'Mika Santos',lastMessage:'See you at the weekend!',updatedAt:'2026-11-27T08:30:00Z',unread:3};
- const messages=Array.from({length:80},(_,i)=>({id:'message-'+i,senderId:i%3===0?owner:other,kind:'text',body:i===79?'See you at the weekend!':i%3===0?'Sounds good. Let’s make a plan.':'A quiet coffee and a catch-up?',createdAt:new Date(Date.UTC(2026,10,26,12,i*15)).toISOString()}));
+ const messages=Array.from({length:80},(_,i)=>({id:`90000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`,senderId:i%3===0?owner:other,kind:'text',body:i===79?'See you at the weekend!':i%3===0?'Sounds good. Let’s make a plan.':'A quiet coffee and a catch-up?',createdAt:new Date(Date.UTC(2026,10,26,12,i*15)).toISOString()}));
  const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://localhost');
   if(url.pathname.startsWith('/api/')){
@@ -30,7 +30,10 @@ const owner='11111111-1111-4111-8111-111111111111', other='22222222-2222-4222-82
     return send(200,{ok:true});
    }
    if(action==='list')return send(200,{friends:scenario==='empty'?[]:[friend],activeInviteUntil});
-   if(action==='directory')return send(200,{handle:'alex_rivera',discoverable:false,requests:[{id:'request-1',handle:'kai_lee'}],blocked:[{id:'block-1',handle:'blocked_person'}]});
+   if(action==='directory')return send(200,{handle:'alex_rivera',discoverable:false,requests:[{id:'request-1',handle:'jules_reyes'}],blocked:[{id:'block-1',handle:'blocked_person'}],outgoing,workspaceAvailable:true,messageReportsAvailable:true});
+   if(action==='request'){outgoing=[{id:'77777777-7777-4777-8777-777777777777',handle:body.handle,createdAt:'2026-11-27T00:00:00Z'}];return send(200,{ok:true});}
+   if(action==='cancel_request'){assert.equal(body.requestId,'77777777-7777-4777-8777-777777777777');outgoing=[];return send(200,{ok:true,canceled:true});}
+   if(action==='report_message'){assert.deepEqual(Object.keys(body).sort(),['action','connectionId','messageId']);assert.equal(body.connectionId,cid);assert.match(body.messageId,/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i);assert.ok(messages.some(m=>m.id===body.messageId&&m.senderId!==owner));reports.add(body.messageId);return send(200,{ok:true,reportId:'fixture-report'});}
    if(action==='search')return send(200,{people:[{handle:'kai_lee'}]});
    if(action==='create'){activeInviteUntil=new Date(Date.now()+86400000).toISOString();return send(200,{token:'b'.repeat(43),expiresAt:activeInviteUntil});}
    if(action==='preview')return send(200,{name:'Kai Lee',connected:false});
@@ -47,14 +50,14 @@ const owner='11111111-1111-4111-8111-111111111111', other='22222222-2222-4222-82
    const page=await browser.newPage({viewport:{width,height:900},colorScheme:mode,reducedMotion:'reduce'});const errors=[];
    page.on('pageerror',e=>errors.push(e.message));
    await page.route('**/*',route=>route.request().url().startsWith('http://127.0.0.1:4178/')?route.continue():route.abort());
-   sent.clear(); activeInviteUntil=null;
+   sent.clear(); reports.clear(); outgoing=[]; activeInviteUntil=null;
    const start=Date.now(),requestStart=requests.length;
    const button=name=>page.getByRole('button',{name,exact:true});
    const open=async(extra='')=>{await page.goto('http://127.0.0.1:4178/?mode='+mode+extra);await page.locator('.friend-chat-inbox-row').waitFor();};
    const capture=async(name)=>{
     await page.evaluate(()=>document.fonts.ready);
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${width} ${mode} ${name} overflow`);
-    const undersized=await page.locator('.friends-workspace button').evaluateAll(buttons=>buttons.filter(b=>{
+    const undersized=await page.locator('.friends-workspace button,.friends-workspace summary').evaluateAll(buttons=>buttons.filter(b=>{
      const r=b.getBoundingClientRect();return r.width>0&&r.height>0&&(r.height<44||r.width<44);
     }).map(b=>({label:b.textContent,height:b.getBoundingClientRect().height,width:b.getBoundingClientRect().width})));
     assert.deepEqual(undersized,[],`${name}: touch targets`);
@@ -70,16 +73,18 @@ const owner='11111111-1111-4111-8111-111111111111', other='22222222-2222-4222-82
     await button('Back').click();await button('Share profile').click();await page.getByLabel('Name friends will see').fill('Alex Rivera');await page.getByRole('button',{name:/^(Create|Replace) invite$/}).click();await page.locator('.friends-qr').waitFor();await capture('qr');
     await open();await button('Add friend').click();await page.getByLabel('Search MOVO usernames').waitFor();await capture('discovery');
     await page.getByLabel('Search MOVO usernames').fill('kai_lee');await button('Search').click();await button('Send request').click();await button('Request sent').waitFor();assert.equal(await button('Request sent').isDisabled(),true);
+    await page.reload();await page.locator('.friend-chat-inbox-row').waitFor();await button('Add friend').click();await page.locator('.friends-outgoing').getByText('@kai_lee',{exact:true}).waitFor();await capture('sent-request');await button('Cancel request').click();await page.getByText('No pending requests.',{exact:true}).waitFor();
     await button('Paste invite link').click();await page.getByLabel('Paste invite link').fill('http://127.0.0.1:4178/friend#invite='+'c'.repeat(43));await button('Review invite').click();await page.getByText('Kai Lee',{exact:true}).waitFor();await capture('invite-review');
     // Actual send client and synchronous duplicate-tap guard, never a delivery/read claim.
     await open();await page.locator('.friend-chat-inbox-row').click();await page.locator('#friend-chat-message').fill('Synthetic draft');
     await page.locator('.friend-chat-profile').click();await button('Back').click();assert.equal(await page.locator('#friend-chat-message').inputValue(),'Synthetic draft');
     await button('Send message').click();await page.getByText('Synthetic draft',{exact:true}).last().waitFor();
+    await page.getByLabel('Conversation options').click();await button('Report a message').click();await capture('report-selection');await page.locator('.friend-message-report').last().click();await page.locator('.confirm-dialog').getByRole('button',{name:'Report to MOVO',exact:true}).click();await page.getByText('Report recorded.',{exact:true}).waitFor();assert.equal(reports.size,1);assert.equal(await page.locator('.friend-message-report').count(),0);
     await page.locator('.friend-chat-messages').evaluate(node=>{node.scrollTop=0;node.dispatchEvent(new Event('scroll'));});
     const scrollBefore=await page.locator('.friend-chat-messages').evaluate(node=>node.scrollTop);
     await page.getByRole('button',{name:'Send message',exact:true}).focus();assert.equal(await page.locator('.friend-chat-messages').evaluate(node=>node.scrollTop),scrollBefore);
     const frames=await page.evaluate(()=>new Promise(resolve=>{let last=performance.now(),d=[];function frame(t){d.push(t-last);last=t;if(d.length===30)resolve(d.slice(1));else requestAnimationFrame(frame);}requestAnimationFrame(frame);}));
-    results.push({width,mode,inboxReadyMs,requests:requests.length-requestStart,frameMaxMs:Math.max(...frames),frameMedianMs:frames.sort((a,b)=>a-b)[Math.floor(frames.length/2)],heapBytes:await page.evaluate(()=>performance.memory?.usedJSHeapSize||null),screens:8});
+    results.push({width,mode,inboxReadyMs,requests:requests.length-requestStart,frameMaxMs:Math.max(...frames),frameMedianMs:frames.sort((a,b)=>a-b)[Math.floor(frames.length/2)],heapBytes:await page.evaluate(()=>performance.memory?.usedJSHeapSize||null),screens:10});
     assert.deepEqual(errors,[]);
    }catch(error){await page.screenshot({path:path.join(output,`${width}-${mode}-failure.png`),fullPage:true});throw error;}finally{await page.close();}
   }
@@ -111,7 +116,7 @@ const owner='11111111-1111-4111-8111-111111111111', other='22222222-2222-4222-82
   await adaptive.emulateMedia({reducedMotion:'reduce'});assert.equal(await adaptive.locator('.just-arrived').evaluate(node=>getComputedStyle(node).animationName),'none');await adaptive.close();
 
   const bundle=fs.readFileSync('/tmp/movo-ui-qa/qa.js');
-  fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({fixture:'actual components; loopback synthetic services; browser evidence only',head:actualHead,motionFramesMs:motionFrames,sourceHashes:Object.fromEntries(['package.json','package-lock.json','src/App.js','src/App.css','src/components/FriendsWorkspace.js','src/components/FriendsSheet.js','src/components/FriendsWorkspace.css','src/components/FriendsController.js','src/components/FriendInvitations.js','src/components/FriendMessages.js','src/components/FriendMessages.css','src/components/FriendsDiscovery.js','src/components/FriendFinanceSummary.js'].map(file=>[file,crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex')])),bundle:{bytes:bundle.length,gzipBytes:zlib.gzipSync(bundle).length,sha256:crypto.createHash('sha256').update(bundle).digest('hex')},results},null,2));
-  console.log(`${results.length} workspace profiles passed; 73 actual screenshots, error/retry, drafts, QR review and targets checked`);
+  fs.writeFileSync(path.join(output,'results.json'),JSON.stringify({fixture:'actual components; loopback synthetic services; browser evidence only',head:actualHead,workingTree:require('child_process').execFileSync('git',['status','--porcelain'],{cwd:root,encoding:'utf8'}).trim()?'uncommitted':'clean',motionFramesMs:motionFrames,sourceHashes:Object.fromEntries(['package.json','package-lock.json','api/friends/index.js','api/lib/friendSocial.js','supabase/migrations/20261127114611_friend_workspace_safety.sql','src/App.js','src/App.css','src/components/FriendsWorkspace.js','src/components/FriendsSheet.js','src/components/FriendsWorkspace.css','src/components/FriendsController.js','src/components/FriendInvitations.js','src/components/FriendMessages.js','src/components/FriendMessages.css','src/components/FriendsDiscovery.js','src/components/FriendFinanceSummary.js'].map(file=>[file,crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex')])),bundle:{bytes:bundle.length,gzipBytes:zlib.gzipSync(bundle).length,sha256:crypto.createHash('sha256').update(bundle).digest('hex')},results},null,2));
+  console.log(`${results.length} workspace profiles passed; 89 actual screenshots, error/retry, drafts, QR review and targets checked`);
  }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exit(1);});

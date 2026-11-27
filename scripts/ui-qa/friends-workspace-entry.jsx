@@ -18,8 +18,8 @@ function Fixture(){
  const drafts=React.useRef(new Map());
  const confirm=useConfirmController();
  const navigate=(next,value)=>{setTrail(t=>[...t,mode]);setMode(next);if(value)setFriend(value);};
- const c=useFriendsController({session,routeMode:mode,onNavigate:navigate,confirmAction:confirm.confirm});
  const inbox=useFriendInbox(session);
+ const c=useFriendsController({session,routeMode:mode,onNavigate:navigate,confirmAction:confirm.confirm,onConnectionsChanged:inbox.reload});
  return <ConfirmProvider value={confirm.confirm}><div className={'movo-app theme-'+theme+' accent-green'} style={{minHeight:'100dvh',background:'var(--bg)',color:'var(--text)',padding:16,boxSizing:'border-box'}}>
  <main style={{maxWidth:1120,margin:'0 auto'}}><FriendsWorkspace key={mode} controller={c} inbox={inbox} session={session} friend={friend}
  user={{name:'Alex Rivera',initial:'A'}} drafts={drafts.current} onNavigate={navigate}

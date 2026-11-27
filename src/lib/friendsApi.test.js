@@ -110,3 +110,54 @@ test('editing a share receives only the authenticated owner’s saved snapshot',
   expect(eq.mock.calls).toEqual([['connection_id', id], ['owner_id', id]]);
   expect(result.json).toHaveBeenCalledWith({ sharedWithYou: null, yourShare: true, yourSummary: own });
 });
+
+test('message reports remain disabled without an explicit reviewed rollout', async () => {
+  delete process.env.MOVO_FRIEND_MESSAGE_REPORTS_ENABLED;
+  const result = await call('POST', { action: 'report_message', connectionId: id, messageId: id });
+  expect(result.status).toHaveBeenCalledWith(503);
+  expect(result.json).toHaveBeenCalledWith({ error: 'message_reports_not_configured' });
+  expect(rpc).not.toHaveBeenCalled();
+});
+
+test('message reporting uses the verified actor and identifiers only, never caller evidence or financial data', async () => {
+  process.env.MOVO_FRIEND_MESSAGE_REPORTS_ENABLED = 'true';
+  try {
+    const result = await call('POST', { action: 'report_message', connectionId: id, messageId: id,
+      p_actor: 'forged', body: 'Do not copy', accountId: 'private', card: { amount: 1 } });
+    expect(result.status).toHaveBeenCalledWith(200);
+    expect(rpc).toHaveBeenCalledWith('movo_friend_workspace', { p_actor: id, p_action: 'report_message', p_data: { connectionId: id, messageId: id } });
+    expect((await call('POST', { action: 'report_message', connectionId: id, messageId: 'bad' })).status).toHaveBeenCalledWith(404);
+  } finally { delete process.env.MOVO_FRIEND_MESSAGE_REPORTS_ENABLED; }
+});
+
+test('directory reads persisted outgoing state for the authenticated owner across sessions', async () => {
+  const outgoing = [{ id, handle: 'friend_handle', createdAt: '2026-11-27T00:00:00Z' }];
+  rpc.mockImplementation(async (fn) => ({ data: fn === 'movo_friend_social' ? { handle: 'my_handle', requests: [], blocked: [] } : { outgoing } }));
+  for (const token of ['device-one', 'device-two']) {
+    const result = await call('POST', { action: 'directory', ownerId: 'someone-else' }, { authorization: 'Bearer '+token });
+    expect(result.json).toHaveBeenCalledWith(expect.objectContaining({ outgoing, workspaceAvailable: true, messageReportsAvailable: false }));
+    expect(rpc).toHaveBeenCalledWith('movo_friend_workspace', { p_actor: id, p_action: 'outgoing_requests', p_data: {} });
+  }
+});
+
+test('a missing workspace migration preserves basic discovery and marks request status unavailable', async () => {
+  rpc.mockImplementation(async (fn) => fn === 'movo_friend_social' ? { data: { handle: 'mine', requests: [], blocked: [] } } : { error: { code: 'PGRST202', message: 'private diagnostic' } });
+  const result = await call('POST', { action: 'directory' });
+  expect(result.status).toHaveBeenCalledWith(200);
+  expect(result.json).toHaveBeenCalledWith({ handle: 'mine', requests: [], blocked: [], outgoing: null, workspaceAvailable: false, messageReportsAvailable: false });
+  expect(JSON.stringify(result.json.mock.calls)).not.toContain('private diagnostic');
+});
+
+test('erasure denial from the workspace projection does not return stale directory data', async () => {
+  rpc.mockImplementation(async (fn) => fn === 'movo_friend_social' ? { data: { handle: 'private', requests: [] } } : { data: { error: 'friend_access_unavailable' } });
+  const result = await call('POST', { action: 'directory' });
+  expect(result.status).toHaveBeenCalledWith(403);
+  expect(result.json).toHaveBeenCalledWith({ error: 'friend_access_unavailable' });
+});
+
+test('cancellation projects only a validated request ID and never trusts supplied ownership', async () => {
+  const result = await call('POST', { action: 'cancel_request', requestId: id, p_actor: 'forged', recipient: 'forged' });
+  expect(result.status).toHaveBeenCalledWith(200);
+  expect(rpc).toHaveBeenCalledWith('movo_friend_workspace', { p_actor: id, p_action: 'cancel_request', p_data: { requestId: id } });
+  expect((await call('POST', { action: 'cancel_request', requestId: 'invalid' })).status).toHaveBeenCalledWith(404);
+});
