@@ -12,26 +12,30 @@ struct MOVOWatchApp: App {
             ScrollView {
                 VStack(spacing: 10) {
                     Image(systemName: "wallet.pass.fill")
-                        .font(.system(size: 26, weight: .medium))
+                        .font(.title2)
                         .foregroundStyle(.green)
                         .accessibilityHidden(true)
                     Text("MOVO")
-                        .font(.system(size: 23, weight: .bold, design: .rounded))
+                        .font(.title2.bold())
                     Text("Money Organizer & Visual Outflow")
-                        .font(.system(size: 11))
+                        .font(.caption2)
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.secondary)
                     Button {
                         bridge.requestQuickLog()
                     } label: {
                         Label("Quick Log on iPhone", systemImage: "plus.circle")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.headline)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(bridge.isRequestPending)
                     .tint(Color(red: 0.03, green: 0.42, blue: 0.23))
                     .accessibilityHint("Continue logging in the MOVO app on your iPhone")
                     Text(bridge.message)
-                        .font(.system(size: 11))
+                        .font(.footnote)
+                        .fixedSize(horizontal: false, vertical: true)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .accessibilityLabel(bridge.message)
@@ -46,6 +50,8 @@ struct MOVOWatchApp: App {
 
 final class WatchQuickLogBridge: NSObject, ObservableObject, WCSessionDelegate {
     @Published var message = "Your financial information stays on your iPhone."
+    @Published private(set) var isRequestPending = false
+    private var requestID: UUID?
 
     override init() {
         super.init()
@@ -56,6 +62,7 @@ final class WatchQuickLogBridge: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     func requestQuickLog() {
+        guard !isRequestPending else { return }
         guard WCSession.isSupported(),
               WCSession.default.activationState == .activated,
               WCSession.default.isReachable else {
@@ -63,17 +70,31 @@ final class WatchQuickLogBridge: NSObject, ObservableObject, WCSessionDelegate {
             return
         }
         message = "Contacting iPhone…"
+        isRequestPending = true
+        let id = UUID()
+        requestID = id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
+            self?.complete(id, message: "Open MOVO manually on your iPhone.")
+        }
         WCSession.default.sendMessage(["action": "quickLog"], replyHandler: { [weak self] reply in
             DispatchQueue.main.async {
-                self?.message = (reply["ok"] as? Bool) == true
+                let message = (reply["ok"] as? Bool) == true
                     ? "Open MOVO on your iPhone to finish."
                     : "Open MOVO manually on your iPhone."
+                self?.complete(id, message: message)
             }
         }, errorHandler: { [weak self] _ in
             DispatchQueue.main.async {
-                self?.message = "Open MOVO manually on your iPhone."
+                self?.complete(id, message: "Open MOVO manually on your iPhone.")
             }
         })
+    }
+
+    private func complete(_ id: UUID, message: String) {
+        guard requestID == id else { return }
+        requestID = nil
+        isRequestPending = false
+        self.message = message
     }
 
     func session(_ session: WCSession, activationDidCompleteWith state: WCSessionActivationState, error: Error?) {

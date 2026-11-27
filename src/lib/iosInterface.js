@@ -16,6 +16,8 @@ export function applyIosInterface(settings, root = document.documentElement) {
   if (Number.isFinite(scale) && scale >= 0.5 && scale <= 4) root.style.setProperty('--ios-text-scale', String(scale));
   const height = Number(settings?.topBarHeight);
   if (Number.isFinite(height) && height >= 44 && height <= 240) root.style.setProperty('--native-top-height', height + 'px');
+  const rail = Number(settings?.railWidth);
+  if (Number.isFinite(rail) && rail >= 0 && rail <= 240) root.style.setProperty('--native-rail-width', rail + 'px');
   for (const [key, name] of Object.entries({ reduceMotion: 'ios-reduce-motion', reduceTransparency: 'ios-reduce-transparency', boldText: 'ios-bold-text', increaseContrast: 'ios-increase-contrast' })) {
     root.classList.toggle(name, settings?.[key] === true);
   }
@@ -49,6 +51,6 @@ export function startIosInterface() {
     viewport?.removeEventListener('resize', resize);
     viewport?.removeEventListener('scroll', resize);
     root.classList.remove('ios-interface', 'ios-system-appearance', 'ios-reduce-motion', 'ios-reduce-transparency', 'ios-bold-text', 'ios-increase-contrast');
-    for (const name of ['--ios-panel-bg', '--ios-field-bg', '--ios-separator', '--ios-text-scale', '--native-top-height', '--ios-viewport-height', '--ios-viewport-top']) root.style.removeProperty(name);
+    for (const name of ['--ios-panel-bg', '--ios-field-bg', '--ios-separator', '--ios-text-scale', '--native-top-height', '--native-rail-width', '--ios-viewport-height', '--ios-viewport-top']) root.style.removeProperty(name);
   };
 }

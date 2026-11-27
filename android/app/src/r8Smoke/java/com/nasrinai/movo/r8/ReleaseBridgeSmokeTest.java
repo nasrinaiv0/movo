@@ -149,6 +149,7 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
         assertTrue("Native AES-GCM IV:ciphertext record missing", saved.contains(":"));
         recreateActivity();
         awaitJs("bridge after Activity recreation", "typeof window.Capacitor?.nativePromise === 'function'", 45000);
+        assertBridgeContracts();
         assertEquals(VALUE, asyncJs("window.Capacitor.nativePromise('MovoNative','secureGet',{key:" + quote(VAULT_KEY) + "})").getString("value"));
         JSONObject removed = asyncJs("(async () => {await window.Capacitor.nativePromise('MovoNative','secureRemove',{key:" + quote(VAULT_KEY) + "});" +
             "return await window.Capacitor.nativePromise('MovoNative','secureGet',{key:" + quote(VAULT_KEY) + "});})()");
@@ -234,10 +235,14 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
     private void assertBridgeContracts() throws Exception {
         JSONObject result = asyncJs("(async () => {const C=window.Capacitor; const required={" +
             "MovoNative:['secureSet','secureGet','secureRemove','installReferrer','requestReview','shareFriendInvite','copyFriendInvite']," +
+            "MovoWindow:['getWindowLayout']," +
             "App:['getLaunchUrl','addListener'],Preferences:['get','set','remove'],Browser:['open','close']," +
             "NativePurchases:['getProducts','getPurchases','purchaseProduct','restorePurchases']};" +
             "for(const [name,methods] of Object.entries(required)){const header=C.PluginHeaders?.find(p=>p.name===name);" +
             "if(!header || methods.some(m=>!header.methods.some(x=>x.name===m))) throw Error('Missing reflected contract: '+name);} " +
+            "const geometry=await C.nativePromise('MovoWindow','getWindowLayout',{});" +
+            "if(!(geometry.width>0 && geometry.height>0) || !Array.isArray(geometry.folds) || " +
+            "Object.keys(geometry).sort().join(',')!=='folds,height,width') throw Error('Invalid read-only window geometry');" +
             "await C.nativePromise('App','getLaunchUrl',{}); return {ok:true};})()");
         assertTrue(result.getBoolean("ok"));
     }

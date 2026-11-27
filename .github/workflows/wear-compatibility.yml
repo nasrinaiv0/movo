@@ -1,0 +1,113 @@
+name: MOVO Wear OS adaptive acceptance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'android/wear/**'
+      - 'android/variables.gradle'
+      - '.github/workflows/wear-compatibility.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: movo-wear-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  round-watch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        profile: [wearos_small_round, wearos_large_round]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install locked native dependency sources
+        run: npx --yes npm@11.19.1 ci
+      - name: Install Android compile SDK
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
+          test -e /dev/kvm
+          sudo chmod a+rw /dev/kvm
+      - name: Build real web assets for native dependency generation
+        run: CI=true npm run build
+      - name: Synchronize Capacitor Android project
+        run: |
+          npx cap sync android
+          test -f android/capacitor-cordova-android-plugins/cordova.variables.gradle
+      - name: Compile wearable app and native acceptance tests
+        working-directory: android
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            log="$RUNNER_TEMP/wear-gradle-compile-$attempt.log"
+            if bash gradlew :wear:assembleDebug :wear:assembleDebugAndroidTest --no-daemon 2>&1 | tee "$log"; then exit 0; fi
+            if [ "$attempt" -eq 3 ] || ! grep -Eq 'Received status code 429|HTTP 429' "$log"; then exit 1; fi
+            sleep "$((attempt * 45))"
+          done
+          exit 1
+      - name: Run round-screen and enlarged-font acceptance on Wear OS
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 34
+          target: android-wear
+          arch: x86_64
+          profile: ${{ matrix.profile }}
+          avd-name: movo-wear
+          force-avd-creation: true
+          ram-size: 2048M
+          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim
+          script: |
+            mkdir -p "$RUNNER_TEMP/wear-evidence"
+            adb wait-for-device shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 1; done'
+            adb shell settings put global device_provisioned 1
+            adb shell settings put secure user_setup_complete 1
+            adb shell dumpsys battery unplug
+            adb shell settings put system screen_off_timeout 1800000
+            adb shell input keyevent KEYCODE_WAKEUP
+            adb shell input keyevent KEYCODE_HOME
+            sleep 5
+            adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' || true
+            adb exec-out screencap -p > "$RUNNER_TEMP/wear-evidence/before-tests.png" || true
+            adb shell input keyevent KEYCODE_WAKEUP
+            adb shell wm dismiss-keyguard
+            adb shell settings put system font_scale 1.0
+            bash android/gradlew -p android :wear:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.expectedFontScale=1.0 -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon || { mkdir -p "$RUNNER_TEMP/wear-evidence/default-in-test"; adb pull /sdcard/Android/data/com.nasrinai.movo/files/ "$RUNNER_TEMP/wear-evidence/default-in-test/" || true; adb shell dumpsys window > "$RUNNER_TEMP/wear-evidence/default-failure-focus.txt" || true; adb exec-out screencap -p > "$RUNNER_TEMP/wear-evidence/default-failure.png" || true; cat android/wear/build/outputs/androidTest-results/connected/debug/*.xml || true; exit 1; }
+            adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png "$RUNNER_TEMP/wear-evidence/default-font.png"
+            test -s "$RUNNER_TEMP/wear-evidence/default-font.png"
+            adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.txt "$RUNNER_TEMP/wear-evidence/default-geometry.txt"
+            adb shell rm -f /sdcard/Android/data/com.nasrinai.movo/files/wear-layout-failure.png /sdcard/Android/data/com.nasrinai.movo/files/wear-layout-failure.txt /sdcard/Android/data/com.nasrinai.movo/files/wear-handoff-failure.png /sdcard/Android/data/com.nasrinai.movo/files/wear-handoff-failure.txt /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.txt
+            adb shell rm -f /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png
+            adb shell settings put system font_scale 2.0
+            adb shell am force-stop com.nasrinai.movo
+            adb shell dumpsys battery unplug
+            adb shell input keyevent KEYCODE_WAKEUP
+            adb shell wm dismiss-keyguard
+            adb shell am start -W -n com.nasrinai.movo/com.nasrinai.movo.wear.WearActivity
+            timeout 30s sh -c 'until adb shell dumpsys window | grep -Eq "mCurrentFocus=.*com\.nasrinai\.movo/"; do sleep 1; done' || { adb shell dumpsys window > "$RUNNER_TEMP/wear-evidence/enlarged-focus.txt"; adb exec-out screencap -p > "$RUNNER_TEMP/wear-evidence/enlarged-foreground-failure.png"; exit 1; }
+            bash android/gradlew -p android :wear:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.expectedFontScale=2.0 -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --rerun-tasks || { mkdir -p "$RUNNER_TEMP/wear-evidence/enlarged-in-test"; adb pull /sdcard/Android/data/com.nasrinai.movo/files/ "$RUNNER_TEMP/wear-evidence/enlarged-in-test/" || true; adb shell dumpsys window > "$RUNNER_TEMP/wear-evidence/enlarged-failure-focus.txt" || true; adb exec-out screencap -p > "$RUNNER_TEMP/wear-evidence/enlarged-failure.png" || true; cat android/wear/build/outputs/androidTest-results/connected/debug/*.xml || true; exit 1; }
+            adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.png "$RUNNER_TEMP/wear-evidence/enlarged-font.png"
+            test -s "$RUNNER_TEMP/wear-evidence/enlarged-font.png"
+            adb pull /sdcard/Android/data/com.nasrinai.movo/files/wear-layout.txt "$RUNNER_TEMP/wear-evidence/enlarged-geometry.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: movo-${{ matrix.profile }}-acceptance
+          path: |
+            ${{ runner.temp }}/wear-evidence/
+            android/wear/build/reports/androidTests/
+          if-no-files-found: warn
+          retention-days: 7

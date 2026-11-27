@@ -70,16 +70,29 @@ jobs:
         run: python3 scripts/r8/experiment.py --mode analyzer --output "$R8_OUTPUT"
       - name: Verify temporary configuration restored
         if: always()
-        run: git diff --exit-code -- android/settings.gradle android/app/proguard-rules.pro
+        env:
+          MOVO_JOB_CANCELLED: ${{ cancelled() }}
+        run: |
+          set -euo pipefail
+          if git diff --exit-code -- android/settings.gradle android/app/proguard-rules.pro; then exit 0; fi
+          if [ "$MOVO_JOB_CANCELLED" != "true" ]; then
+            echo "::error::Unexpected experiment configuration drift"
+            exit 1
+          fi
+          # Runner cancellation can interrupt Python before its finally block.
+          # Restore only the two experiment-owned paths in this disposable checkout.
+          git restore --source=HEAD --worktree -- android/settings.gradle android/app/proguard-rules.pro
+          git diff --exit-code -- android/settings.gradle android/app/proguard-rules.pro
+          echo "::warning::Cancelled experiment configuration restored; no acceptance credit"
       - name: Release compiler daemons and record memory before emulator
-        if: always() && steps.default-build.outcome == 'success'
+        if: ${{ !cancelled() && steps.default-build.outcome == 'success' }}
         run: |
           free -m
           bash android/gradlew --stop -p android
           free -m
           df -h "$RUNNER_TEMP"
       - name: Enable KVM on disposable Linux runner
-        if: always() && steps.default-build.outcome == 'success'
+        if: ${{ !cancelled() && steps.default-build.outcome == 'success' }}
         run: |
           test -e /dev/kvm
           sudo chmod a+rw /dev/kvm
@@ -87,7 +100,7 @@ jobs:
       - name: Offline emulator acceptance on DEFAULT release baseline
         id: baseline-acceptance
         timeout-minutes: 25
-        if: always() && steps.default-build.outcome == 'success'
+        if: ${{ !cancelled() && steps.default-build.outcome == 'success' }}
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
           api-level: 35
@@ -101,7 +114,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           script: python3 scripts/r8/emulator_smoke.py --disposable-emulator --variant baseline --output "$R8_OUTPUT"
       - name: Offline emulator acceptance on DEFAULT release candidate
-        if: always() && steps.default-build.outcome == 'success' && steps.baseline-acceptance.outcome == 'success'
+        if: ${{ !cancelled() && steps.default-build.outcome == 'success' && steps.baseline-acceptance.outcome == 'success' }}
         timeout-minutes: 25
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:

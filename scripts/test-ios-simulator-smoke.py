@@ -13,6 +13,20 @@ spec.loader.exec_module(smoke)
 
 
 class IosSimulatorSmokeTests(unittest.TestCase):
+    def test_device_family_never_silently_substitutes_a_phone_for_duo_or_ipad(self):
+        import json
+        devices = json.dumps({"devices": {"iOS 27.1": [
+            {"name": "iPhone 18", "udid": "phone", "isAvailable": True},
+            {"name": "iPhone Duo", "udid": "duo", "isAvailable": True},
+            {"name": "iPad Pro", "udid": "ipad", "isAvailable": True},
+        ]}})
+        self.assertEqual("duo", smoke.choose_iphone(devices, "duo")["udid"])
+        self.assertEqual("ipad", smoke.choose_iphone(devices, "ipad")["udid"])
+        with self.assertRaisesRegex(smoke.SmokeFailure, "No available duo"):
+            smoke.choose_iphone(json.dumps({"devices": {"iOS 27.1": [
+                {"name": "iPhone 18", "udid": "phone", "isAvailable": True}
+            ]}}), "duo")
+
     def test_prefers_booted_iphone(self):
         devices = {
             "devices": {
