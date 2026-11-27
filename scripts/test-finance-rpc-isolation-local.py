@@ -1,4 +1,4 @@
-"""Run production migration SQL and 12 privileged finance-RPC tenant tests against
+"""Run production migration SQL and privileged finance-RPC isolation tests against
 an ephemeral *local* Postgres database. No Supabase project or remote host used.
 
 Only GitHub Actions with the disposable PostgreSQL service container are allowed.
@@ -96,6 +96,11 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role BYPASSRLS; END IF;
 END $$;
 CREATE SCHEMA auth; CREATE SCHEMA storage;
+-- Match the hosted postgres role's effective public-schema default ACLs.
+-- Without these, the original service/ledger denial regression falsely passes.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon, authenticated, service_role;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE auth.users (
   id uuid PRIMARY KEY,
@@ -471,9 +476,9 @@ def main():
         # Main already contains migrations newer than the staged PR. Rehearse
         # the upgrade from that deployed schema with only the three PR stages pending.
         upgrade_versions = ("20261111133000", "20261111133100", "20261111133200")
-        # Rehearse the three observed missing capabilities plus the local-only workspace proposal separately.
+        # Rehearse the pending chat/import/loan/workspace capabilities and forward grant fixes.
         # This is a repository-derived approximation, not a production dump.
-        pending_versions = ("20261123131500", "20261123170000", "20261124030000", "20261127114611", "20261127212047")
+        pending_versions = ("20261123131500", "20261123170000", "20261124030000", "20261127114611", "20261127212047", "20261127234509")
         pending = [migration for migration in migrations if migration.name[:14] in pending_versions]
         if tuple(migration.name[:14] for migration in pending) != pending_versions:
             raise RuntimeError("Unexpected pending friend/loan/workspace migration sequence")
@@ -531,7 +536,23 @@ def main():
                   end $$;
                   rollback;
                 """, "hosted column-only Auth grants reproduce workspace permission failure before fix")
+            if migration.name[:14] == "20261127234509":
+                sql(r"""
+                  begin;
+                  set local role service_role;
+                  do $$ begin
+                    if not has_table_privilege(current_user,'public.transactions','INSERT')
+                       or not has_table_privilege(current_user,'public.transactions','UPDATE')
+                       or not has_table_privilege(current_user,'public.transactions','DELETE') then
+                      raise exception 'Hosted raw server ledger grant gap was not reproduced';
+                    end if;
+                  end $$;
+                  update public.transactions set merchant=merchant where false;
+                  rollback;
+                """, "hosted defaults reproduce raw server ledger access before the fence")
             sql(migration.read_text(), "pending capability upgrade: " + migration.name)
+        sql((ROOT / "supabase/tests/service_ledger_write_fence.test.sql").read_text(),
+            "hosted service grants deny raw ledger writes and preserve idempotent automation")
         sql((ROOT / "supabase/tests/security_definer_tenant_isolation.test.sql").read_text(),
             "12 SECURITY DEFINER cross-tenant denials and owner-only controls")
         sql((ROOT / "supabase/tests/hybrid_sync_operations.test.sql").read_text(),
