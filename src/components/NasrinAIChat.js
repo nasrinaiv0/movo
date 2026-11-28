@@ -78,7 +78,7 @@ export default function NasrinAIChat(props) {
 }
 
 // Safety UI uses the canonical translation catalogue. No message text is transmitted.
-function AIReportControl({ session, messageId }) {
+export function AIReportControl({ session, messageId }) {
   const [reason, setReason] = useState('');
   const [status, setStatus] = useState('');
   const request = useRef(null);

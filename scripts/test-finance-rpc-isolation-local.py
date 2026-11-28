@@ -471,7 +471,19 @@ def verify_ai_reporting_candidate():
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier
     import json
-    sql((ROOT / "docs/store-compliance/AI_REPORT_DATABASE_DRAFT.sql").read_text(), "AI reporting isolated candidate DDL (not a migration)")
+    draft = (ROOT / "docs/store-compliance/AI_REPORT_DATABASE_DRAFT.sql").read_text()
+    generated = os.environ.get("MOVO_AI_REPORT_MIGRATION_CANDIDATE")
+    if generated:
+        candidate = Path(generated).resolve(strict=True)
+        expected_root = (Path(os.environ["RUNNER_TEMP"]) / "movo-ai-migration" / "work" / "supabase" / "migrations").resolve()
+        if candidate.parent != expected_root or not candidate.name.endswith("_movo_ai_reporting_moderation_candidate.sql"):
+            raise RuntimeError("Unsafe generated candidate path")
+        migration = candidate.read_text()
+        if migration != "begin;\n" + draft + "\ncommit;\n":
+            raise RuntimeError("Migration differs from the reviewed candidate")
+        sql(migration, "CLI-generated isolated AI reporting migration candidate")
+    else:
+        sql(draft, "AI reporting isolated candidate DDL (not a migration)")
     sql((ROOT / "supabase/tests/ai_reporting_candidate.test.sql").read_text(), "AI report owner authorization and deletion/rate durability")
     owner = "a3480000-0000-4000-8000-000000000010"
     thread = "b3480000-0000-4000-8000-000000000010"

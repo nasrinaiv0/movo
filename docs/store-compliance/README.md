@@ -44,3 +44,6 @@ The existing disposable PostgreSQL 17/18 matrix now exercises the non-migration 
 
 ## Provenance and moderation candidate
 See MODERATION_OPERATIONS.md. The atomic service-only turn writer, moderation API, queue and retention DDL remain separately gated; the SQL is installed only at the end of existing disposable CI. No production migration, activation or legal approval.
+
+## Isolated migration and dedicated safety visual acceptance
+Existing finance CI generates a CLI-named candidate in runner temporary storage, verifies exact source bytes and tests the generated SQL against disposable PostgreSQL 17/18 only. Successful candidate artifacts are not deployed migrations or approvals. Existing visual workflow renders actual exported AI and owner controls with synthetic loopback data. See engineering update and MODERATION_OPERATIONS.md. Pending all evidence gates.

@@ -5,6 +5,10 @@ on:
     paths:
       - 'src/components/Friend*.js'
       - 'src/components/Friend*.css'
+      - 'src/components/NasrinAIChat*'
+      - 'src/owner/**'
+      - 'src/i18n/catalog/ai-report-safety.js'
+      - 'src/i18n/extra/ceb.json'
       - 'src/lib/sharedLedgerDate.js'
       - 'src/App.js'
       - 'scripts/ui-qa/**'
@@ -54,6 +58,13 @@ jobs:
         run: |
           MOVO_UI_QA_ENTRY=workspace NODE_ENV=development node scripts/ui-qa/build.cjs
           NODE_PATH="$RUNNER_TEMP/movo-ui-tools/node_modules" QA_OUTPUT="$RUNNER_TEMP/movo-friend-ui/workspace" node scripts/ui-qa/friends-workspace.cjs
+      - name: Render real multilingual AI reporting and owner moderation controls
+        if: github.event.pull_request.number == 348 && matrix.variant == 'baseline'
+        env:
+          MOVO_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          MOVO_UI_QA_ENTRY=safety NODE_ENV=development node scripts/ui-qa/build.cjs
+          NODE_PATH="$RUNNER_TEMP/movo-ui-tools/node_modules" QA_OUTPUT="$RUNNER_TEMP/movo-friend-ui/safety" node scripts/ui-qa/safety.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

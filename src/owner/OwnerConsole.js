@@ -145,7 +145,7 @@ function GrantForm({userId,session,onDone}) {
     <button type="submit" className="occ-primary" disabled={!confirmed||reason.trim().length<5||busy}>{busy?'Saving…':'Confirm and grant access'}</button>
   </form>;
 }
-function AIModerationQueue({session, reports, refresh}) {
+export function AIModerationQueue({session, reports, refresh}) {
   const [detail,setDetail]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const generation=React.useRef(0), lock=React.useRef(false);
   useEffect(()=>()=>{generation.current++;},[]);
