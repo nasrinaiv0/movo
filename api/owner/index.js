@@ -22,6 +22,8 @@ function configuration() {
   const owners = new Set(String(process.env.MOVO_OWNER_USER_IDS || '').split(',').map(v => v.trim().toLowerCase()).filter(v => UUID.test(v)));
   return {url,anon,service,owners};
 }
+const moderatorAllowed = actor => process.env.MOVO_AI_MODERATION_ENABLED==='true'
+  && String(process.env.MOVO_MODERATOR_USER_IDS||'').split(',').map(v=>v.trim().toLowerCase()).filter(v=>UUID.test(v)).includes(actor.toLowerCase());
 const safeError = e => String(e?.code || 'unavailable').slice(0,40);
 async function collect(admin) {
   const count = async (table,field,eq) => {
@@ -60,6 +62,14 @@ async function handler(req,res) {
     if(req.method==='POST'){
       const body=req.body && typeof req.body==='object' && !Array.isArray(req.body) ? req.body : {};
       const action=body.action,target=body.userId,tier=body.tier;
+      if(action==='ai_moderation'){
+        if(!moderatorAllowed(actor))return reply(res,403,{error:'moderation_unavailable'});
+        if(!UUID.test(body.reportId||'')||!['inspect','reviewed','dismissed','escalated'].includes(body.decision)
+          ||(body.decision!=='inspect'&&!['pending','escalated'].includes(body.expectedStatus)))return reply(res,400,{error:'invalid_moderation_action'});
+        const {data,error}=await admin.rpc('movo_ai_moderation_action',{p_actor:actor,p_action:body.decision,p_report:body.reportId,p_expected:body.decision==='inspect'?null:body.expectedStatus});
+        if(error||!data)throw Error('moderation_unavailable');
+        return reply(res,data.error?(data.error==='report_changed'?409:404):200,data);
+      }
       if(action==='work_create'){
         if(!WORK_AREAS.has(body.area)||typeof body.title!=='string'||body.title.trim().length<5||body.title.length>140
           ||typeof body.notes!=='string'||body.notes.length>3000||!WORK_PRIORITIES.has(body.priority))
@@ -189,7 +199,10 @@ async function handler(req,res) {
       if(view==='support'){
         const {data:reports,error}=await admin.from('movo_friend_reports').select('id,reason,reported,created_at')
           .order('created_at',{ascending:false}).limit(100);
-        return reply(res,200,{items:items||[],reports:reports||[],reportsAvailable:!error,limitedTo:100,status:'ready',externalIntegration:'not_integrated'});
+        const moderation=moderatorAllowed(actor)?await admin.rpc('movo_ai_moderation_action',{p_actor:actor,p_action:'list',p_report:null,p_expected:null}):null;
+        return reply(res,200,{items:items||[],reports:reports||[],reportsAvailable:!error,limitedTo:100,status:'ready',externalIntegration:'not_integrated',
+          aiModerationAvailable:!!moderation&&!moderation.error&&Array.isArray(moderation.data?.reports),
+          aiReports: Array.isArray(moderation?.data?.reports)?moderation.data.reports:[]});
       }
       if(view==='health'){
         const {error}=await admin.from('movo_plan_grants').select('user_id',{head:true,count:'exact'}).limit(1);

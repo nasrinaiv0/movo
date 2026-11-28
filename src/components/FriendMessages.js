@@ -23,6 +23,7 @@ function statusMessage(error) {
     case 'friend_connection_required': return tr('This friend connection is no longer available.');
     case 'message_rate_limit': return tr('Too many messages. Try again in a minute.');
     case 'chat_update_pending': return tr('Chats need a database update before they can be used.');
+    case 'invalid_message': return tr('Review the message and try again.');
     case 'invalid_transaction_card': return tr('Review the transaction card and try again.');
     case 'chat_network': return tr('Could not connect to Chats. Check your connection.');
     default: return tr('Chats are unavailable right now. Try again.');

@@ -130,7 +130,26 @@
     "Earlier messages": "Mga naunang mensahe",
     "More chats": "Dugang mga chat",
     "No saved chats yet.": "Wala pay na-save nga chat.",
-    "Chat history could not be saved on this device.": "Dili ma-save ang kasaysayan sa chat niining device."
+    "Chat history could not be saved on this device.": "Dili ma-save ang kasaysayan sa chat niining device.",
+    "Report not received. Try again, or contact support@nasrinai.com.": "Wala madawat ang report. Sulayi pag-usab o kontaka ang support@nasrinai.com.",
+    "Report received.": "Nadawat ang report.",
+    "Review the message and try again.": "Susiha ang mensahe ug sulayi pag-usab.",
+    "Submit report": "Isumite ang report",
+    "This request or response was not supported by our safety checks. Try rephrasing your finance question.": "Wala makapasar sa pagsusi sa kaluwasan ang hangyo o tubag. Usba ang pagkasulti sa imong pangutana bahin sa kuwarta.",
+    "Report AI response": "I-report ang tubag sa AI",
+    "Send a response reference and reason to MOVO for safety review. Your report does not send a new AI request.": "Ipadala sa MOVO ang reperensiya sa tubag ug rason para sa pagsusi sa kaluwasan. Ang report dili magpadala og bag-ong hangyo sa AI.",
+    "AI report reason": "Rason sa AI report",
+    "Choose an AI report reason": "Pagpili og rason sa AI report",
+    "AI response: harmful or abusive": "Tubag sa AI: makadaot o abusado",
+    "AI response: deceptive or unsafe advice": "Tubag sa AI: malimbongon o dili luwas nga tambag",
+    "AI response: privacy concern": "Tubag sa AI: kabalaka sa pagkapribado",
+    "AI response: other concern": "Tubag sa AI: laing kabalaka",
+    "Sending AI report…": "Gipadala ang AI report…"
   },
-  "unchanged": ["Default", "Face ID / Touch ID", "Legal", "Liquid Glass"]
+  "unchanged": [
+    "Default",
+    "Face ID / Touch ID",
+    "Legal",
+    "Liquid Glass"
+  ]
 }

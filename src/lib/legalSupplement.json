@@ -56,7 +56,7 @@
     {
       "heading": "18. Sharing with friends",
       "paragraphs": [
-        "Only share content you have the right to share. MOVO prohibits harassment, threats, sexually exploitative material, impersonation, and disclosure of someone else’s private information through Friends. You can block a user or report a request or shared summary in the app. Contact support@nasrinai.com for help."
+        "Only share content you have the right to share. MOVO prohibits harassment, threats, sexually exploitative material, nonconsensual intimate imagery (including AI-generated imagery), impersonation, fraud, and disclosure of someone else’s private information through Friends. A shared transaction card is a record, not a payment instruction. Block a user or report a request or shared summary in the app; where message-specific reporting is available, report the received message. Contact support@nasrinai.com for help and safety concerns."
       ]
     }
   ],
@@ -122,7 +122,8 @@
       "heading": "16. AI assistance and automated inferences",
       "paragraphs": [
         "Optional AI-generated summaries, classifications, suggestions and market insights may be incorrect or biased and are provided for review, not as automatic financial instructions. MOVO's suggestions do not independently authorize a payment, apply for credit or make a binding lending or insurance decision on your behalf.",
-        "If you do not enable NasrinAI's financial-context sharing, that optional data sharing should not occur. Contact support if you believe information was shared without authorization, or if you want to exercise your rights in relation to a recommendation."
+        "If you do not enable NasrinAI's financial-context sharing, that optional data sharing should not occur. Contact support if you believe information was shared without authorization, or if you want to exercise your rights in relation to a recommendation.",
+        "When AI response reporting is available, a signed-in user can submit a response identifier and a selected reason to MOVO for safety review. Reporting does not send a new request to an AI provider or require a paid plan. The report references existing account chat content rather than duplicating its text. Account or message deletion removes the associated report; information already disclosed to a provider follows that provider’s applicable terms."
       ]
     },
     {
@@ -156,8 +157,9 @@
         "Friends is optional. To create or accept an invite, sign in and choose the display name you want to share. Anyone who has an active invite link and a verified MOVO account can see the name attached to that invite. Invite links carry a random code and expire after 24 hours or after one person accepts. Creating a replacement or revoking the active invite disables the previous link.",
         "MOVO stores a hashed invite code, account identifiers, chosen display names, usernames, requests and connection timestamps to manage Friends. Verified members can search usernames that their owners choose to make discoverable. The search shows only usernames. Recipients choose whether to accept connection requests.",
         "When you preview and approve a monthly tracking summary, MOVO stores the selected snapshot for the friend you chose. The sections you select may include your note, income, expenses, savings balance, weekly net cash flow, financial planning totals, budget and plan progress, and spending category percentages. Friends cannot open your underlying transactions, receipts or accounts. You can revoke access, and removing a friend removes any shared snapshots for that connection.",
-        "MOVO saves your uploaded profile photo privately on the account when you are signed in and makes it available to you on your devices. Guests keep their photo on the current device. Search results and shared summaries do not include your photo, email or contacts. Account deletion removes the account’s photo and Friends records.",
-        "If you block or report someone, MOVO stores the accounts involved and the type of report for safety and support review. A report does not copy the contents of a financial summary into the report record.",
+        "MOVO stores an uploaded account profile photo for signed-in users and makes it available on their devices. Accepted Friends connections can receive that profile photo in the inbox and conversation. Search results and shared summaries do not include your photo, email or contacts. Guests keep their photo on the current device. Account deletion removes the account photo and associated Friends records, subject to the retention exceptions described in this policy.",
+        "When you send a private Friends message, MOVO stores the message, sender and connection identifiers, timestamps and read state to deliver the conversation to the accepted connection. If you choose to share a transaction card, selected financial fields are stored with the message and shown to that recipient. A recipient must explicitly choose whether to import the record and select their own account; MOVO does not transfer funds. Recipients may keep copies they have already received or imported.",
+        "If you block or report someone, MOVO stores the accounts involved and the type of report for safety and support review. Where message-specific reports are enabled, MOVO records the connection and message identifiers. A report does not copy the contents of a financial summary into the report record.",
         "When you choose Scan QR code, MOVO reads camera frames or a selected QR photo on your device. These images are not uploaded or stored by Friends. Only a validated MOVO invitation code is sent for review; scanning does not accept the invite automatically. You can instead paste an invite link. A profile QR image you choose to share contains your chosen display name, initial and temporary invitation code, without your photo, contact details or financial records. Recipients and sharing apps may keep a copy; revoking the invite disables its code, not those copies."
       ]
     }

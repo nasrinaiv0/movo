@@ -1,4 +1,5 @@
 'use strict';
+const { highRiskText } = require('./moderation');
 
 const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const CONTROL = /[\p{Cc}\u202A-\u202E\u2066-\u2069]/u;
@@ -8,7 +9,7 @@ const KINDS = new Set(['expense', 'income', 'transfer']);
 function cleanText(value, limit) {
   if (typeof value !== 'string') return null;
   const result = value.trim();
-  return result && Array.from(result).length <= limit && !CONTROL.test(result) ? result : null;
+  return result && Array.from(result).length <= limit && !CONTROL.test(result) && !highRiskText(result) ? result : null;
 }
 
 function cardPayload(input) {

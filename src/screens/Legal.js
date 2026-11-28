@@ -96,7 +96,7 @@ export function TermsOfService({ c }) {
     <section className="legal-section">
       <h2>{tr('3. Local data, cloud accounts, and exports')}</h2>
       <LegalCore name="termsLocal" />
-      <p>{tr('Custom card-sticker artwork is cropped in your browser and saved in browser storage on this device. MOVO does not send that artwork to its cloud database or sync it to another device. Clear All Data removes custom sticker artwork as well as local financial records.')}</p>
+      <LegalCore name="termsArtwork" />
       <p>{tr('When cloud features are available and you sign in, records are stored in MOVO\'s configured cloud database and access is restricted by account-scoped authorization controls. Keep your own records where needed. CSV exports are generated from the records currently available to your session and may contain sensitive financial information; store and share them carefully.')}</p>
     </section>
     <section className="legal-section">

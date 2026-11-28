@@ -23,6 +23,7 @@ module.exports = async function handler(req, res) {
   try {
     const db = billing.adminClient();
     await billing.rpc(db, 'movo_run_data_retention');
+    if (process.env.MOVO_AI_MODERATION_RETENTION_ENABLED === 'true') await billing.rpc(db, 'movo_prune_ai_moderation', { p_limit: 200 });
     return billing.json(res, 200, { completed: true });
   } catch {
     console.error('[movo-account] scheduled retention failed');

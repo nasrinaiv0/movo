@@ -1,0 +1,30 @@
+{
+  "bundleId": "com.nasrinai.movo",
+  "packageName": "com.nasrinai.movo",
+  "minimumAge": 18,
+  "privacyUrl": "https://movo.nasrinai.com/privacy",
+  "termsUrl": "https://movo.nasrinai.com/terms",
+  "deletionUrl": "https://movo.nasrinai.com/account-deletion.html",
+  "supportUrl": "https://movo.nasrinai.com/",
+  "supportEmail": "support@nasrinai.com",
+  "status": "draft-not-console-verified",
+  "apple": {
+    "name": "MOVO: Budget & Expense Tracker",
+    "subtitle": "Track spending and budgets",
+    "promotionalText": "Organize your money, review spending, plan budgets and track bills and goals with MOVO.",
+    "keywords": "budget,expense,income,spending,bills,savings,finance,ledger,transactions,cashflow",
+    "description": "MOVO is a personal money organizer. Record income, expenses, payments and transfers; organize accounts; review recorded balances and spending; plan budgets, bills and savings goals; and export supported records. Track existing loans and debts without applying for credit. MOVO does not hold funds, connect to your bank, issue loans, execute trades or move money. Recorded balances are not verified bank balances. For adults aged 18 and older. Informational use only. Optional connected and premium features depend on availability.",
+    "ageOverride": "18+",
+    "category": "Finance",
+    "locale": "en-US"
+  },
+  "google": {
+    "name": "MOVO: Budget & Expense Tracker",
+    "shortDescription": "Track expenses, income, budgets, accounts and financial goals in one place.",
+    "description": "MOVO is a personal money organizer. Record income, expenses, payments and transfers; organize accounts; review recorded balances and spending; plan budgets, bills and savings goals; and export supported records. Track existing loans and debts without applying for credit. MOVO does not hold funds, connect to your bank, issue loans, execute trades or move money. Recorded balances are not verified bank balances. For adults aged 18 and older. Informational use only. Optional connected and premium features depend on availability.",
+    "targetAudience": "18+",
+    "category": "Finance",
+    "locale": "en-US",
+    "contentRating": "pending IARC questionnaire"
+  }
+}

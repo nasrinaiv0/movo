@@ -26,6 +26,7 @@ import useChatThreads, { chatAccessToken } from '../lib/useChatThreads';
 import { identifyChatMessages } from '../lib/chatHistory';
 
 function friendlyError(code) {
+  if (code === 'content_not_supported') return tr('This request or response was not supported by our safety checks. Try rephrasing your finance question.');
   if (code === 'nasrinai_scope_unconfirmed') return tr('NasrinAI did not confirm it used only your Movo data, so its reply was not shown.');
   if (code === 'sign_in_required' || code === 'invalid_session') return tr('Sign in to MOVO to use your private financial copilot.');
   if (code === 'pro_required') return tr('Free can read your stored balances and transactions. Pro unlocks full NasrinAI. Use Add transaction to record expenses.');
@@ -74,6 +75,51 @@ const blobBuffer = (blob) => (typeof blob.arrayBuffer === 'function' ? blob.arra
 
 export default function NasrinAIChat(props) {
   return <ChatSession key={JSON.stringify([props.session?.user?.id || null, Boolean(props.cloudMode)])} {...props} />;
+}
+
+// Safety UI uses the canonical translation catalogue. No message text is transmitted.
+export function AIReportControl({ session, messageId }) {
+  const [reason, setReason] = useState('');
+  const [status, setStatus] = useState('');
+  const request = useRef(null);
+  useEffect(() => () => { request.current?.abort(); request.current = null; }, []);
+  async function submit(event) {
+    event.preventDefault();
+    if (!reason || request.current || status === 'sent') return;
+    const controller = new AbortController();
+    request.current = controller;
+    setStatus('sending');
+    const timer = setTimeout(() => controller.abort(), 15000);
+    try {
+      const token = await chatAccessToken(session);
+      if (!token || controller.signal.aborted) throw new Error('session');
+      const response = await fetch(apiUrl('/api/nasrinai/chat'), {
+        method: 'POST', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ action: 'report', messageId, reason })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (request.current === controller) setStatus(response.ok && result.ok === true && typeof result.reportId === 'string' ? 'sent' : 'error');
+    } catch {
+      if (request.current === controller) setStatus('error');
+    } finally {
+      clearTimeout(timer);
+      if (request.current === controller) request.current = null;
+    }
+  }
+  return <details className="movo-ai-report">
+    <summary>{tr('Report AI response')}</summary>
+    <form onSubmit={submit}>
+      <p>{tr('Send a response reference and reason to MOVO for safety review. Your report does not send a new AI request.')}</p>
+      <label>{tr('AI report reason')}
+        <select value={reason} onChange={event => setReason(event.target.value)} disabled={status === 'sending' || status === 'sent'} required>
+          <option value="">{tr('Choose an AI report reason')}</option><option value="harmful">{tr('AI response: harmful or abusive')}</option><option value="deceptive">{tr('AI response: deceptive or unsafe advice')}</option><option value="privacy">{tr('AI response: privacy concern')}</option><option value="other">{tr('AI response: other concern')}</option>
+        </select>
+      </label>
+      <button type="submit" className="secondary-button" disabled={!reason || status === 'sending' || status === 'sent'}>{status === 'sending' ? tr('Sending AI report…') : tr('Submit report')}</button>
+      <p role="status" aria-live="polite">{status === 'sent' ? tr('Report received.') : status === 'error' ? tr('Report not received. Try again, or contact support@nasrinai.com.') : ''}</p>
+    </form>
+  </details>;
 }
 
 function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, onViewLog, onLocalAnswer, onLocalChart, shortcuts = [], show = true }) {
@@ -774,6 +820,7 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
       </article> : <article key={message.id || index} className={'movo-ai-message ' + message.role}>
         <span className={'movo-ai-message-label' + (message.role === 'user' ? ' sr-only' : '')}>{message.role === 'user' ? tr('You') : tr('NasrinAI')}</span>
         {message.role === 'user' ? <p className="movo-ai-user-text">{message.content}</p> : <NasrinAIMessage content={message.content} />}
+        {message.role === 'assistant' && message.reportable === true && session?.user?.id && <AIReportControl key={message.id} session={session} messageId={message.id} />}
         {message.chart && <ChatChart chart={message.chart} fmt={(value) => shown(show, money(value))} />}
         {message.role === 'assistant' && typeof window !== 'undefined' && window.speechSynthesis && <button type="button" className={`movo-ai-listen${speaking === index ? ' is-speaking' : ''}`} onClick={() => speak(message.content, index)} aria-label={speaking === index ? tr('Stop reading aloud') : tr('Read aloud')}><Icon name={speaking === index ? 'stop' : 'speaker'} size={14} strokeWidth={2} />{speaking === index ? tr('Stop') : tr('Listen')}</button>}
       </article>)}

@@ -6,6 +6,8 @@ const { classifyNasrinAIKeyFormat } = require('./key-format.cjs');
 const { parseVoiceResponse } = require('./voice-stream.cjs');
 const { askOpenRouter, openRouterConfigured } = require('./openrouter-fallback.cjs');
 const { transcribeAudio } = require('./transcription.cjs');
+const { clients } = require('../lib/referralAuth');
+const { highRiskText, submitAIReport } = require('../lib/moderation');
 
 const MAX_MESSAGE_CHARS = 1600;
 const MAX_UPSTREAM_CONTEXT_CHARS = 3800;
@@ -21,7 +23,7 @@ function pageOffset(value) {
   return Number(value);
 }
 
-const historyMessage = ({ id, role, content, created_at }) => ({ id, role, content, createdAt: created_at });
+const historyMessage = ({ id, role, content, created_at, server_generated }) => ({ id, role, content, createdAt: created_at, ...(role === 'assistant' && server_generated === true && process.env.MOVO_AI_REPORTS_ENABLED === 'true' ? { reportable: true } : {}) });
 
 function json(res, status, body) {
   res.status(status).setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -237,6 +239,12 @@ module.exports = async function handler(req, res) {
   const authHeader = String(req.headers.authorization || '');
   const match = /^Bearer ([\w.-]{20,4096})$/.exec(authHeader);
   if (!match) return json(res, 401, { error: 'sign_in_required' });
+  // Reporting existing content is not a new AI request: no AI consent or paid plan needed.
+  if (req.method === 'POST' && req.body?.action === 'report') {
+    if (Number(req.headers['content-length'] || 0) > 2048 || Buffer.byteLength(JSON.stringify(req.body)) > 2048) return json(res, 413, { error: 'payload_too_large' });
+    const result = await submitAIReport(req.body, () => clients(req), process.env.MOVO_AI_REPORTS_ENABLED === 'true');
+    return json(res, result.status, result.body);
+  }
   if (req.method === 'POST' && req.body?.consent !== true) {
     return json(res, 400, { error: 'financial_context_consent_required' });
   }
@@ -245,6 +253,7 @@ module.exports = async function handler(req, res) {
     return json(res, 400, { error: 'message_too_long' });
   }
   const message = safeText(rawMessage, MAX_MESSAGE_CHARS);
+  if (req.method === 'POST' && req.body?.action !== 'transcribe' && highRiskText(message)) return json(res, 400, { error: 'content_not_supported' });
   if (req.method === 'POST' && req.body?.action !== 'transcribe' && !message) return json(res, 400, { error: 'message_required' });
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
@@ -315,7 +324,7 @@ module.exports = async function handler(req, res) {
       if (!conversation && requested) return json(res, 404, { error: 'conversation_not_found' });
       if (!conversation) return json(res, 200, { conversationId: null, title: null, messages: [] });
       const messagesResult = await db.from('movo_ai_messages')
-        .select('id,role,content,created_at')
+        .select(process.env.MOVO_AI_REPORTS_ENABLED === 'true' ? 'id,role,content,created_at,server_generated' : 'id,role,content,created_at')
         .eq('user_id', userId).eq('conversation_id', conversation.id)
         .order('created_at', { ascending: false }).order('id', { ascending: false })
         .range(offset, offset + MESSAGE_PAGE_SIZE);
@@ -470,6 +479,19 @@ module.exports = async function handler(req, res) {
       return json(res, fail.status, fail.body);
     }
     const reply = answer.reply;
+    if (highRiskText(reply)) return json(res, 422, { error: 'content_not_supported' });
+    if (process.env.MOVO_AI_REPORTS_ENABLED === 'true') {
+      const verified = await clients(req);
+      if (verified.error || !verified.verified || verified.userId !== userId) return json(res, 403, { error: 'verified_account_required' });
+      const { data, error } = await verified.admin.rpc('movo_save_reportable_ai_turn', {
+        p_actor: userId, p_conversation: conversation?.id || null, p_prompt: message, p_reply: reply,
+      });
+      if (error || data?.error || !data?.conversationId || !Array.isArray(data?.messages) || data.messages.length !== 2) {
+        return json(res, 409, { error: 'reportable_turn_unavailable' });
+      }
+      return json(res, 200, { conversationId: data.conversationId, title: data.title, reply, messages: data.messages.map(historyMessage),
+        ...(answer.audioParts ? { audioParts: answer.audioParts } : {}), privacy: { scope: 'current_user_only', dataShared: 'minimum_financial_context' } });
+    }
     if (!conversation) {
       const title = message.replace(/\s+/g, ' ').slice(0, 80) || 'New conversation';
       const created = await db.from('movo_ai_conversations')

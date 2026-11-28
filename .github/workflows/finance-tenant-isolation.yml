@@ -60,6 +60,12 @@ jobs:
           printf '%s\n' "$client_dir" >> "$GITHUB_PATH"
       - name: Verify staged migration and synthetic rollback safety contracts
         run: python3 scripts/test-pr274-migration-plan.py
+      - name: Generate hash-pinned local-only AI reporting migration candidate
+        if: github.event.pull_request.number == 348
+        env:
+          MOVO_TEST_PGHOST: 127.0.0.1
+          MOVO_TEST_PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: bash scripts/prepare-ai-report-migration-candidate.sh
       - name: Run migrations, old-app compatibility, retention and snapshot restore against disposable database
         env:
           MOVO_TEST_PGHOST: 127.0.0.1
@@ -68,3 +74,12 @@ jobs:
           MOVO_TEST_PG_CONTAINER: ${{ job.services.postgres.id }}
           PGPASSWORD: movo-isolated-ci-only
         run: python3 scripts/test-finance-rpc-isolation-local.py
+
+      - name: Upload tested migration candidate (not a release approval)
+        if: success() && github.event.pull_request.number == 348
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: movo-ai-report-migration-pg-${{ matrix.postgres }}
+          path: ${{ runner.temp }}/movo-ai-migration/evidence/
+          if-no-files-found: error
+          retention-days: 7

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 describe('public app-store legal documents', () => {
-  for (const [route, date] of [['terms', 'November 20, 2026'], ['privacy', 'November 20, 2026']]) {
+  for (const [route, date] of [['terms', 'November 28, 2026'], ['privacy', 'November 28, 2026']]) {
     test(route + ' is a standalone HTML legal page rather than the SPA shell', () => {
       const html = fs.readFileSync(path.join(process.cwd(), 'public', route + '.html'), 'utf8');
       expect(html).toMatch(/<!doctype html>/i);
@@ -48,4 +48,11 @@ test('critical corrected disclosures are canonical, noncontradictory and idempot
   expect(legalCore.privacyLocal.join(' ')).toContain('not all protected');
   expect(legalCore.privacyPurchase.join(' ')).toContain('encrypted copy');
   expect(legalCore.privacyRetention.join(' ')).toContain('not guaranteed on day 90');
+});
+
+test('Terms and Privacy agree on cloud sticker copies and Friends disclosures', () => {
+  expect(legalCore.termsArtwork.join(' ')).toContain('cloud account');
+  expect(legalCore.privacyArtworkBullet.join(' ')).toContain('cloud account');
+  expect(legalSupplement.privacy.find(s => s.heading === '20. Private friend invites').paragraphs.join(' ')).toContain('selected financial fields');
+  expect(legalSupplement.terms.find(s => s.heading === '18. Sharing with friends').paragraphs.join(' ')).toContain('nonconsensual intimate imagery');
 });

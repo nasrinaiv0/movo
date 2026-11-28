@@ -110,3 +110,6 @@
 @container owner-workspace (min-width: 680px) {
   .occ-two-col { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
 }
+
+.occ-ai-report-list{display:grid;gap:8px}.occ-ai-report-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--occ-line,currentColor)}.occ-ai-report-row>div{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}.occ-ai-moderation button{font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:10px;min-height:44px;padding:8px 12px}.occ-ai-moderation button:focus-visible{outline:2px solid currentColor;outline-offset:3px}.occ-ai-report-detail{padding-block:12px;overflow-wrap:anywhere}.occ-ai-report-detail p{white-space:pre-wrap}.occ-ai-report-actions{display:flex;flex-wrap:wrap;gap:8px}
+@media(max-width:420px){.occ-ai-report-row{flex-wrap:wrap}}

@@ -81,3 +81,13 @@
 .friend-chat-disclosure summary { display:flex; justify-content:center; align-items:center; gap:6px; min-height:44px; cursor:pointer; font-size:.75rem; color:var(--muted); list-style:none; }
 .friend-chat-disclosure summary::-webkit-details-marker { display:none; }
 .friend-chat-disclosure p { margin:4px 4px 12px; font-size:.75rem; line-height:1.6; }
+
+/* Preserve names at enlarged font sizes; on narrow screens remove redundant avatar/chevron only. */
+@media (max-width: 430px) {
+  .friend-chat-heading { gap: 6px; }
+  .friend-chat-profile { gap: 6px; }
+  .friend-chat-heading .friend-chat-profile > .friend-chat-avatar,
+  .friend-chat-heading .friend-chat-profile > svg { display: none; }
+  .friend-chat-heading .friend-chat-profile strong { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+  .friend-chat-heading .friend-chat-profile small { overflow-wrap: anywhere; }
+}

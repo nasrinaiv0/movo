@@ -112,6 +112,8 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      - name: Require reviewed Google Play pre-upload evidence
+        run: node scripts/check-store-compliance.cjs google upload
       - name: Install locked dependencies
         run: npx --yes npm@11.19.1 ci
       # The signed AAB packages the local CRA build; Vercel env vars are NOT inherited.
