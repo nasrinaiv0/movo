@@ -1,3 +1,7 @@
+## 2026-11-28 — Standalone Aries wardrobe example (draft)
+
+Codex prepared an isolated example in `examples/aries-wardrobe/` using the original MOVO Aries sources. It includes the five-look catalog, a reference-style expression grid, right-side clothing buttons and an offline build. Lockfile install, build, byte-for-byte mascot comparison and four Chromium viewport checks passed locally. GitHub checks and independent review remain pending for the draft. [Engineering update](engineering/updates/2026-11-28-standalone-aries-wardrobe.md).
+
 ## 2026-11-28 — MOVO implementation merged and database compatibility verified (before documentation commit)
 
 Contributor: Codex. PR #347 merged, incorporating #346 with its history preserved; #335 was already merged. No open MOVO PRs remain. All eleven pull-request workflows passed on reviewed source 0c2bd2f3; the merge tree matches that source exactly. Isolated financial/compatibility/recovery tests and actual browser/native artifacts were verified. The authorized database compatibility update completed without rewriting existing customer ledger records. The production build completed and the checked HTTPS access path returned the MOVO application successfully. No store approval or untested physical-device certification is claimed; experimental dependency changes remain unadopted. Detailed operational evidence is private. See [public completion summary](engineering/updates/2026-11-28-completion-summary.md).
