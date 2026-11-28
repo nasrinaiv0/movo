@@ -48,7 +48,7 @@ jobs:
           python3 -m unittest discover -s scripts/r8 -p 'test_host_diagnostics.py' -v
       - name: Validate dual-store metadata and evidence contracts
         run: |
-          node --test scripts/check-store-compliance.test.cjs
+          node --test scripts/check-store-compliance.test.cjs scripts/moderation.test.cjs
           node scripts/check-store-compliance.cjs --lint
           node scripts/update-legal-pages.cjs --check
       - name: Install locked dependencies (pinned npm 11)

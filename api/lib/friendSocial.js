@@ -1,4 +1,5 @@
 'use strict';
+const { highRiskText } = require('./moderation');
 
 const SOCIAL_ACTIONS = new Set(['directory', 'set_directory', 'search', 'request', 'accept_request', 'decline_request',
   'outgoing_requests', 'cancel_request', 'report_message', 'summary', 'share_summary', 'revoke_summary', 'avatar', 'set_avatar', 'block', 'unblock', 'report']);
@@ -7,7 +8,6 @@ const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const HANDLE = /^[a-z0-9_]{3,24}$/;
 const PHOTO = /^data:image\/jpeg;base64,\/[a-zA-Z0-9+/]+={0,2}$/;
 const BUCKETS = ['Food', 'Shopping', 'Bills', 'Transportation', 'Others'];
-const HIGH_RISK_TEXT = /(?:\b(?:kill yourself|kys|child porn|send nudes|rape you)\b)/i;
 const UNSAFE_TEXT = /[\p{Cc}\u202A-\u202E\u2066-\u2069]/u;
 
 function amount(value, signed = false) {
@@ -64,7 +64,7 @@ function summaryPayload(input) {
   if (!input || typeof input.month !== 'string' || !/^20\d{2}-(0[1-9]|1[0-2])$/.test(input.month)) return null;
   const summary = { month: input.month };
   if (input.note !== undefined) {
-    if (typeof input.note !== 'string' || Array.from(input.note).length > 500 || UNSAFE_TEXT.test(input.note.replace(/\n/g, '')) || HIGH_RISK_TEXT.test(input.note.normalize('NFKC').replace(/\s+/g, ' '))) return null;
+    if (typeof input.note !== 'string' || Array.from(input.note).length > 500 || UNSAFE_TEXT.test(input.note.replace(/\n/g, '')) || highRiskText(input.note)) return null;
     if (input.note.trim()) summary.note = input.note.trim();
   }
   if (input.totals !== undefined) {

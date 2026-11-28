@@ -122,7 +122,8 @@
       "heading": "16. AI assistance and automated inferences",
       "paragraphs": [
         "Optional AI-generated summaries, classifications, suggestions and market insights may be incorrect or biased and are provided for review, not as automatic financial instructions. MOVO's suggestions do not independently authorize a payment, apply for credit or make a binding lending or insurance decision on your behalf.",
-        "If you do not enable NasrinAI's financial-context sharing, that optional data sharing should not occur. Contact support if you believe information was shared without authorization, or if you want to exercise your rights in relation to a recommendation."
+        "If you do not enable NasrinAI's financial-context sharing, that optional data sharing should not occur. Contact support if you believe information was shared without authorization, or if you want to exercise your rights in relation to a recommendation.",
+        "When AI response reporting is available, a signed-in user can submit a response identifier and a selected reason to MOVO for safety review. Reporting does not send a new request to an AI provider or require a paid plan. The report references existing account chat content rather than duplicating its text. Account or message deletion removes the associated report; information already disclosed to a provider follows that provider’s applicable terms."
       ]
     },
     {
