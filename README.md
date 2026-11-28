@@ -121,6 +121,8 @@ Wallet → Cards → **Card style** lets users dress each card with a sticker. T
 
 Home shows Aries, MOVO’s soft cream ram with curled horns, fluffy wool, little arms and hooves, and a green scarf. The shared vector character (`src/components/AriesMascot.js`, artwork in `src/lib/ariesArt.js`) also welcomes people at sign-in, reacts to plan selection, accompanies bill reminders and savings goals, and guides the welcome tour and Help Center. Fourteen expressions are available in Home → tap Aries → Change mascot → Aries. The gallery is a preview: it never changes financial records or overrides spending moods. On Home, the existing spending thresholds (`src/lib/mascotMood.js`) still select happy, cheerful, disappointed or upset; the feet stay grounded on the balance card and tapping briefly waves and opens the existing message. Photo mascots and the saved `mascotStyle: 'ram'` preference remain compatible. Motion pauses off screen and in background tabs, respects live reduced-motion changes, and can be paused in the expression preview. Aries needs no WebGL, model download or external image service.
 
+Home → mascot → **Plush Zodiac** previews all 12 signs with Calm, Happy and Concerned expressions. Plush Aries is included on every plan. Equipping the other signs uses the existing Pro+ mascot entitlement. Once equipped, a plush portrait reacts to the same Home spending moods as classic Aries. Portraits are bundled with the app, and reduced motion keeps every expression visible without movement.
+
 ## Motion
 
 Motion is calm by design: no device vibration, no overshooting "bounce" springs, no breathing or pulsing orb. Transitions use a single smooth ease-out curve.

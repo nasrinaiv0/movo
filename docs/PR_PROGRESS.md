@@ -1,3 +1,7 @@
+## 2026-11-29 — Plush zodiac mascots candidate
+
+Contributor: Codex. Added 12 selectable plush zodiac mascots to Home, each with three expression renders and reduced-motion support. Reused scoped preferences, localization and existing Pro+ access. Node 26.13.1 passed 1,859 tests and the strict optimized build. Chromium verified all 36 portraits, selection, persistence, layouts and reduced motion. The owner requested a dedicated draft PR. Drafts #348 and #349 cover separate work. See the [implementation and acceptance record](engineering/updates/2026-11-29-plush-zodiac-mascots.md).
+
 ## 2026-11-28 — MOVO implementation merged and database compatibility verified (before documentation commit)
 
 Contributor: Codex. PR #347 merged, incorporating #346 with its history preserved; #335 was already merged. No open MOVO PRs remain. All eleven pull-request workflows passed on reviewed source 0c2bd2f3; the merge tree matches that source exactly. Isolated financial/compatibility/recovery tests and actual browser/native artifacts were verified. The authorized database compatibility update completed without rewriting existing customer ledger records. The production build completed and the checked HTTPS access path returned the MOVO application successfully. No store approval or untested physical-device certification is claimed; experimental dependency changes remain unadopted. Detailed operational evidence is private. See [public completion summary](engineering/updates/2026-11-28-completion-summary.md).

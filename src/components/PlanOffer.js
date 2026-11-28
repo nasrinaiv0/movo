@@ -21,7 +21,7 @@ import { money } from '../lib/format';
 const PLAN_CARDS = [
   { name: 'Free', tagline: 'On this device', features: ['Unlimited records on this device', 'Export & import', 'Receipt attachments', 'NasrinAI answers from your records'] },
   { name: 'Pro', tagline: 'Sync and insights', features: ['Cloud Sync', 'Insights & briefings', 'Full NasrinAI', 'Receipt scanner', 'Portrait cards & animations', 'Custom Money Flow', 'Premium card styles & uploads', 'Gold badges'] },
-  { name: 'Pro+', tagline: 'Everything, automated', features: ['Everything in Pro', 'Automatic logging', 'Glow and motion finish', 'Platinum badges'], future: 'Premium mascots and advanced widgets arrive in a future release. The current ram stays the same.' },
+  { name: 'Pro+', tagline: 'Everything, automated', features: ['Everything in Pro', 'Automatic logging', 'Glow and motion finish', 'Premium zodiac mascots', 'Platinum badges'], future: 'Advanced widgets arrive in a future release.' },
 ];
 // Aries is included on every plan; the pose celebrates the selection, never an unverified purchase.
 const PLAN_ARIES = ['welcome', 'cheering', 'celebrate'];
@@ -46,7 +46,7 @@ export function PlanComparison() {
 const PLANS = [
   { tier: 'free', name: 'Free', tone: 'color', heading: 'Included:', features: ['Unlimited records on this device', 'Export & import', 'Receipt attachments', 'NasrinAI answers from your records'] },
   { tier: 'pro', name: 'Pro', tone: 'gold', heading: 'Everything in Free, plus:', features: ['Cloud Sync', 'Insights & briefings', 'Full NasrinAI', 'Receipt scanner', 'Custom Money Flow', 'Zodiac & glow Home headers', 'Gold badges & app icons'] },
-  { tier: 'pro_plus', name: 'Pro+', tone: 'platinum', heading: 'Everything in Pro, plus:', features: ['Automatic logging', 'Glow and motion finish', 'Premium card styles & uploads', 'Platinum badges & app icons'] },
+  { tier: 'pro_plus', name: 'Pro+', tone: 'platinum', heading: 'Everything in Pro, plus:', features: ['Automatic logging', 'Glow and motion finish', 'Premium zodiac mascots', 'Premium card styles & uploads', 'Platinum badges & app icons'] },
 ];
 const PLUS_ONLY = ['automation', 'premiumMascots', 'premiumUI'];
 
@@ -165,7 +165,7 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
     <div className="plan-panel-welcome">
       <div className="plan-panel-head">
         <span className="plan-panel-brand"><MovoMark size={30} tone={markTone} /><b>MOVO</b></span>
-        <h2>{feature ? tr('Unlock with Pro') : tr('Upgrade MOVO')}</h2>
+        <h2>{feature ? tr(PLUS_ONLY.includes(feature) ? 'Unlock with Pro+' : 'Unlock with Pro') : tr('Upgrade MOVO')}</h2>
       </div>
       <AriesMascot className="plan-aries" state={busy ? 'thinking' : error ? 'reminder' : PLAN_ARIES[index]} size={100} />
     </div>
