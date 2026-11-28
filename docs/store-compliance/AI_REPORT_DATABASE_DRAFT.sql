@@ -180,8 +180,13 @@ begin
   if current_user<>'service_role' then raise exception 'service_role_required' using errcode='42501'; end if;
   if p_limit is null or p_limit not between 1 and 500 then raise exception 'invalid_limit' using errcode='22023'; end if;
   n:=p_limit;
+  -- Serialize prune batches without granting UPDATE on immutable access logs.
+  -- PostgreSQL row-locking SELECT requires UPDATE even when only reading IDs.
+  if not pg_try_advisory_xact_lock(hashtextextended('movo-ai-moderation-prune',0)) then
+    return jsonb_build_object('reports',0,'events',0,'rates',0,'skipped',true);
+  end if;
   delete from public.movo_ai_moderation_access where id in
-    (select id from public.movo_ai_moderation_access where created_at<now()-interval '30 days' order by created_at,id limit n for update skip locked);
+    (select id from public.movo_ai_moderation_access where created_at<now()-interval '30 days' order by created_at,id limit n);
   get diagnostics events=row_count;
   delete from public.movo_ai_reports where id in
     (select id from public.movo_ai_reports where status in ('reviewed','dismissed') and reviewed_at<now()-interval '90 days' order by reviewed_at,id limit n for update skip locked);
