@@ -2,11 +2,11 @@
  * Effective dates of the Terms of Service and Privacy Policy, and the version a person accepts during setup.
  * When either document changes materially, update its date and explicit revision: the setup gate asks again.
  */
-export const TERMS_EFFECTIVE_DATE = '2026-11-20T00:00:00Z';
-export const PRIVACY_EFFECTIVE_DATE = '2026-11-20T00:00:00Z';
+export const TERMS_EFFECTIVE_DATE = '2026-11-28T00:00:00Z';
+export const PRIVACY_EFFECTIVE_DATE = '2026-11-28T00:00:00Z';
 // A revision distinguishes material changes published on the same day.
-export const LEGAL_VERSION = '2026-11-20-r1';
-export const LEGAL_ACCEPTANCE_DATE = '2026-11-20';
+export const LEGAL_VERSION = '2026-11-28-r1';
+export const LEGAL_ACCEPTANCE_DATE = '2026-11-28';
 
 /** True once these preferences hold an acceptance of the current Terms and Privacy Policy. */
 export function hasAcceptedLegal(prefs) {

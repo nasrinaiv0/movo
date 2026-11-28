@@ -46,6 +46,11 @@ jobs:
           python3 scripts/check_android_toolchain.py
           python3 -m unittest discover -s scripts -p 'test_android_toolchain.py' -v
           python3 -m unittest discover -s scripts/r8 -p 'test_host_diagnostics.py' -v
+      - name: Validate dual-store metadata and evidence contracts
+        run: |
+          node --test scripts/check-store-compliance.test.cjs
+          node scripts/check-store-compliance.cjs --lint
+          node scripts/update-legal-pages.cjs --check
       - name: Install locked dependencies (pinned npm 11)
         run: npx --yes npm@11.19.1 ci
       - name: Verify installed proxy compatibility (loopback fixtures only)

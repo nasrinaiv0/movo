@@ -33,6 +33,8 @@ workflows:
         - pattern: 'ios-v*'
           include: true
     scripts:
+      - name: Require reviewed Apple pre-upload evidence
+        script: node scripts/check-store-compliance.cjs apple upload
       - name: Install locked dependencies
         script: npx --yes npm@11.19.1 ci
       - name: Verify Xcode and iOS SDK toolchain

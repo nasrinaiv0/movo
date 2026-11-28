@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "bundleId": "com.nasrinai.movo",
+  "candidate": null,
+  "reviews": {
+    "identityRights": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "commercialAssetsAndMarketData": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "legalAndPrivacy": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "ageAndFinancialDeclarations": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "moderationAndAIConsent": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "accountDeletion": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "internationalAvailability": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "metadataAndReviewAccess": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "independentReview": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "applePrivacyAndExport": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "googleDataSafetyAndFinancial": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "androidBinaryAndWear": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "appleStoreSetup": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "googleStoreSetup": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "appleSignedDeviceAndLiveBackend": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "googleSignedDeviceAndLiveBackend": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "appleStorePurchaseLifecycle": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    },
+    "googleStorePurchaseLifecycle": {
+      "status": "pending",
+      "reviewer": null,
+      "reviewedOn": null,
+      "evidence": null,
+      "sha256": null
+    }
+  }
+}

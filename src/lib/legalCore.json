@@ -51,5 +51,8 @@
   ],
   "deleteScope": [
     "This requests permanent deletion of your MOVO cloud account and associated records. Some restricted purchase-processing, backup, security or legal records may be retained for the purposes described in the Privacy Policy. Copies on other devices, exports and files already shared with others need separate removal. Store subscriptions must be cancelled separately. This cannot be undone."
+  ],
+  "termsArtwork": [
+    "Custom card-sticker artwork is processed and saved on your device. When signed in, supported custom sticker artwork and preferences may also be stored with your cloud account and downloaded on other devices. Use the available sticker, local-data and account-deletion controls to remove the applicable copies; clearing local data alone does not necessarily remove cloud copies."
   ]
 }

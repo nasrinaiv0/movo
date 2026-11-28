@@ -9,7 +9,7 @@ const escapeHtml = value => String(value)
   .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const CORE_BLOCKS = {
-  terms: [['product', '1.', 'prepend'], ['eligibility', '2.', 'all'], ['termsLocal', '3.', 0]],
+  terms: [['product', '1.', 'prepend'], ['eligibility', '2.', 'all'], ['termsLocal', '3.', 0], ['termsArtwork', '3.', 1]],
   privacy: [['privacyOwner', '1.', 'all'], ['privacyPurchase', 'Store purchase information:', 0],
     ['privacyLocal', '3.', 0], ['privacyArtwork', '3.', 1], ['privacyAISharing', '5.', 1],
     ['privacyRetention', '6.', 'all'], ['privacySecurity', '7.', 'all'], ['privacyChildren', '9.', 0]]
