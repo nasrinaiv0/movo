@@ -53,6 +53,8 @@ jobs:
           node scripts/update-legal-pages.cjs --check
       - name: Install locked dependencies (pinned npm 11)
         run: npx --yes npm@11.19.1 ci
+      - name: Explicit owner moderation API regression (fictional sessions only)
+        run: npm test -- --runInBand --roots api --testMatch '**/*.test.js' --runTestsByPath api/owner/index.test.js
       - name: Verify installed proxy compatibility (loopback fixtures only)
         run: node --test scripts/security/proxy-compatibility.test.cjs
       - name: Validate Android public auth configuration contract
