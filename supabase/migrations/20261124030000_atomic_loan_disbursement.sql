@@ -30,7 +30,15 @@ declare
   v_index integer := 0;
   v_new boolean;
 begin
-  if v_user is null or p_expected_user_id is distinct from v_user then
+  if v_user is null or p_expected_user_id is distinct from v_user
+    or coalesce(auth.jwt()->>'is_anonymous','false') = 'true' then
+    raise exception 'authentication_required' using errcode = '42501';
+  end if;
+  -- Match the recipient-import erasure lock order. Do not return old receipts
+  -- or create new ones for anonymous, unverified, deleted or erasing users.
+  perform 1 from auth.users where id = v_user and not is_anonymous
+    and (email_confirmed_at is not null or phone_confirmed_at is not null) for update;
+  if not found or public.movo_account_erasure_pending() then
     raise exception 'authentication_required' using errcode = '42501';
   end if;
   if p_request_id is null or p_name is null or char_length(btrim(p_name)) not between 1 and 120

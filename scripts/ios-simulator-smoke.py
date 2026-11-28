@@ -12,6 +12,9 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from native_evidence import EvidenceError, fresh_capture_destination, require_png
+
 
 BUNDLE_ID = "com.nasrinai.movo"
 SMOKE_LOG_URL = "movo://log?src=siri_shortcut&amount=12.34&merchant=Simulator%20Test"
@@ -198,10 +201,12 @@ def smoke(app, screenshot, family="iphone"):
     time.sleep(5)
     open_log_url_with_one_cold_recovery(device_id, app)
     time.sleep(3)
-    os.makedirs(os.path.dirname(os.path.abspath(screenshot)), exist_ok=True)
-    capture_screenshot_with_one_cold_recovery(device_id, app, screenshot)
-    if not os.path.isfile(screenshot):
-        raise SmokeFailure("simctl screenshot reported success but did not create an image")
+    try:
+        fresh_capture_destination(screenshot)
+        capture_screenshot_with_one_cold_recovery(device_id, app, screenshot)
+        require_png(screenshot)
+    except (EvidenceError, OSError) as error:
+        raise SmokeFailure(f"Invalid iOS screenshot evidence: {error}") from error
     print("Native iOS app installed, launched, received a deep link, and captured a screenshot.")
 
 

@@ -6,11 +6,17 @@ on:
     paths:
       - "android/**"
       - "scripts/r8/**"
+      - "scripts/native_evidence.py"
+      - "scripts/check_android_toolchain.py"
+      - "scripts/test_android_toolchain.py"
+      - "scripts/test_native_evidence.py"
+      - "scripts/test_integrated_harness.py"
       - ".github/workflows/android-r8-experiment.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: movo-r8-experiment-${{ github.event.pull_request.number || github.ref }}
@@ -18,8 +24,14 @@ concurrency:
 
 jobs:
   controlled-comparison:
+    name: controlled-comparison${{ matrix.variant == 'svg-candidate' && ' (svg-candidate)' || '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        variant: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 347 && github.event.pull_request.head.repo.full_name == github.repository && fromJSON('["baseline","svg-candidate"]') || fromJSON('["baseline"]') }}
     env:
       R8_OUTPUT: ${{ github.workspace }}/tmp/r8-experiment
     steps:
@@ -28,6 +40,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Prepare isolated exact SVG candidate
+        if: matrix.variant == 'svg-candidate'
+        uses: ./.github/actions/svg-candidate-acceptance
+        with:
+          head: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # verified v4
         with:
           distribution: temurin
@@ -36,6 +53,8 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: .nvmrc
+      - name: Verify pinned Android toolchain before native build
+        run: python3 scripts/check_android_toolchain.py
       - name: Install SDK 36 and Python analyzer dependency
         run: |
           set -euo pipefail
@@ -63,22 +82,24 @@ jobs:
           node scripts/check-bundled-cloud-config.cjs build
           npx cap sync android
           python3 -m unittest discover -s scripts/r8 -p 'test_*.py' -v
+          python3 -m unittest discover -s scripts -p 'test_native_evidence.py' -v
+          python3 -m unittest discover -s scripts -p 'test_integrated_harness.py' -v
       - name: Default release compiler baseline and candidate
         id: default-build
         run: python3 scripts/r8/experiment.py --mode default --output "$R8_OUTPUT"
       - name: Diagnostic R8 9.4.34 matched baseline and candidate
         run: python3 scripts/r8/experiment.py --mode analyzer --output "$R8_OUTPUT"
       - name: Verify temporary configuration restored
-        if: always()
-        env:
-          MOVO_JOB_CANCELLED: ${{ cancelled() }}
+        if: ${{ always() && !cancelled() }}
+        run: |
+          set -euo pipefail
+          # A non-cancelled compiler failure or drift must never be repaired into a pass.
+          git diff --exit-code -- android/settings.gradle android/app/proguard-rules.pro
+      - name: Restore experiment-owned paths after cancellation only
+        if: cancelled()
         run: |
           set -euo pipefail
           if git diff --exit-code -- android/settings.gradle android/app/proguard-rules.pro; then exit 0; fi
-          if [ "$MOVO_JOB_CANCELLED" != "true" ]; then
-            echo "::error::Unexpected experiment configuration drift"
-            exit 1
-          fi
           # Runner cancellation can interrupt Python before its finally block.
           # Restore only the two experiment-owned paths in this disposable checkout.
           git restore --source=HEAD --worktree -- android/settings.gradle android/app/proguard-rules.pro
@@ -111,10 +132,12 @@ jobs:
           force-avd-creation: true
           ram-size: 4096M
           disable-linux-hw-accel: false
-          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-window -gpu lavapipe -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           script: python3 scripts/r8/emulator_smoke.py --disposable-emulator --variant baseline --output "$R8_OUTPUT"
+      # Keep both fresh AVD results even when the first fails. No failure is ignored.
       - name: Offline emulator acceptance on DEFAULT release candidate
-        if: ${{ !cancelled() && steps.default-build.outcome == 'success' && steps.baseline-acceptance.outcome == 'success' }}
+        id: candidate-acceptance
+        if: ${{ !cancelled() && steps.default-build.outcome == 'success' }}
         timeout-minutes: 25
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
@@ -126,8 +149,19 @@ jobs:
           force-avd-creation: true
           ram-size: 4096M
           disable-linux-hw-accel: false
-          emulator-options: -no-window -gpu swiftshader_indirect -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-window -gpu lavapipe -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           script: python3 scripts/r8/emulator_smoke.py --disposable-emulator --variant candidate --output "$R8_OUTPUT"
+      - name: Require both actual emulator acceptance results
+        if: ${{ always() && !cancelled() && steps.default-build.outcome == 'success' }}
+        env:
+          BASELINE_OUTCOME: ${{ steps.baseline-acceptance.outcome }}
+          CANDIDATE_OUTCOME: ${{ steps.candidate-acceptance.outcome }}
+        run: |
+          set -euo pipefail
+          test "$BASELINE_OUTCOME" = success
+          test "$CANDIDATE_OUTCOME" = success
+          test -s "$R8_OUTPUT/default/baseline/device/passed.txt"
+          test -s "$R8_OUTPUT/default/candidate/device/passed.txt"
       - name: Record runner resources after emulator failure
         if: failure() && steps.default-build.outcome == 'success'
         run: |
@@ -139,7 +173,7 @@ jobs:
         if: always() && steps.default-build.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: movo-r8-emulator-${{ github.event.pull_request.head.sha || github.sha }}
+          name: movo-r8-emulator-${{ github.event.pull_request.head.sha || github.sha }}${{ matrix.variant == 'svg-candidate' && '-svg-candidate' || '' }}
           path: |
             tmp/r8-experiment/legal-fixture.json
             tmp/r8-experiment/default/*/device/
@@ -150,10 +184,23 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: movo-r8-experiment-${{ github.event.pull_request.head.sha || github.sha }}
+          name: movo-r8-experiment-${{ github.event.pull_request.head.sha || github.sha }}${{ matrix.variant == 'svg-candidate' && '-svg-candidate' || '' }}
           path: tmp/r8-experiment/
           if-no-files-found: error
           retention-days: 7
       - name: Remove disposable signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/r8-test.jks"
+      - name: Verify SVG candidate provenance after acceptance
+        if: always() && !cancelled() && matrix.variant == 'svg-candidate'
+        env:
+          MOVO_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/security/prepare-svg-acceptance.py --verify-only --checkout "$GITHUB_WORKSPACE" --evidence "$RUNNER_TEMP/movo-svg-provenance.json" --head "$MOVO_EXPECTED_HEAD"
+      - name: Upload candidate provenance separately
+        if: always() && matrix.variant == 'svg-candidate'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: movo-svg-provenance-r8
+          path: ${{ runner.temp }}/movo-svg-provenance.json
+          if-no-files-found: error
+          retention-days: 7

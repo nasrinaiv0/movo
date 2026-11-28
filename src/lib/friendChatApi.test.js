@@ -58,3 +58,18 @@ test('fails closed during a pending database migration', async () => {
   expect(res.json).toHaveBeenCalledWith({ error: 'chat_update_pending' });
   expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'private, no-store');
 });
+
+
+test('recipient decisions require explicit server flag and project away caller identity', async () => {
+  delete process.env.MOVO_ATOMIC_FRIEND_IMPORT_ENABLED;
+  expect((await call('POST', { action: 'accept_share', connectionId: cid, messageId: nonce })).status).toHaveBeenCalledWith(503);
+  expect(rpc).not.toHaveBeenCalled();
+  process.env.MOVO_ATOMIC_FRIEND_IMPORT_ENABLED = 'true';
+  try {
+    await call('POST', { action: 'accept_share', connectionId: cid, messageId: nonce, p_actor: 'forged', amount: 999 });
+    expect(rpc).toHaveBeenCalledWith('movo_friend_transaction_decision', { p_actor: id, p_action: 'accept_share', p_data: { connectionId: cid, messageId: nonce } });
+    rpc.mockResolvedValueOnce({ data: { decisions: [] } });
+    const result = await call('POST', { action: 'decisions', connectionId: cid });
+    expect(result.json).toHaveBeenCalledWith({ decisions: [], atomicImport: true });
+  } finally { delete process.env.MOVO_ATOMIC_FRIEND_IMPORT_ENABLED; }
+});

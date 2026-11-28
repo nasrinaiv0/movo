@@ -2,7 +2,7 @@
 -- Atomic create and replay, including no side effects after a rejected request.
 begin;
 select set_config('request.jwt.claims','{"role":"service_role"}',false);
-insert into auth.users(id) values ('00000000-0000-0000-0000-00000000d101'),('00000000-0000-0000-0000-00000000d102');
+insert into auth.users(id,email_confirmed_at) values ('00000000-0000-0000-0000-00000000d101',now()),('00000000-0000-0000-0000-00000000d102',now());
 insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance) values
  ('10000000-0000-0000-0000-00000000d101','00000000-0000-0000-0000-00000000d101','Receiving','bank','PHP',1000),
  ('20000000-0000-0000-0000-00000000d101','00000000-0000-0000-0000-00000000d101','Card','card','PHP',-100),
@@ -48,4 +48,50 @@ begin
   then raise exception 'request receipt access leak'; end if;
 end
 $test$;
+
+-- Guard coverage under actual authenticated role. Verify the guard's exact
+-- error so another downstream privilege/plan rejection cannot pass this test.
+select set_config('request.jwt.claims','{"role":"service_role"}',false);
+insert into auth.users(id,email_confirmed_at,is_anonymous) values
+ ('00000000-0000-0000-0000-00000000d103',null,false),
+ ('00000000-0000-0000-0000-00000000d104',now(),true),
+ ('00000000-0000-0000-0000-00000000d105',now(),false);
+insert into public.movo_manual_plan_grants(user_id,tier,expires_at,reason)
+ select id,'pro',now()+interval '1 day','synthetic guard fixture' from auth.users where id in
+ ('00000000-0000-0000-0000-00000000d103','00000000-0000-0000-0000-00000000d104','00000000-0000-0000-0000-00000000d105');
+insert into public.movo_account_erasure_requests(user_id) values ('00000000-0000-0000-0000-00000000d105');
+set local role authenticated;
+select set_config('request.jwt.claims','{"role":"authenticated","is_anonymous":false}',false);
+do $denied$
+declare u uuid; k uuid := '50000000-0000-0000-0000-00000000d103';
+begin
+  foreach u in array ARRAY['00000000-0000-0000-0000-00000000d103'::uuid,
+    '00000000-0000-0000-0000-00000000d104'::uuid,
+    '00000000-0000-0000-0000-00000000d105'::uuid,
+    '00000000-0000-0000-0000-00000000d106'::uuid]
+  loop
+    perform set_config('request.jwt.claim.sub',u::text,false);
+    begin
+      perform public.create_loan_atomic(k,u,'Denied','debt',10,'PHP',false,null,null,null,0,'[]',null,null);
+      raise exception 'guard allowed ineligible identity';
+    exception when insufficient_privilege then
+      if SQLERRM <> 'authentication_required' then raise; end if;
+    end;
+  end loop;
+  -- Even if the database owner is verified, an anonymous JWT is rejected.
+  perform set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000d101',false);
+  perform set_config('request.jwt.claims','{"role":"authenticated","is_anonymous":true}',false);
+  begin
+    perform public.create_loan_atomic(k,'00000000-0000-0000-0000-00000000d101','Denied','debt',10,'PHP',false,null,null,null,0,'[]',null,null);
+    raise exception 'anonymous token unexpectedly accepted';
+  exception when insufficient_privilege then
+    if SQLERRM <> 'authentication_required' then raise; end if;
+  end;
+end $denied$;
+reset role;
+do $counts$ begin
+  if exists (select 1 from public.loan_creation_requests where request_id='50000000-0000-0000-0000-00000000d103')
+     or exists (select 1 from public.financial_loans where user_id in ('00000000-0000-0000-0000-00000000d103','00000000-0000-0000-0000-00000000d104','00000000-0000-0000-0000-00000000d105','00000000-0000-0000-0000-00000000d106'))
+  then raise exception 'ineligible loan request left financial state'; end if;
+end $counts$;
 rollback;

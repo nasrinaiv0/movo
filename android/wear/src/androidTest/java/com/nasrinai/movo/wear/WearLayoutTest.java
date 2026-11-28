@@ -1,6 +1,7 @@
 package com.nasrinai.movo.wear;
 
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.SystemClock;
 import android.view.View;
@@ -60,9 +61,76 @@ public final class WearLayoutTest {
         InstrumentationRegistry.getInstrumentation().waitForIdleSync();
     }
 
-    private void capture(ActivityScenario<WearActivity> scenario, String name) throws Exception {
+    // View geometry can precede the compositor's scroll frame. Require the real
+    // screenshot to contain the action's current tint inside its current bounds.
+    private boolean showsRenderedAction(Bitmap shot, Rect bounds, int tint) {
+        if (bounds.isEmpty() || bounds.left < 0 || bounds.top < 0
+                || bounds.right > shot.getWidth() || bounds.bottom > shot.getHeight()) return false;
+        // Android 14 UiAutomation can return a GPU-backed screenshot. Pixel reads
+        // require a software copy; keep the original real capture for the artifact.
+        Bitmap pixels = shot.getConfig() == Bitmap.Config.HARDWARE
+                ? shot.copy(Bitmap.Config.ARGB_8888, false) : shot;
+        assertNotNull("Readable screenshot copy", pixels);
+        try {
+            int insetX = Math.max(1, bounds.width() / 6);
+            int insetY = Math.max(1, bounds.height() / 6);
+            int stepX = Math.max(1, (bounds.width() - 2 * insetX) / 8);
+            int stepY = Math.max(1, (bounds.height() - 2 * insetY) / 8);
+            int matching = 0, samples = 0;
+            for (int y = bounds.top + insetY; y < bounds.bottom - insetY; y += stepY) {
+                for (int x = bounds.left + insetX; x < bounds.right - insetX; x += stepX) {
+                    int pixel = pixels.getPixel(x, y);
+                    if (Math.abs(Color.red(pixel) - Color.red(tint)) <= 20
+                            && Math.abs(Color.green(pixel) - Color.green(tint)) <= 20
+                            && Math.abs(Color.blue(pixel) - Color.blue(tint)) <= 20) matching++;
+                    samples++;
+                }
+            }
+            return samples > 0 && matching * 4 >= samples;
+        } finally {
+            if (pixels != shot) pixels.recycle();
+        }
+    }
+
+    private Bitmap actionScreenshot(ActivityScenario<WearActivity> scenario) {
+        long deadline = SystemClock.uptimeMillis() + 3000;
+        do {
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            Rect bounds = new Rect();
+            int[] tint = new int[1];
+            scenario.onActivity(activity -> {
+                assertTrue("MOVO must keep foreground focus during capture", activity.hasWindowFocus());
+                Button action = button(activity.getWindow().getDecorView());
+                assertNotNull(action);
+                assertTrue(action.getGlobalVisibleRect(bounds));
+                assertEquals(action.getWidth(), bounds.width());
+                assertEquals(action.getHeight(), bounds.height());
+                assertNotNull(action.getBackgroundTintList());
+                tint[0] = action.getBackgroundTintList().getColorForState(
+                        action.getDrawableState(), action.getBackgroundTintList().getDefaultColor());
+            });
+            Bitmap shot = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
+            if (shot != null) {
+                boolean accepted = false;
+                try {
+                    accepted = showsRenderedAction(shot, bounds, tint[0]);
+                    if (accepted) return shot;
+                } finally {
+                    if (!accepted) shot.recycle();
+                }
+            }
+            SystemClock.sleep(100);
+        } while (SystemClock.uptimeMillis() < deadline);
+        throw new AssertionError("Captured frame never showed Quick Log inside its verified bounds");
+    }
+
+    private void capture(ActivityScenario<WearActivity> scenario, String name, boolean requireRenderedAction) throws Exception {
         File dir = InstrumentationRegistry.getInstrumentation().getTargetContext().getExternalFilesDir(null);
         assertNotNull(dir);
+        Bitmap screenshot = requireRenderedAction ? actionScreenshot(scenario)
+                : InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
+        assertNotNull("In-test screenshot", screenshot);
+        try {
         try (PrintWriter out = new PrintWriter(new File(dir, name + ".txt"))) {
             scenario.onActivity(activity -> {
                 Button action = button(activity.getWindow().getDecorView());
@@ -84,15 +152,14 @@ public final class WearLayoutTest {
                 }
             });
         }
-        Bitmap screenshot = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
-        assertNotNull("In-test screenshot", screenshot);
         try (FileOutputStream out = new FileOutputStream(new File(dir, name + ".png"))) {
             assertTrue(screenshot.compress(Bitmap.CompressFormat.PNG, 100, out));
+        }
         } finally { screenshot.recycle(); }
     }
 
     private void captureFailure(ActivityScenario<WearActivity> scenario, String name, Throwable failure) {
-        try { capture(scenario, name); }
+        try { capture(scenario, name, false); }
         catch (Throwable diagnostic) { failure.addSuppressed(diagnostic); }
     }
 
@@ -128,7 +195,7 @@ public final class WearLayoutTest {
                     }
                 }
             });
-            capture(scenario, "wear-layout");
+            capture(scenario, "wear-layout", true);
             } catch (Exception | AssertionError failure) {
                 captureFailure(scenario, "wear-layout-failure", failure);
                 throw failure;

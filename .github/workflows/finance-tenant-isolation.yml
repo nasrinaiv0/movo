@@ -13,12 +13,16 @@ concurrency:
 
 jobs:
   finance-authorization:
-    name: Isolated two-user financial RPC regression
+    name: Isolated financial RPC regression (PostgreSQL ${{ matrix.postgres }})
     runs-on: ubuntu-latest
     timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: ["17.11", "18"]
     services:
       postgres:
-        image: postgres:18
+        image: postgres:${{ matrix.postgres }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: movo-isolated-ci-only
@@ -33,7 +37,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      # Use the client utilities already shipped in the disposable postgres:18
+      # Use the client utilities already shipped in the selected disposable PostgreSQL
       # service image. The runner's Ubuntu apt mirror is not a release gate.
       - name: Use PostgreSQL clients inside the isolated service
         env:

@@ -105,6 +105,8 @@ The iOS app wraps this same code with Capacitor (`ios/`, `capacitor.config.json`
 
 ## Production readiness
 
+Draft PR #347 now contains the dedicated Friends workspace candidate: chats, profiles, discovery, QR invitations and privacy/settings reuse the existing chat and financial-sharing contracts. See the [November 27 implementation, rendered evidence and release gates](docs/engineering/updates/2026-11-27-friends-workspace-execution.md). Local verification does not authorize production: exact-head native CI, moderation/legal review, migration/restore approval and signed-device/store acceptance remain required.
+
 See the [November 20 production audit and remediation matrix](docs/audits/2026-11-20-full-movo-product-audit.md) for the audited commit, evidence and implementation PRs. Public expansion and paid launch depend on accounting integrity, account isolation and deletion, signed-device sign-in and billing, and store acceptance. Use the latest branch, migration and deployment evidence before making release decisions.
 
 ## Icons

@@ -1,4 +1,4 @@
-"""Run production migration SQL and 12 privileged finance-RPC tenant tests against
+"""Run production migration SQL and privileged finance-RPC isolation tests against
 an ephemeral *local* Postgres database. No Supabase project or remote host used.
 
 Only GitHub Actions with the disposable PostgreSQL service container are allowed.
@@ -96,6 +96,11 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role BYPASSRLS; END IF;
 END $$;
 CREATE SCHEMA auth; CREATE SCHEMA storage;
+-- Match the hosted postgres role's effective public-schema default ACLs.
+-- Without these, the original service/ledger denial regression falsely passes.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon, authenticated, service_role;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE auth.users (
   id uuid PRIMARY KEY,
@@ -103,6 +108,8 @@ CREATE TABLE auth.users (
   raw_user_meta_data jsonb DEFAULT '{}'::jsonb,
   email_confirmed_at timestamptz,
   phone_confirmed_at timestamptz,
+  is_anonymous boolean NOT NULL DEFAULT false,
+  last_sign_in_at timestamptz,
   created_at timestamptz DEFAULT now()
 );
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
@@ -127,7 +134,10 @@ CREATE FUNCTION storage.foldername(name text) RETURNS text[] LANGUAGE sql IMMUTA
     ELSE string_to_array(regexp_replace(name,'/[^/]*$',''),'/') END
 $$;
 GRANT USAGE ON SCHEMA auth, public, storage TO authenticated, anon, service_role;
-GRANT SELECT ON auth.users TO authenticated, service_role;
+-- Match the hosted service's existing column grants. Broad mock SELECT hid
+-- the workspace RPC's missing is_anonymous dependency in production.
+GRANT SELECT (id, created_at, last_sign_in_at, email_confirmed_at, phone_confirmed_at)
+  ON auth.users TO service_role;
 GRANT ALL ON storage.buckets, storage.objects TO authenticated, service_role;
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 """
@@ -142,7 +152,7 @@ def verify_atomic_loan_concurrency():
     request = "50000000-0000-0000-0000-00000000d201"
     sql(f"""
       select set_config('request.jwt.claims','{{"role":"service_role"}}',false);
-      insert into auth.users(id) values ('{owner}');
+      insert into auth.users(id,email_confirmed_at) values ('{owner}',now());
       insert into public.movo_manual_plan_grants(user_id,tier,expires_at,reason) values ('{owner}','pro',now()+interval '1 day','isolated concurrent test');
       insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance)
       values ('{bank}','{owner}','Concurrent synthetic bank','bank','PHP',1000);
@@ -178,6 +188,284 @@ def verify_atomic_loan_concurrency():
     """, "two independent authenticated SQL sessions: exactly one disbursement")
 
 
+def verify_friend_import_concurrency():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    sender = "00000000-0000-0000-0000-00000000f301"
+    owner = "00000000-0000-0000-0000-00000000f302"
+    bank = "10000000-0000-0000-0000-00000000f302"
+    connection = "20000000-0000-0000-0000-00000000f302"
+    message = "30000000-0000-0000-0000-00000000f302"
+    sql(f"""
+      select set_config('request.jwt.claims','{{"role":"service_role"}}',false);
+      insert into auth.users(id,email_confirmed_at) values ('{sender}',now()),('{owner}',now());
+      insert into public.movo_manual_plan_grants(user_id,tier,expires_at,reason) values ('{owner}','pro',now()+interval '1 day','isolated concurrent import');
+      insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance) values ('{bank}','{owner}','Synthetic bank','bank','PHP',1000);
+      insert into public.movo_friend_connections(id,member_low,member_high,name_low,name_high) values ('{connection}','{sender}','{owner}','Sender','Recipient');
+      insert into public.movo_friend_messages(id,connection_id,sender_id,client_id,kind,body,card) values ('{message}','{connection}','{sender}',gen_random_uuid(),'transaction','','{{"type":"expense","currency":"PHP","amount":42.25,"date":"2026-11-23"}}');
+      insert into public.movo_friend_transaction_decisions(message_id,recipient_id,status) values ('{message}','{owner}','accepted');
+    """, "seed concurrent synthetic friend import")
+    gate = Barrier(2, timeout=10)
+    def worker():
+        gate.wait()
+        result = command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE, stdin=f"""
+          begin;
+          set local role authenticated;
+          set local request.jwt.claims = '{{"role":"authenticated"}}';
+          set local request.jwt.claim.sub = '{owner}';
+          select public.movo_import_friend_transaction('{owner}','{connection}','{message}','{bank}',null,'2026-11-23');
+          select pg_sleep(0.5);
+          commit;
+        """)
+        return result.stdout.strip()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(worker) for _ in range(2)]
+        receipts = [future.result(timeout=65) for future in futures]
+    if not receipts[0] or receipts[0] != receipts[1]:
+        raise RuntimeError("Concurrent imports did not return the same receipt")
+    sql(f"""
+      do $race$ begin
+        if (select count(*) from public.transactions where id='{message}' and user_id='{owner}' and amount=42.25)<>1
+           or (select count(*) from public.movo_sync_operations where operation_id='{message}' and user_id='{owner}')<>1
+           or (select status from public.movo_friend_transaction_decisions where message_id='{message}') is distinct from 'imported'
+        then raise exception 'atomic share duplicated or incomplete'; end if;
+      end $race$;
+    """, "two independent authenticated SQL sessions: exactly one share import")
+
+
+def verify_friend_import_revocation_races():
+    """Run both ordered outcomes using separate disposable database connections."""
+    from concurrent.futures import ThreadPoolExecutor
+    import time
+    for index, mode in enumerate(("decline_first", "import_first", "remove_first", "erasure_first", "erase_after_import"), 1):
+        sender = f"00000000-0000-0000-0000-00000000e{index}01"
+        owner = f"00000000-0000-0000-0000-00000000e{index}02"
+        bank = f"10000000-0000-0000-0000-00000000e{index}02"
+        connection = f"20000000-0000-0000-0000-00000000e{index}02"
+        message = f"30000000-0000-0000-0000-00000000e{index}02"
+        marker = 846000 + index
+        sql(f"""
+          select set_config('request.jwt.claims','{{"role":"service_role"}}',false);
+          insert into auth.users(id,email_confirmed_at) values ('{sender}',now()),('{owner}',now());
+          insert into public.movo_manual_plan_grants(user_id,tier,expires_at,reason) values ('{owner}','pro',now()+interval '1 day','isolated revocation');
+          insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance) values ('{bank}','{owner}','Synthetic bank','bank','PHP',1000);
+          insert into public.movo_friend_connections(id,member_low,member_high,name_low,name_high) values ('{connection}','{sender}','{owner}','Sender','Recipient');
+          insert into public.movo_friend_messages(id,connection_id,sender_id,client_id,kind,body,card) values ('{message}','{connection}','{sender}',gen_random_uuid(),'transaction','','{{"type":"expense","currency":"PHP","amount":42.25,"date":"2026-11-23"}}');
+          insert into public.movo_friend_transaction_decisions(message_id,recipient_id,status) values ('{message}','{owner}','accepted');
+        """, "seed revocation race " + mode)
+        recipient = f"set local role authenticated; set local request.jwt.claims = '{{\"role\":\"authenticated\"}}'; set local request.jwt.claim.sub = '{owner}';"
+        service = """set local role service_role; set local request.jwt.claims = '{"role":"service_role"}';"""
+        posting = f"select public.movo_import_friend_transaction('{owner}','{connection}','{message}','{bank}',null,'2026-11-23');"
+        decline = f"""select public.movo_friend_transaction_decision('{owner}','decline_share','{{"connectionId":"{connection}","messageId":"{message}"}}');"""
+        remove = f"select public.movo_friends('{sender}','remove',null,null,'{connection}');"
+        erase = f"insert into public.movo_account_erasure_requests(user_id) values ('{owner}');"
+        finish = f"select public.movo_finish_account_erasure('{owner}');"
+        blocked = f"""
+          do $block$ begin
+            begin
+              perform public.movo_import_friend_transaction('{owner}','{connection}','{message}','{bank}',null,'2026-11-23');
+              raise exception 'revoked import unexpectedly posted';
+            exception when insufficient_privilege then null;
+            end;
+          end $block$;
+        """
+        if mode == "import_first":
+            first, second = recipient + posting, service + decline
+        elif mode == "erase_after_import":
+            first, second = recipient + posting, service + erase + finish
+        else:
+            first = service + {"decline_first": decline, "remove_first": remove, "erasure_first": erase}[mode]
+            second = recipient + blocked
+        def run(statement):
+            return command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE,
+                           stdin="begin; set local lock_timeout='10s'; " + statement + " commit;").stdout
+        # Signal only after the first action has acquired its real database locks.
+        # A held transaction advisory marker is observable from the second session.
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first_future = executor.submit(run, first + f" select pg_advisory_xact_lock({marker}); select pg_sleep(2);")
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                held = command("psql", *CONN, "-X", "-Atq", "-d", DATABASE,
+                    stdin=f"select exists(select 1 from pg_locks where locktype='advisory' and classid=0 and objid={marker} and granted);").stdout.strip()
+                if held == "t":
+                    break
+                if first_future.done():
+                    first_future.result()
+                    raise RuntimeError("first transaction ended before overlap: " + mode)
+                time.sleep(0.05)
+            else:
+                raise RuntimeError("race synchronization timed out: " + mode)
+            second_future = executor.submit(run, second)
+            first_future.result(timeout=30)
+            result = second_future.result(timeout=30)
+        if mode == "import_first" and '"status": "imported"' not in result:
+            raise RuntimeError("late decline changed imported receipt")
+        expected = 1 if mode == "import_first" else 0
+        sql(f"""
+          do $race$ begin
+            if (select count(*) from public.transactions where user_id='{owner}' and id='{message}') <> {expected}
+               or (select count(*) from public.movo_sync_operations where user_id='{owner}' and operation_id='{message}') <> {expected}
+            then raise exception 'race ledger or receipt mismatch'; end if;
+            if '{mode}'='erase_after_import' and (exists(select 1 from auth.users where id='{owner}')
+                or exists(select 1 from public.movo_friend_transaction_decisions where recipient_id='{owner}'))
+            then raise exception 'erasure retained user or decisions'; end if;
+          end $race$;
+        """, "ordered concurrent consent/erasure outcome: " + mode)
+
+
+def verify_loan_erasure_races():
+    """Require both orders on separate disposable sessions with an observed overlap."""
+    from concurrent.futures import ThreadPoolExecutor
+    import time
+    for index, mode in enumerate(("erasure_first", "loan_first"), 1):
+        owner = f"00000000-0000-0000-0000-00000000f{index}01"
+        bank = f"10000000-0000-0000-0000-00000000f{index}01"
+        request = f"50000000-0000-0000-0000-00000000f{index}01"
+        marker = 847000 + index
+        sql(f"""
+          select set_config('request.jwt.claims','{{"role":"service_role"}}',false);
+          insert into auth.users(id,email_confirmed_at) values ('{owner}',now());
+          insert into public.movo_manual_plan_grants(user_id,tier,expires_at,reason)
+            values ('{owner}','pro',now()+interval '1 day','isolated loan erasure race');
+          insert into public.financial_accounts(id,user_id,name,account_type,currency,opening_balance)
+            values ('{bank}','{owner}','Synthetic loan bank','bank','PHP',1000);
+        """, "seed loan erasure race " + mode)
+        actor = f"""set local role authenticated; set local request.jwt.claims='{{"role":"authenticated"}}'; set local request.jwt.claim.sub='{owner}';"""
+        service = """set local role service_role; set local request.jwt.claims='{"role":"service_role"}';"""
+        posting = f"select (public.create_loan_atomic('{request}','{owner}','Loan race','loan',500,'PHP',true,'{bank}',null,null,0,'[]',null,null)).id;"
+        erase = f"insert into public.movo_account_erasure_requests(user_id) values ('{owner}');"
+        denied = f"""
+          do $block$ begin
+            begin
+              perform public.create_loan_atomic('{request}','{owner}','Loan race','loan',500,'PHP',true,'{bank}',null,null,0,'[]',null,null);
+              raise exception 'erasure-pending loan unexpectedly accepted';
+            exception when insufficient_privilege then
+              if SQLERRM <> 'authentication_required' then raise; end if;
+            end;
+          end $block$;
+        """
+        # Keep the user and receipt present in loan-first until assertions prove
+        # that a post-erasure-request replay is also denied; then finish erasure.
+        first, second = (service + erase, actor + denied) if mode == "erasure_first" else (actor + posting, service + erase)
+        def run(statement):
+            return command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE,
+                           stdin="begin; set local lock_timeout='10s'; " + statement + " commit;").stdout
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first_future = executor.submit(run, first + f" select pg_advisory_xact_lock({marker}); select pg_sleep(2);")
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                held = command("psql", *CONN, "-X", "-Atq", "-d", DATABASE,
+                    stdin=f"select exists(select 1 from pg_locks where locktype='advisory' and classid=0 and objid={marker} and granted);").stdout.strip()
+                if held == "t":
+                    break
+                if first_future.done():
+                    first_future.result()
+                    raise RuntimeError("first loan race ended before overlap")
+                time.sleep(0.05)
+            else:
+                raise RuntimeError("loan erasure race synchronization timed out")
+            second_future = executor.submit(run, second)
+            first_future.result(timeout=30)
+            second_future.result(timeout=30)
+        if mode == "loan_first":
+            run(actor + denied)
+        expected = 1 if mode == "loan_first" else 0
+        sql(f"""
+          do $race$ begin
+            if (select count(*) from public.financial_loans where user_id='{owner}') <> {expected}
+              or (select count(*) from public.loan_creation_requests where user_id='{owner}') <> {expected}
+              or (select count(*) from public.loan_events where user_id='{owner}') <> {expected}
+              or (select count(*) from public.accounting_postings where user_id='{owner}') <> {expected}
+              or coalesce((select sum(signed_amount) from public.accounting_postings where user_id='{owner}'),0) <> {expected * 500}
+            then raise exception 'loan erasure ordering or accounting mismatch'; end if;
+          end $race$;
+        """, "ordered loan/erasure result " + mode)
+        run(service + f"select public.movo_clear_cloud_records('{owner}'); select public.movo_finish_account_erasure('{owner}');")
+        sql(f"""
+          do $race$ begin
+            if exists(select 1 from auth.users where id='{owner}')
+               or exists(select 1 from public.loan_creation_requests where user_id='{owner}')
+               or exists(select 1 from public.accounting_postings where user_id='{owner}')
+               or exists(select 1 from public.financial_loans where user_id='{owner}')
+            then raise exception 'loan erasure retained identity or finance data'; end if;
+          end $race$;
+        """, "loan erasure clears receipts and financial rows " + mode)
+
+
+def verify_friend_workspace_concurrency():
+    """Keep cancellation/acceptance and report/removal linearizable on real sessions."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    import time
+    service = "set local role service_role; set local request.jwt.claims = '{\"role\":\"service_role\"}';"
+    def run(statement):
+        return command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE,
+            stdin="begin; set local lock_timeout='10s'; " + service + statement + " commit;").stdout.strip()
+    for index, mode in enumerate(("cancel_first", "accept_first", "duplicate_report", "report_first", "remove_first"), 1):
+        a = f"00000000-0000-4000-8000-00000000c{index}01"
+        b = f"00000000-0000-4000-8000-00000000c{index}02"
+        request = f"10000000-0000-4000-8000-00000000c{index}01"
+        connection = f"20000000-0000-4000-8000-00000000c{index}01"
+        message = f"30000000-0000-4000-8000-00000000c{index}01"
+        sql(f"""
+          insert into auth.users(id,email_confirmed_at) values('{a}',now()),('{b}',now());
+          insert into public.movo_friend_directory(owner_id,handle,discoverable)
+            values('{a}','workspace_race_a_{index}',true),('{b}','workspace_race_b_{index}',true);
+        """, "seed workspace ordering " + mode)
+        if mode in ("cancel_first", "accept_first"):
+            sql(f"insert into public.movo_friend_requests(id,sender,recipient) values('{request}','{a}','{b}');", "seed pending request")
+            cancel = f"select public.movo_friend_workspace('{a}','cancel_request','{{\"requestId\":\"{request}\"}}');"
+            accept = f"select public.movo_friend_social('{b}','accept_request','{{\"requestId\":\"{request}\"}}');"
+            first, second = (cancel, accept) if mode == "cancel_first" else (accept, cancel)
+        else:
+            sql(f"""
+              insert into public.movo_friend_connections(id,member_low,member_high,name_low,name_high) values('{connection}','{a}','{b}','A','B');
+              insert into public.movo_friend_messages(id,connection_id,sender_id,client_id,kind,body)
+                values('{message}','{connection}','{b}',gen_random_uuid(),'text','Synthetic report ordering');
+            """, "seed private message")
+            report = f"select public.movo_friend_workspace('{a}','report_message','{{\"connectionId\":\"{connection}\",\"messageId\":\"{message}\"}}');"
+            remove = f"select public.movo_friends('{b}','remove',null,null,'{connection}');"
+            if mode == "duplicate_report":
+                barrier = Barrier(2, timeout=10)
+                def report_once():
+                    barrier.wait()
+                    return run(report)
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    results = [future.result(timeout=30) for future in [executor.submit(report_once), executor.submit(report_once)]]
+                if not results[0] or results[0] != results[1]:
+                    raise RuntimeError("Concurrent message reports returned different receipts")
+                sql(f"""do $$ begin
+                  if (select count(*) from public.movo_friend_reports where reporter='{a}' and message_id='{message}')<>1
+                    or (select hits from public.movo_friend_rate_limits where owner_id='{a}' and action='report_message')<>1
+                  then raise exception 'duplicate report or rate penalty'; end if;
+                end $$;""", "concurrent report retry: one reference, one rate debit")
+                continue
+            first, second = (report, remove) if mode == "report_first" else (remove, report)
+        marker = 847100 + index
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first_future = executor.submit(run, first + f" select pg_advisory_xact_lock({marker}); select pg_sleep(1);")
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                held = command("psql", *CONN, "-X", "-Atq", "-d", DATABASE,
+                    stdin=f"select exists(select 1 from pg_locks where locktype='advisory' and classid=0 and objid={marker} and granted);").stdout.strip()
+                if held == "t": break
+                if first_future.done():
+                    first_future.result()
+                    raise RuntimeError("Workspace overlap ended early: " + mode)
+                time.sleep(0.05)
+            else: raise RuntimeError("Workspace ordering timed out: " + mode)
+            second_future = executor.submit(run, second)
+            first_future.result(timeout=30)
+            second_future.result(timeout=30)
+        expected = 1 if mode == "accept_first" else 0
+        sql(f"""do $$ begin
+          if exists(select 1 from public.movo_friend_requests where id='{request}')
+            or (select count(*) from public.movo_friend_connections where member_low='{a}' and member_high='{b}')<>{expected}
+            or exists(select 1 from public.movo_friend_reports where message_id='{message}')
+          then raise exception 'workspace ordering violated'; end if;
+        end $$;""", "ordered workspace result: " + mode)
+
+
 def main():
     command("createdb", *CONN, DATABASE)
     try:
@@ -188,7 +476,13 @@ def main():
         # Main already contains migrations newer than the staged PR. Rehearse
         # the upgrade from that deployed schema with only the three PR stages pending.
         upgrade_versions = ("20261111133000", "20261111133100", "20261111133200")
-        baseline = [migration for migration in migrations if migration.name[:14] not in upgrade_versions]
+        # Rehearse the pending chat/import/loan/workspace capabilities and forward grant fixes.
+        # This is a repository-derived approximation, not a production dump.
+        pending_versions = ("20261123131500", "20261123170000", "20261124030000", "20261127114611", "20261127212047", "20261127234509")
+        pending = [migration for migration in migrations if migration.name[:14] in pending_versions]
+        if tuple(migration.name[:14] for migration in pending) != pending_versions:
+            raise RuntimeError("Unexpected pending friend/loan/workspace migration sequence")
+        baseline = [migration for migration in migrations if migration.name[:14] not in upgrade_versions + pending_versions]
         upgrade = [migration for migration in migrations if migration.name[:14] in upgrade_versions]
         if tuple(migration.name[:14] for migration in upgrade) != upgrade_versions:
             raise RuntimeError("Unexpected PR274 migration sequence or missing upgrade step")
@@ -218,6 +512,47 @@ def main():
         restore_into_generated_test_database(clean_baseline_snapshot, DATABASE)
         for migration in upgrade:
             sql(migration.read_text(), "clean schema: " + migration.name)
+        sql("""
+          do $$ begin
+            if to_regclass('public.movo_friend_messages') is not null
+              or to_regclass('public.movo_friend_transaction_decisions') is not null
+              or to_regclass('public.loan_creation_requests') is not null
+            then raise exception 'pending migrations already present in rehearsal baseline'; end if;
+          end $$;
+        """, "pending capabilities absent before isolated upgrade")
+        for migration in pending:
+            if migration.name[:14] == "20261127212047":
+                sql(r"""
+                  begin;
+                  set local role service_role;
+                  do $$ begin
+                    begin
+                      perform public.movo_friend_workspace(
+                        '00000000-0000-4000-8000-00000000a199','outgoing_requests','{}');
+                      raise exception 'Hosted Auth permission gap was not reproduced';
+                    exception when insufficient_privilege then
+                      if SQLERRM not like '%users%' then raise; end if;
+                    end;
+                  end $$;
+                  rollback;
+                """, "hosted column-only Auth grants reproduce workspace permission failure before fix")
+            if migration.name[:14] == "20261127234509":
+                sql(r"""
+                  begin;
+                  set local role service_role;
+                  do $$ begin
+                    if not has_table_privilege(current_user,'public.transactions','INSERT')
+                       or not has_table_privilege(current_user,'public.transactions','UPDATE')
+                       or not has_table_privilege(current_user,'public.transactions','DELETE') then
+                      raise exception 'Hosted raw server ledger grant gap was not reproduced';
+                    end if;
+                  end $$;
+                  update public.transactions set merchant=merchant where false;
+                  rollback;
+                """, "hosted defaults reproduce raw server ledger access before the fence")
+            sql(migration.read_text(), "pending capability upgrade: " + migration.name)
+        sql((ROOT / "supabase/tests/service_ledger_write_fence.test.sql").read_text(),
+            "hosted service grants deny raw ledger writes and preserve idempotent automation")
         sql((ROOT / "supabase/tests/security_definer_tenant_isolation.test.sql").read_text(),
             "12 SECURITY DEFINER cross-tenant denials and owner-only controls")
         sql((ROOT / "supabase/tests/hybrid_sync_operations.test.sql").read_text(),
@@ -242,11 +577,19 @@ def main():
             "discoverable usernames, recipient approval, snapshot revocation and avatar isolation")
         sql((ROOT / "supabase/tests/friend_chat.test.sql").read_text(),
             "private friend chats: cross-user denial, projected cards, idempotency and block deletion")
+        sql((ROOT / "supabase/tests/friend_transaction_import.test.sql").read_text(),
+            "recipient consent, immutable import receipt, account mapping and cascade")
+        sql((ROOT / "supabase/tests/friend_workspace.test.sql").read_text(),
+            "owner-scoped outgoing requests, message report references and erasure")
         sql((ROOT / "supabase/tests/loan_payment_accounts.test.sql").read_text(),
             "loan payment account isolation, currency and single-ledger posting")
         sql((ROOT / "supabase/tests/atomic_loan_disbursement.test.sql").read_text(),
             "atomic loan disbursement, payload replay, rollback and account isolation")
         verify_atomic_loan_concurrency()
+        verify_loan_erasure_races()
+        verify_friend_workspace_concurrency()
+        verify_friend_import_concurrency()
+        verify_friend_import_revocation_races()
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_") or not RESTORE_DATABASE.startswith("movo_rollback_test_"):

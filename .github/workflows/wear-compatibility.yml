@@ -11,12 +11,14 @@ on:
 
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: movo-wear-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   round-watch:
+    name: round-watch (${{ matrix.profile }})${{ matrix.variant == 'svg-candidate' && ' - svg-candidate' || '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     strategy:
@@ -24,8 +26,17 @@ jobs:
       max-parallel: 1
       matrix:
         profile: [wearos_small_round, wearos_large_round]
+        variant: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 347 && github.event.pull_request.head.repo.full_name == github.repository && fromJSON('["baseline","svg-candidate"]') || fromJSON('["baseline"]') }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ matrix.variant == 'svg-candidate' && github.event.pull_request.head.sha || github.sha }}
+      - name: Prepare isolated exact SVG candidate
+        if: matrix.variant == 'svg-candidate'
+        uses: ./.github/actions/svg-candidate-acceptance
+        with:
+          head: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -105,9 +116,22 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: movo-${{ matrix.profile }}-acceptance
+          name: movo-${{ matrix.profile }}-acceptance${{ matrix.variant == 'svg-candidate' && '-svg-candidate' || '' }}
           path: |
             ${{ runner.temp }}/wear-evidence/
             android/wear/build/reports/androidTests/
           if-no-files-found: warn
+          retention-days: 7
+      - name: Verify SVG candidate provenance after acceptance
+        if: always() && !cancelled() && matrix.variant == 'svg-candidate'
+        env:
+          MOVO_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/security/prepare-svg-acceptance.py --verify-only --checkout "$GITHUB_WORKSPACE" --evidence "$RUNNER_TEMP/movo-svg-provenance.json" --head "$MOVO_EXPECTED_HEAD"
+      - name: Upload candidate provenance separately
+        if: always() && matrix.variant == 'svg-candidate'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: movo-svg-provenance-wear-${{ matrix.profile }}
+          path: ${{ runner.temp }}/movo-svg-provenance.json
+          if-no-files-found: error
           retention-days: 7

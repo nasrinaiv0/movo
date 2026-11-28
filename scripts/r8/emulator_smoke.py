@@ -9,6 +9,11 @@ import re
 import subprocess
 import sys
 
+# The shared host-only evidence helper is in the parent scripts directory.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from native_evidence import EvidenceError, require_r8_capture
+from r8.host_diagnostics import record_stage
+
 PACKAGE = "com.nasrinai.movo"
 TEST_PACKAGE = PACKAGE + ".test"
 CLASS = PACKAGE + ".r8.ReleaseBridgeSmokeTest"
@@ -118,12 +123,22 @@ def instrument(folder, method, legal, phase=None):
         args.extend(["-e", "movoPersistencePhase", phase])
     print("Starting instrumentation: " + label, flush=True)
     try:
-        result = adb(*args, RUNNER, timeout=240)
-    except subprocess.TimeoutExpired as error:
-        partial = error.stdout or ""
-        if isinstance(partial, bytes):
-            partial = partial.decode("utf-8", errors="replace")
-        (folder / (label + ".txt")).write_text(partial + "\nInstrumentation timed out; acceptance FAILED.\n")
+        with record_stage(folder, label):
+            result = adb(*args, RUNNER, timeout=240)
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as error:
+        # A disconnected emulator may disappear before end-of-run capture. Keep
+        # the failed stage's stdout AND stderr while retaining the original error.
+        def evidence_text(value):
+            return value.decode("utf-8", errors="replace") if isinstance(value, bytes) else value or ""
+        status = ("timed out" if isinstance(error, subprocess.TimeoutExpired)
+                  else "exited with status " + str(error.returncode))
+        try:
+            (folder / (label + ".txt")).write_text(
+                evidence_text(error.stdout)[-262144:] + "\n--- stderr ---\n" +
+                evidence_text(error.stderr)[-262144:] +
+                "\nInstrumentation " + status + "; acceptance FAILED.\n", encoding="utf-8")
+        except OSError as diagnostic_error:
+            print(f"Failed to retain instrumentation transcript: {diagnostic_error}", file=sys.stderr)
         raise
     (folder / (label + ".txt")).write_text(result)
     print(result, flush=True)
@@ -145,18 +160,20 @@ def capture(folder):
         except (OSError, subprocess.SubprocessError) as error:
             errors.append(name + ": " + str(error))
     collect("logcat", lambda: (folder / "logcat.txt").write_text(
-        adb("logcat", "-d", "-v", "threadtime", check=False, timeout=30)))
+        adb("logcat", "-d", "-v", "threadtime", timeout=30)))
     def screen():
         with (folder / "screen.png").open("wb") as image:
             subprocess.run(["adb", "-s", ADB_SERIAL, "exec-out", "screencap", "-p"],
                            stdout=image, check=True, timeout=30)
     collect("screenshot", screen)
     collect("activity", lambda: (folder / "activity.txt").write_text(
-        adb("shell", "dumpsys", "activity", "activities", check=False, timeout=30)))
+        adb("shell", "dumpsys", "activity", "activities", timeout=30)))
     collect("screenshots", lambda: adb("pull", "/sdcard/Android/data/" + PACKAGE + "/files/r8-smoke",
-                                      str(folder / "screenshots"), check=False, timeout=30))
+                                      str(folder / "screenshots"), timeout=30))
     if errors:
         (folder / "diagnostic-errors.txt").write_text("\n".join(errors) + "\n")
+        raise EvidenceError("Android diagnostic capture failed: " + "; ".join(errors))
+    require_r8_capture(folder)
 
 
 @contextmanager
@@ -208,7 +225,8 @@ def main():
         print("Starting minified release acceptance: " + label, flush=True)
         built = output / "default" / label
         folder = built / "device"
-        folder.mkdir(parents=True, exist_ok=True)
+        # Refuse reused evidence directories, including stale passed.txt markers.
+        folder.mkdir(parents=True, exist_ok=False)
         with stream_device_log(folder):
             try:
                 adb("uninstall", TEST_PACKAGE, check=False)
@@ -234,9 +252,17 @@ def main():
                 adb("shell", "am", "force-stop", PACKAGE)
                 # Do not clear/uninstall between these phases: same Keystore+storage.
                 instrument(folder, "processPersistencePhase", fixture, "verify")
-                (folder / "passed.txt").write_text("Synthetic bridge/offline/native callback and separate-process vault checks passed.\nReal Google/email sign-in and signed store purchases were NOT tested.\n")
-            finally:
+            except BaseException:
+                # Best-effort capture must never hide the original failure.
+                try:
+                    capture(folder)
+                except Exception as diagnostic_error:
+                    print(f"Evidence capture also failed: {diagnostic_error}", file=sys.stderr)
+                raise
+            else:
                 capture(folder)
+        # Publish the success marker only after required evidence and log cleanup.
+        (folder / "passed.txt").write_text("Synthetic bridge/offline/native callback and separate-process vault checks passed.\nReal Google/email sign-in and signed store purchases were NOT tested.\n")
 
 
 if __name__ == "__main__":

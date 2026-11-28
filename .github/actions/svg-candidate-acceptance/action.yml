@@ -1,0 +1,23 @@
+name: Prepare verified SVG candidate
+description: Download a pinned prior CI artifact and validate an isolated candidate checkout.
+inputs:
+  head:
+    description: Exact pull request head
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Download prior experiment evidence
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      with:
+        name: movo-modernization-candidates
+        run-id: '45736289352'
+        repository: ${{ github.repository }}
+        github-token: ${{ github.token }}
+        path: ${{ runner.temp }}/movo-svg-acceptance-input
+    - name: Verify bytes, production graph and isolated checkout
+      shell: bash
+      env:
+        MOVO_EXPECTED_HEAD: ${{ inputs.head }}
+      run: |
+        python3 scripts/security/prepare-svg-acceptance.py --checkout "$GITHUB_WORKSPACE" --artifact "$RUNNER_TEMP/movo-svg-acceptance-input/svg" --evidence "$RUNNER_TEMP/movo-svg-provenance.json" --head "$MOVO_EXPECTED_HEAD"

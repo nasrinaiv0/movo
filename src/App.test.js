@@ -998,8 +998,9 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[role="dialog"][aria-label="Budgets and plans"]')).toBeNull();
     expect(container.querySelector('h1').textContent).toBe('Menu');
     act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.querySelector('strong')?.textContent === 'Friends').click());
-    expect(container.querySelector('h1').textContent).toBe('Friends');
-    expect(container.querySelector('.friends-page')).not.toBeNull();
+    expect(container.querySelector('h1').textContent).toBe('Chats');
+    expect(container.querySelector('.friends-workspace')).not.toBeNull();
+    expect(container.querySelector('[role="dialog"][aria-label="Friends"]')).toBeNull();
     clickButton(container, 'Back');
     expect(container.querySelector('h1').textContent).toBe('Menu');
     act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.textContent.includes('Subscriptions')).click());

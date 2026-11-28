@@ -8,7 +8,7 @@ import usePlanning from '../lib/usePlanning';
 import Icon from './Icon';
 import { Sheet, SubHeader } from './ui';
 import { useConfirm } from './ConfirmDialog';
-import { friendErrorMessage } from './FriendsSheet';
+import { friendErrorMessage } from './FriendsController';
 
 const PERIOD_OPTIONS = { month: 'long', year: 'numeric', timeZone: 'UTC' };
 const DAY_OPTIONS = { dateStyle: 'medium', timeZone: 'UTC' };
@@ -178,7 +178,7 @@ function ShareSettings({ c, finance, friend, own, busy, run, onClose, error }) {
   </Sheet>;
 }
 
-export default function FriendFinanceSummary({ friend, session, finance, c, onClose }) {
+export default function FriendFinanceSummary({ friend, session, finance, c, onClose, onConnectionRemoved }) {
   const [shared, setShared] = useState(null);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
@@ -190,6 +190,19 @@ export default function FriendFinanceSummary({ friend, session, finance, c, onCl
   const { access_token: accessToken } = session;
   const connectionId = friend.id;
   const page = useRef(null);
+  const lifecycle = useRef(null);
+  const scopeKey = `${session.user?.id || ''}:${accessToken}:${connectionId}`;
+  if (lifecycle.current?.key !== scopeKey) {
+    lifecycle.current?.controller.abort();
+    lifecycle.current = { key: scopeKey, controller: new AbortController() };
+  }
+  const scope = lifecycle.current;
+  const current = () => lifecycle.current === scope && !scope.controller.signal.aborted;
+  useEffect(() => {
+    if (scope.controller.signal.aborted) scope.controller = new AbortController();
+    locked.current = false; setBusy(false); setEditing(null);
+    return () => scope.controller.abort();
+  }, [scope]);
 
   useEffect(() => {
     let controller;
@@ -210,23 +223,24 @@ export default function FriendFinanceSummary({ friend, session, finance, c, onCl
   }, [accessToken, connectionId, revision]);
 
   async function run(action, payload, success) {
-    if (locked.current) return;
+    if (locked.current || !current()) return;
     locked.current = true;
     setBusy(true); setError(''); setStatus('');
     try {
-      await friendsRequest(session, action, { ...payload, connectionId });
-      if (action === 'block') { onClose(); return; }
+      await friendsRequest(session, action, { ...payload, connectionId }, scope.controller.signal);
+      if (!current()) return;
+      if (action === 'block') { onConnectionRemoved?.(connectionId); onClose(); return; }
       if (action === 'share_summary') setEditing(null);
       if (action !== 'report') setRevision(value => value + 1);
       setStatus(success === 'share' ? tr('Summary shared.') : success === 'revoke' ? tr('Summary access revoked.') : tr('Report sent.'));
-    } catch (cause) { setError(friendErrorMessage(cause)); }
-    finally { locked.current = false; setBusy(false); }
+    } catch (cause) { if (current()) setError(friendErrorMessage(cause)); }
+    finally { if (current()) { locked.current = false; setBusy(false); } }
   }
 
   async function safety(action) {
     const blocking = action === 'block';
     const title = blocking ? tr('Block user') : tr('Report to MOVO');
-    if (await confirm({ title, message: blocking ? tr('Blocking removes the connection and stops future friend requests.') : tr('MOVO support will review your report.'), confirmLabel: title, danger: blocking })) run(action, {}, 'report');
+    if (await confirm({ title, message: blocking ? tr('Blocking removes the connection and stops future friend requests.') : tr('Send this connection to MOVO support for review?'), confirmLabel: title, danger: blocking })) run(action, {}, 'report');
   }
 
   return <>

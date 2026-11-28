@@ -21,6 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -31,12 +32,52 @@ jobs:
         env:
           MOVO_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: node scripts/require-pr-documentation.cjs
+      - name: Verify portable native evidence and workflow contracts
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_native_evidence.py' -v
+          python3 -m unittest discover -s scripts -p 'test_integrated_harness.py' -v
+          python3 scripts/r8/test_workflow_contract.py
+          python3 -m unittest discover -s scripts -p 'test_ios_failure_diagnostics.py' -v
+          node --test scripts/security/check-advisory-regression.test.cjs
+          node --test scripts/security/modernization-experiment.test.cjs
+          python3 -m unittest discover -s scripts/security -p 'test_svg_acceptance.py' -v
+          python3 -m unittest discover -s scripts/r8 -p 'test_instrumentation_failure_evidence.py' -v
+          python3 -m unittest discover -s scripts/r8 -p 'test_emulator_safety.py' -v
+          python3 scripts/check_android_toolchain.py
+          python3 -m unittest discover -s scripts -p 'test_android_toolchain.py' -v
+          python3 -m unittest discover -s scripts/r8 -p 'test_host_diagnostics.py' -v
       - name: Install locked dependencies (pinned npm 11)
         run: npx --yes npm@11.19.1 ci
+      - name: Verify installed proxy compatibility (loopback fixtures only)
+        run: node --test scripts/security/proxy-compatibility.test.cjs
       - name: Validate Android public auth configuration contract
         run: node --test scripts/validate-android-auth-config.test.cjs scripts/build-offline-worker.test.cjs scripts/serve-movo.test.cjs
       - name: Audit production dependencies
         run: npm run audit:production
+      - name: Record full locked dependency advisories (non-production diagnostic)
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/movo-dependency-audit"
+          set +e
+          npm audit --json > "$RUNNER_TEMP/movo-dependency-audit/audit.json"
+          STATUS=$?
+          set -e
+          node -e 'const a=require(process.argv[1]);if(a.error||!a.metadata||!a.metadata.vulnerabilities||!a.vulnerabilities)throw Error("Registry audit evidence missing");console.log(JSON.stringify(a.metadata.vulnerabilities));' "$RUNNER_TEMP/movo-dependency-audit/audit.json"
+          printf '%s\n' "$STATUS" > "$RUNNER_TEMP/movo-dependency-audit/exit-code.txt"
+      - name: Upload exact-head advisory report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: movo-dependency-audit
+          path: ${{ runner.temp }}/movo-dependency-audit/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Enforce development advisory regression baseline
+        run: |
+          set -euo pipefail
+          STATUS=$(cat "$RUNNER_TEMP/movo-dependency-audit/exit-code.txt")
+          test "$STATUS" -eq 0 || test "$STATUS" -eq 1
+          node scripts/security/check-advisory-regression.cjs "$RUNNER_TEMP/movo-dependency-audit/audit.json" package-lock.json
       - name: TypeScript typecheck
         run: npm run typecheck
       - name: Translation catalogue coverage

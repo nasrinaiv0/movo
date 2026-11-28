@@ -32,3 +32,9 @@ test('an unreadable receipt is counted and left out instead of cancelling the wh
   expect(backup.missingAttachments).toBe(1);
   expect(backup.attachments).toEqual([]);
 });
+
+test('raw shared transaction backup preserves the timestamp and original reference', async () => {
+  const row={id:'synthetic',external_reference:'movo-friend:synthetic',occurred_at:'2026-11-30T12:00:00Z',amount:42.25,currency:'PHP',transaction_type:'expense'};
+  const backup=await createFinanceBackup({accountsView:[],rawTxs:[row],txs:[{...row,date:'2026-11-30T12:00:00'}],prefs:{}});
+  expect(parseFinanceBackup(JSON.stringify(backup)).transactions).toEqual([row]);
+});

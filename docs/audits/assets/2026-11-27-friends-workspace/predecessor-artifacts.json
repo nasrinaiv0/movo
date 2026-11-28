@@ -1,0 +1,541 @@
+{
+  "scope": "Prior CI evidence only; not new-head or physical/store approval. ZIP digests matched connector metadata at download; CRC and paths checked before extraction. All PNGs decoded; representative financial/native attachments visually inspected.",
+  "artifacts": [
+    {
+      "id": 15080748751,
+      "name": "audit-baseline",
+      "bytes": 1913,
+      "sha256": "26a4d44dae7bf1fa66cd13f19cb55de634d45d3c34fcee8cc537be1b4eabe093",
+      "pngs": [],
+      "originHead": "74cf632e30bf2a415665f8ddac049d165a2046c6"
+    },
+    {
+      "id": 15158690823,
+      "name": "current-ios-failure",
+      "bytes": 19678,
+      "sha256": "4aed9fa33b9b78eda0115d8d279cdd00c3c92210a98136af47e1e68b61953d66",
+      "pngs": [],
+      "originHead": "96e10c2fcf31b94b8ed1fce434f4b5f71ba7ca62"
+    },
+    {
+      "id": 15080677852,
+      "name": "friend-baseline",
+      "bytes": 578553,
+      "sha256": "30a724dcc1cd8ece9943af5e5ae0ab3d8a39ab54f54a7b607795e9075090bddf",
+      "pngs": [
+        {
+          "path": "Asia-Manila-1280-dark-imported.png",
+          "size": [
+            1280,
+            844
+          ],
+          "sha256": "28a2b7f9e565241a41e8b510317de69d6f6a23674f9e0ebc8803539caa0413b6"
+        },
+        {
+          "path": "Asia-Manila-1280-dark-mapping.png",
+          "size": [
+            1280,
+            844
+          ],
+          "sha256": "960030d4c64a7ed989ad15aee7d48bb5ce13db89fa666632f7882c5cba94eb7b"
+        },
+        {
+          "path": "Asia-Manila-1280-light-imported.png",
+          "size": [
+            1280,
+            844
+          ],
+          "sha256": "36641ccb9994dc469ce6958feb75be01c0a61970f5045a49b8ea483e4b8635dd"
+        },
+        {
+          "path": "Asia-Manila-1280-light-mapping.png",
+          "size": [
+            1280,
+            844
+          ],
+          "sha256": "487fb61566de155e2668b9af526ba6437f904cadfc2ad0ae7fc834eebd6f425c"
+        },
+        {
+          "path": "Asia-Manila-320-dark-imported.png",
+          "size": [
+            320,
+            844
+          ],
+          "sha256": "f906ed03d6848cb54ad7c5c0265e633f02f48ab717028fafd6fb9d3aa36634c3"
+        },
+        {
+          "path": "Asia-Manila-320-dark-mapping.png",
+          "size": [
+            320,
+            844
+          ],
+          "sha256": "c15dbf57d339b4f4c948195906e2d52daf461e5f516b15fc53f7640d7673db5d"
+        },
+        {
+          "path": "Asia-Manila-320-light-imported.png",
+          "size": [
+            320,
+            844
+          ],
+          "sha256": "75af77ff3c9a4ce6d5c2183fb2aa67b1168e28b6e07ebf404c579ff7cb3afd19"
+        },
+        {
+          "path": "Asia-Manila-320-light-mapping.png",
+          "size": [
+            320,
+            844
+          ],
+          "sha256": "876c904bd4bdcb730f679fd12a8c091c76ab10bfab9f921b53516325a883f0d3"
+        },
+        {
+          "path": "Asia-Manila-390-dark-imported.png",
+          "size": [
+            390,
+            844
+          ],
+          "sha256": "8f631e118b5c7c8843b56cf49f347c2c173f12f4744dc6913124101fb4c97a0f"
+        },
+        {
+          "path": "Asia-Manila-390-dark-mapping.png",
+          "size": [
+            390,
+            844
+          ],
+          "sha256": "3600ac85971deb4365d810a7c1642a6935c4ae90982537c15be37227a6dbacfa"
+        },
+        {
+          "path": "Asia-Manila-390-light-imported.png",
+          "size": [
+            390,
+            844
+          ],
+          "sha256": "115165791785d8b9dddbf46c630f30bac23a832007a800f02a7b6c61618e50e1"
+        },
+        {
+          "path": "Asia-Manila-390-light-mapping.png",
+          "size": [
+            390,
+            844
+          ],
+          "sha256": "978d43002045e3ddaed309b85c41a8c82e9146a37c85c3cc53a7095103ba377e"
+        }
+      ],
+      "originHead": "74cf632e30bf2a415665f8ddac049d165a2046c6"
+    },
+    {
+      "id": 15080762822,
+      "name": "friend-svg",
+      "bytes": 578553,
+      "sha256": "fe68e90c5f9ee670f610160b7e5f8672d7a696d5f06457bb8bb8a11d5e3ad308",
+      "pngs": [
+        {
+          "path": "Asia-Manila-1280-dark-imported.png",
+          "size": [
+            1280,
+            844
+          ],
+          "sha256": "28a2b7f9e565241a41e8b510317de69d6f6a23674f9e0ebc8803539caa0413b6"
+        },
+        {
+          "path": "Asia-Manila-1280-dark-mapping.png",
+          "size": [
+            1280,
+            844
+          ],
+          "sha256": "960030d4c64a7ed989ad15aee7d48bb5ce13db89fa666632f7882c5cba94eb7b"
+        },
+        {
+          "path": "Asia-Manila-1280-light-imported.png",
+          "size": [
+            1280,
+            844
+          ],
+          "sha256": "36641ccb9994dc469ce6958feb75be01c0a61970f5045a49b8ea483e4b8635dd"
+        },
+        {
+          "path": "Asia-Manila-1280-light-mapping.png",
+          "size": [
+            1280,
+            844
+          ],
+          "sha256": "487fb61566de155e2668b9af526ba6437f904cadfc2ad0ae7fc834eebd6f425c"
+        },
+        {
+          "path": "Asia-Manila-320-dark-imported.png",
+          "size": [
+            320,
+            844
+          ],
+          "sha256": "f906ed03d6848cb54ad7c5c0265e633f02f48ab717028fafd6fb9d3aa36634c3"
+        },
+        {
+          "path": "Asia-Manila-320-dark-mapping.png",
+          "size": [
+            320,
+            844
+          ],
+          "sha256": "c15dbf57d339b4f4c948195906e2d52daf461e5f516b15fc53f7640d7673db5d"
+        },
+        {
+          "path": "Asia-Manila-320-light-imported.png",
+          "size": [
+            320,
+            844
+          ],
+          "sha256": "75af77ff3c9a4ce6d5c2183fb2aa67b1168e28b6e07ebf404c579ff7cb3afd19"
+        },
+        {
+          "path": "Asia-Manila-320-light-mapping.png",
+          "size": [
+            320,
+            844
+          ],
+          "sha256": "876c904bd4bdcb730f679fd12a8c091c76ab10bfab9f921b53516325a883f0d3"
+        },
+        {
+          "path": "Asia-Manila-390-dark-imported.png",
+          "size": [
+            390,
+            844
+          ],
+          "sha256": "8f631e118b5c7c8843b56cf49f347c2c173f12f4744dc6913124101fb4c97a0f"
+        },
+        {
+          "path": "Asia-Manila-390-dark-mapping.png",
+          "size": [
+            390,
+            844
+          ],
+          "sha256": "3600ac85971deb4365d810a7c1642a6935c4ae90982537c15be37227a6dbacfa"
+        },
+        {
+          "path": "Asia-Manila-390-light-imported.png",
+          "size": [
+            390,
+            844
+          ],
+          "sha256": "115165791785d8b9dddbf46c630f30bac23a832007a800f02a7b6c61618e50e1"
+        },
+        {
+          "path": "Asia-Manila-390-light-mapping.png",
+          "size": [
+            390,
+            844
+          ],
+          "sha256": "978d43002045e3ddaed309b85c41a8c82e9146a37c85c3cc53a7095103ba377e"
+        }
+      ],
+      "originHead": "74cf632e30bf2a415665f8ddac049d165a2046c6"
+    },
+    {
+      "id": 15085061099,
+      "name": "ipad-baseline",
+      "bytes": 838123,
+      "sha256": "25b84af475ed6f2eb45c43f14d64ef31815a8619c44015aa36abcdb9909f1605",
+      "pngs": [
+        {
+          "path": "movo-ipad-smoke/ipad-simulator-smoke.png",
+          "size": [
+            1640,
+            2360
+          ],
+          "sha256": "0d68b306d5b38430ec42e196807998abbea5357d2b05eb16adfb4496a2c772e3"
+        },
+        {
+          "path": "movo-ipad-smoke/native-attachments/3881CA71-8AE3-4E68-B57F-4CCD463CAD6A.png",
+          "size": [
+            1640,
+            2360
+          ],
+          "sha256": "c9def92f307a4b526313fd4daff6d18d951b17f953344bafba6e7d70f5538c3d"
+        },
+        {
+          "path": "movo-ipad-smoke/native-attachments/B18DBFC7-DC72-471F-8C9C-4DD3DF201710.png",
+          "size": [
+            1640,
+            2360
+          ],
+          "sha256": "80b3fcdfa5a603fd4d5d793b7b947d4e2281aebf10e74ee4d946443288eb14eb"
+        }
+      ],
+      "originHead": "74cf632e30bf2a415665f8ddac049d165a2046c6"
+    },
+    {
+      "id": 15082923829,
+      "name": "iphone-baseline",
+      "bytes": 805118,
+      "sha256": "d761502629abbd62e521a79545d24e6b07cf081ee0b4ef2f5315676301c9e93a",
+      "pngs": [
+        {
+          "path": "iphone-simulator-smoke.png",
+          "size": [
+            1206,
+            2622
+          ],
+          "sha256": "eb42a2589a3c5a5b76caf19e2198698a9bac794f260195b3be078dfd97368f67"
+        },
+        {
+          "path": "native-attachments/3D3E5292-1AC1-4541-9BDA-E66A0B435F90.png",
+          "size": [
+            1206,
+            2622
+          ],
+          "sha256": "98b6a208a1f4c1d55c3ec618bd7c1d0af30c2387300630ab2bc667d622389ab3"
+        },
+        {
+          "path": "native-attachments/A74CB736-26C3-49EE-9336-B904BCABC330.png",
+          "size": [
+            1206,
+            2622
+          ],
+          "sha256": "741bbfd8ccc89f1e996792e8a28f339aafbe58c641b6ebe5d17b473d8fe3ec6a"
+        }
+      ],
+      "originHead": "74cf632e30bf2a415665f8ddac049d165a2046c6"
+    },
+    {
+      "id": 15081552803,
+      "name": "r8-baseline",
+      "bytes": 7418001,
+      "sha256": "d8aef56f0a401b730dd59ce992c89440ab64676d6ca96b80d329902d93a6a3bd",
+      "pngs": [
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/baseline/device/screen.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "4c9a3759eeb1394cf177a4ea3786b169d7555b160b4cb0af4f760fd89488d2d1"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/baseline/device/screenshots/cold-bridge.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "32d38191c421f1aa5785b801b7524a0b7344a25634abf57d25aecc8e63424695"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/baseline/device/screenshots/last-state.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "760486f73a74fcfe78f9213e15c5d709f7cc990237688cd910213a4dce7dca29"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/baseline/device/screenshots/offline-wallet.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "dfe163207974d98f84584e4fab05ee251cf57b87a79f650971577eb6a5fe9ffd"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/baseline/device/screenshots/synthetic-oauth-failure.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "95a583b4bfbfa9b2ca5c69b9d0e6267334f55d9e7fa37065c564ad4796153860"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/candidate/device/screen.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "108f6f82603c5e26dd69b77a9b7cf76a7704598c27950f450d8c5e625390b826"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/candidate/device/screenshots/cold-bridge.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "6eea8505c639cebd351fdc32ea5e5039b4111642551d923f3fe784dd92c79573"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/candidate/device/screenshots/last-state.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "7456ad8c438accf5da6b00d5ef863e9ebbc94dcb30231bf7ea3e134c219627d2"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/candidate/device/screenshots/offline-wallet.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "4593911ed6c3d87eb2de3df3caaad0e1763b89cc96a7b15ad8a2649e6cd2d1ac"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/candidate/device/screenshots/synthetic-oauth-failure.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "3f7d203a77a3fe9029d66f26685b22eec459f8b300f2c5820c5230886dbb389d"
+        }
+      ],
+      "originHead": "74cf632e30bf2a415665f8ddac049d165a2046c6"
+    },
+    {
+      "id": 15082331404,
+      "name": "r8-svg",
+      "bytes": 7621955,
+      "sha256": "56c09a74adbdbf83ed7df8fbb595b956e60285e6950e8ff717c443250eaa5f65",
+      "pngs": [
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/baseline/device/screen.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "0078594ee392db40681e03209530afdbcd2fe3774bceb974ae634b343b9d096d"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/baseline/device/screenshots/cold-bridge.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "43db5911aed2823ffc02c4f254d831eeb531861e3f2c2ffdda7c30a1d4cfff0f"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/baseline/device/screenshots/last-state.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "5b3875fd2a54d52c5d37c5c5fca5e8c034ff8ba1ace12d739d9b43b0fe43fffd"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/baseline/device/screenshots/offline-wallet.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "f5ea75f5de639f1943b84a1fa3428678db2ba49189529d4eb713a0b1e9142b19"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/baseline/device/screenshots/synthetic-oauth-failure.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "328796df70fae6bb152a9860a8bbb4d09ba0b0c30932f1f45bb78584d0a3daee"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/candidate/device/screen.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "dad277edbb2f08f0d945cf6873efeb24a9ea600fc9bf4808b040f0bc3afb5c6b"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/candidate/device/screenshots/cold-bridge.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "eecb8fcbe441dae1e4a90488e92ecb0ddf0c05ef5a51cfd2886552b7b71a1b7c"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/candidate/device/screenshots/last-state.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "0c9b79f1a8efcf5fec67cbc7e1525edf31d8ee8a99626a668f6f0ca9bff8bac7"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/candidate/device/screenshots/offline-wallet.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "c22848b8e51408b34a4f3d33babeef53955108cf92ed87e90ff739cc0dd13b58"
+        },
+        {
+          "path": "home/runner/work/movo/movo/tmp/r8-experiment/default/candidate/device/screenshots/synthetic-oauth-failure.png",
+          "size": [
+            1080,
+            2400
+          ],
+          "sha256": "144a0164e5ae518da68330a6dc67eeaae55aeb90dd07590a564ef8523726d790"
+        }
+      ],
+      "originHead": "74cf632e30bf2a415665f8ddac049d165a2046c6"
+    },
+    {
+      "id": 15081977624,
+      "name": "wear-large",
+      "bytes": 41699,
+      "sha256": "f8fc5e845e8e16b0d4a49203bcddeb2f1e06a6aa2544a1bbd25655a9a9eb0e8c",
+      "pngs": [
+        {
+          "path": "_temp/wear-evidence/before-tests.png",
+          "size": [
+            454,
+            454
+          ],
+          "sha256": "02b72522064f69e7583d9e965c6502a3ffb0bb72d07c531ede2b800e310a673a"
+        },
+        {
+          "path": "_temp/wear-evidence/default-font.png",
+          "size": [
+            454,
+            454
+          ],
+          "sha256": "c2b478a28967ce27779e03f24e71d6aee3b2dcdf42d208505cf891073cc1843a"
+        },
+        {
+          "path": "_temp/wear-evidence/enlarged-font.png",
+          "size": [
+            454,
+            454
+          ],
+          "sha256": "4938da82d85a8483be81f4ced979e038d98880688158f61b07101507f3e0e989"
+        }
+      ],
+      "originHead": "74cf632e30bf2a415665f8ddac049d165a2046c6"
+    },
+    {
+      "id": 15081431702,
+      "name": "wear-small",
+      "bytes": 37823,
+      "sha256": "f9c0532fe708adf7f913240cfb3a21901d3e60aece74afe773ce2ae84c803df2",
+      "pngs": [
+        {
+          "path": "_temp/wear-evidence/before-tests.png",
+          "size": [
+            384,
+            384
+          ],
+          "sha256": "1d63d6fedaa9ab59bd355a083b03e0631ded9faf53def1f8c003338e964267a3"
+        },
+        {
+          "path": "_temp/wear-evidence/default-font.png",
+          "size": [
+            384,
+            384
+          ],
+          "sha256": "2922eb7c609f884857f809611b8e5b5d03052786eaa63465d6b77169e20ad9af"
+        },
+        {
+          "path": "_temp/wear-evidence/enlarged-font.png",
+          "size": [
+            384,
+            384
+          ],
+          "sha256": "d4623adf99677c2fc85795b77f519106fc379909b4e8f793a1f7a01bec0e2857"
+        }
+      ],
+      "originHead": "74cf632e30bf2a415665f8ddac049d165a2046c6"
+    }
+  ]
+}
