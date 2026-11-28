@@ -38,3 +38,6 @@ Recheck live policy and actual console questions before submission.
 
 ## Continuation — moderation candidate
 See [provider/privacy review](PROVIDER_AND_PRIVACY_REVIEW.md) and [inactive database design](AI_REPORT_DATABASE_DRAFT.sql). AI report API/UI is gated by MOVO_AI_REPORTS_ENABLED; missing RPC fails closed. No migration or moderation operations activation. Narrow text screening is not complete moderation; require multilingual and adversarial validation, human review queue, actual signed UI and privacy/retention acceptance. Do not claim approval.
+
+## Localization and database rehearsal
+The existing disposable PostgreSQL 17/18 matrix now exercises the non-migration SQL draft after the canonical financial regressions. This does not authorize migration or activation. See [moderation operations](MODERATION_OPERATIONS.md). Core safety translations and Cebuano are staged; human language review and new exact-head screenshot inspection remain pending.

@@ -26,7 +26,7 @@ import useChatThreads, { chatAccessToken } from '../lib/useChatThreads';
 import { identifyChatMessages } from '../lib/chatHistory';
 
 function friendlyError(code) {
-  if (code === 'content_not_supported') return 'This request or response was not supported by our safety checks. Try rephrasing your finance question.';
+  if (code === 'content_not_supported') return tr('This request or response was not supported by our safety checks. Try rephrasing your finance question.');
   if (code === 'nasrinai_scope_unconfirmed') return tr('NasrinAI did not confirm it used only your Movo data, so its reply was not shown.');
   if (code === 'sign_in_required' || code === 'invalid_session') return tr('Sign in to MOVO to use your private financial copilot.');
   if (code === 'pro_required') return tr('Free can read your stored balances and transactions. Pro unlocks full NasrinAI. Use Add transaction to record expenses.');
@@ -77,7 +77,7 @@ export default function NasrinAIChat(props) {
   return <ChatSession key={JSON.stringify([props.session?.user?.id || null, Boolean(props.cloudMode)])} {...props} />;
 }
 
-// English safety copy is explicit pending legal localization review. No message text is transmitted.
+// Safety UI uses the canonical translation catalogue. No message text is transmitted.
 function AIReportControl({ session, messageId }) {
   const [reason, setReason] = useState('');
   const [status, setStatus] = useState('');
@@ -107,17 +107,17 @@ function AIReportControl({ session, messageId }) {
       if (request.current === controller) request.current = null;
     }
   }
-  return <details className="movo-ai-report" lang="en">
-    <summary>Report response</summary>
+  return <details className="movo-ai-report">
+    <summary>{tr('Report AI response')}</summary>
     <form onSubmit={submit}>
-      <p>Send a response reference and reason to MOVO for safety review. Your report does not send a new AI request.</p>
-      <label>Reason
+      <p>{tr('Send a response reference and reason to MOVO for safety review. Your report does not send a new AI request.')}</p>
+      <label>{tr('AI report reason')}
         <select value={reason} onChange={event => setReason(event.target.value)} disabled={status === 'sending' || status === 'sent'} required>
-          <option value="">Choose a reason</option><option value="harmful">Harmful or abusive</option><option value="deceptive">Deceptive or unsafe advice</option><option value="privacy">Privacy concern</option><option value="other">Other</option>
+          <option value="">{tr('Choose an AI report reason')}</option><option value="harmful">{tr('AI response: harmful or abusive')}</option><option value="deceptive">{tr('AI response: deceptive or unsafe advice')}</option><option value="privacy">{tr('AI response: privacy concern')}</option><option value="other">{tr('AI response: other concern')}</option>
         </select>
       </label>
-      <button type="submit" className="secondary-button" disabled={!reason || status === 'sending' || status === 'sent'}>{status === 'sending' ? 'Sending…' : 'Submit report'}</button>
-      <p role="status" aria-live="polite">{status === 'sent' ? 'Report received.' : status === 'error' ? 'Report not received. Try again, or contact support@nasrinai.com.' : ''}</p>
+      <button type="submit" className="secondary-button" disabled={!reason || status === 'sending' || status === 'sent'}>{status === 'sending' ? tr('Sending AI report…') : tr('Submit report')}</button>
+      <p role="status" aria-live="polite">{status === 'sent' ? tr('Report received.') : status === 'error' ? tr('Report not received. Try again, or contact support@nasrinai.com.') : ''}</p>
     </form>
   </details>;
 }

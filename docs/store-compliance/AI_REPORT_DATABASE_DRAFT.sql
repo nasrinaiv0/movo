@@ -1,14 +1,25 @@
--- DESIGN DRAFT ONLY. Not a migration. Never execute on a remote or customer DB.
+-- ISOLATED CI CANDIDATE ONLY. Not a migration. Never execute on a remote or customer DB.
 -- Generate the migration using Supabase CLI, then run the full disposable PG matrix.
 -- No copy of message content; deletion of the source message or owner cascades.
+alter table public.movo_ai_messages add constraint movo_ai_messages_report_owner_unique unique(id,user_id);
 create table public.movo_ai_reports (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  message_id uuid not null references public.movo_ai_messages(id) on delete cascade,
+  message_id uuid not null,
+  foreign key(message_id,user_id) references public.movo_ai_messages(id,user_id) on delete cascade,
   reason text not null check (reason in ('harmful','deceptive','privacy','other')),
   created_at timestamptz not null default now(),
   unique(user_id,message_id)
 );
+create table public.movo_ai_report_rate (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  window_start timestamptz not null default now(),
+  hits integer not null check(hits between 1 and 25)
+);
+alter table public.movo_ai_report_rate enable row level security;
+revoke all on public.movo_ai_report_rate from public,anon,authenticated,service_role;
+grant select,insert,update on public.movo_ai_report_rate to service_role;
+grant select(id,user_id,role) on public.movo_ai_messages to service_role;
 create index movo_ai_reports_message_idx on public.movo_ai_reports(message_id);
 create index movo_ai_reports_owner_created_idx on public.movo_ai_reports(user_id,created_at);
 alter table public.movo_ai_reports enable row level security;
@@ -27,7 +38,12 @@ begin
   if not exists(select 1 from public.movo_ai_messages m where m.id=p_message_id and m.user_id=p_actor and m.role='assistant') then return jsonb_build_object('error','message_unavailable'); end if;
   select id into receipt from public.movo_ai_reports where user_id=p_actor and message_id=p_message_id;
   if receipt is not null then return jsonb_build_object('ok',true,'reportId',receipt); end if;
-  if (select count(*) from public.movo_ai_reports where user_id=p_actor and created_at >= now()-interval '1 day') >= 25 then return jsonb_build_object('error','report_rate_limit'); end if;
+  insert into public.movo_ai_report_rate as r(user_id,window_start,hits) values(p_actor,now(),1)
+  on conflict(user_id) do update set
+    hits=case when r.window_start <= now()-interval '1 day' then 1 else r.hits+1 end,
+    window_start=case when r.window_start <= now()-interval '1 day' then now() else r.window_start end
+  where r.window_start <= now()-interval '1 day' or r.hits<25;
+  if not found then return jsonb_build_object('error','report_rate_limit'); end if;
   insert into public.movo_ai_reports(user_id,message_id,reason) values(p_actor,p_message_id,p_reason) returning id into receipt;
   return jsonb_build_object('ok',true,'reportId',receipt);
 end; $$;
@@ -35,6 +51,6 @@ revoke all on function public.movo_report_ai_message(uuid,uuid,text) from public
 grant execute on function public.movo_report_ai_message(uuid,uuid,text) to service_role;
 -- BEFORE PROMOTION: verify service-role visibility under actual hosted defaults;
 -- account erasure race, clear-data cascade, FK consistency, concurrent duplicate,
--- rate-limit durability across message deletion, forged assistant rows (legacy clients can insert),
+-- rate-limit durability across message deletion (CI candidate), forged assistant rows (legacy clients can insert),
 -- owner mismatch and authenticated execute denial. Add bounded retention & review workflow.
 -- Never enable MOVO_AI_REPORTS_ENABLED until these are resolved and independent review passes.

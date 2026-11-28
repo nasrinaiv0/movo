@@ -466,6 +466,47 @@ def verify_friend_workspace_concurrency():
         end $$;""", "ordered workspace result: " + mode)
 
 
+def verify_ai_reporting_candidate():
+    """Exercise the non-migration draft at the end of the disposable database matrix only."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    import json
+    sql((ROOT / "docs/store-compliance/AI_REPORT_DATABASE_DRAFT.sql").read_text(), "AI reporting isolated candidate DDL (not a migration)")
+    sql((ROOT / "supabase/tests/ai_reporting_candidate.test.sql").read_text(), "AI report owner authorization and deletion/rate durability")
+    owner = "a3480000-0000-4000-8000-000000000010"
+    thread = "b3480000-0000-4000-8000-000000000010"
+    message = "c3480000-0000-4000-8000-000000000010"
+    sql(f"""
+      insert into auth.users(id,email_confirmed_at) values('{owner}',now());
+      insert into public.movo_ai_conversations(id,user_id,title) values('{thread}','{owner}','Fictional concurrent report');
+      insert into public.movo_ai_messages(id,conversation_id,user_id,role,content) values('{message}','{thread}','{owner}','assistant','Fictional');
+    """, "seed synthetic report race")
+    barrier = Barrier(2, timeout=10)
+    def submit():
+        barrier.wait()
+        return json.loads(command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE, stdin=f"""
+          begin; set local role service_role; set local lock_timeout='10s';
+          select public.movo_report_ai_message('{owner}','{message}','privacy');
+          commit;
+        """).stdout.strip())
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(submit) for _ in range(2)]
+        results = [f.result(timeout=30) for f in futures]
+    if results[0] != results[1] or results[0].get("ok") is not True:
+        raise RuntimeError("Concurrent AI report receipts differ")
+    sql(f"""do $ begin
+      if (select count(*) from public.movo_ai_reports where user_id='{owner}')<>1
+        or (select hits from public.movo_ai_report_rate where user_id='{owner}') is distinct from 1
+      then raise exception 'duplicate AI report debit'; end if;
+    end $;""", "concurrent report one receipt and one debit")
+    sql(f"delete from auth.users where id='{owner}';", "erase synthetic concurrent reporter")
+    sql(f"""do $ begin
+      if exists(select 1 from public.movo_ai_reports where user_id='{owner}')
+        or exists(select 1 from public.movo_ai_report_rate where user_id='{owner}')
+      then raise exception 'AI report owner erase'; end if;
+    end $;""", "verify AI report erasure cascade")
+
+
 def main():
     command("createdb", *CONN, DATABASE)
     try:
@@ -590,6 +631,7 @@ def main():
         verify_friend_workspace_concurrency()
         verify_friend_import_concurrency()
         verify_friend_import_revocation_races()
+        verify_ai_reporting_candidate()
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_") or not RESTORE_DATABASE.startswith("movo_rollback_test_"):

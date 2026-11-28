@@ -1,0 +1,13 @@
+# Moderation operations — proposed, not activated
+
+Status: HOLD. Assign a named accountable safety operator and backup, verify permission boundaries, staff training and support hours before launch. No moderator credentials or real reports are used here.
+
+1. Accept report references only from authenticated users; review queue restricted to approved staff. Acknowledge receipt only after durable success. No AI inference or subscription required to report.
+2. Triage harmful/abusive content, suspected fraud, privacy and other concerns. Proposed target: urgent safety reports reviewed within 24 hours; other reports within 72 hours. These are targets, not verified service guarantees.
+3. Review minimal necessary content through an audited restricted interface. No exporting chats, receipts, financial data or third-party AI calls. Support can escalate urgent lawful requests; preserve only legally required data under approved policy.
+4. Apply proportionate restrictions, block abusive accounts where justified, document resolution, provide appeal/support route, and audit access. Report does not automatically block or move funds. Avoid self-approval and notify affected parties when appropriate.
+5. Deletion: report references cascade on message or account deletion. Separate per-owner rate window survives message deletion and expires logically after 24h; owner deletion removes it. Establish bounded physical cleanup and review retention before release. Review legal holds separately; do not promise retention that implementation cannot honor.
+6. Existing assistant rows may be client-created under legacy policies. Do not treat an assistant role as proof of provider provenance. Before activation, bind reportable messages to server-created provenance without regressing older clients, and verify erasure race/freeze, grant limits, operator queue and abuse tests.
+7. No activation of MOVO_AI_REPORTS_ENABLED or MOVO_FRIEND_MESSAGE_REPORTS_ENABLED, no remote SQL, no production credentials. Approval requires the existing evidence gates.
+
+Independent Claude: inspect actual screenshots for 320px/200% text truncation, RTL, keyboard and report states; check all 14 strings in 12 core languages and Cebuano (other preview languages retain normal fallback). Verify localization quality with native speakers, real service-role grants, composite foreign key, rate debit concurrency/erasure, actual provider-message provenance and moderation access. Complete migration via authorized Supabase CLI only after isolated review.
