@@ -34,10 +34,12 @@ test('trial offer requires sign-in and states no automatic charge', () => {
   act(()=>[...host.querySelectorAll('button')].find(x=>x.textContent.includes('Sign in to claim')).click());
   expect(signIn).toHaveBeenCalledTimes(1);
 });
-test('future mascots and native widgets are not advertised as available', () => {
+test('Pro+ includes zodiac mascots while advanced native widgets remain a future feature', () => {
   act(()=>root.render(<PlanComparison />));
-  expect(host.textContent).toContain('future release');
-  expect(host.textContent).toContain('current ram stays the same');
+  expect(host.querySelector('.plan-plus').textContent).toContain('Premium zodiac mascots');
+  expect(host.querySelector('.plan-plus small').textContent).toBe('Advanced widgets arrive in a future release.');
+  expect(host.querySelector('.plan-free').textContent).not.toContain('Premium zodiac mascots');
+  expect(host.querySelector('.plan-pro').textContent).not.toContain('Premium zodiac mascots');
   expect(host.textContent).toContain('Gold badges');
   expect(host.textContent).toContain('Platinum badges');
 });

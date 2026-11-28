@@ -9498,3 +9498,120 @@ html.ios-interface.native-chrome .movo-app.movo-app.movo-app.movo-app .screen > 
 .movo-app .fp-home-top > span:first-child { flex: 1 0 auto; max-width: 100%; }
 .movo-app .fp-home-top strong { overflow: visible; text-overflow: clip; }
 .movo-app .fp-home-top .fp-home-split { margin-inline-start: auto; }
+
+/* Home mascot collection */
+.movo-mascot-sheet .chip-row { margin-bottom: 12px; }
+.plush-picker { display: grid; gap: 10px; }
+.plush-portrait { display: block; width: 100%; height: auto; object-fit: contain; }
+.plush-stage {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1fr);
+  align-items: center;
+  min-height: 126px;
+  gap: 12px;
+  margin: 0;
+  padding: 4px 14px;
+  border-radius: 20px;
+  background: #f1ece2;
+}
+.theme-dark .plush-stage { background: #2b2924; }
+.plush-stage-art { width: min(100%, 136px); margin-inline: auto; }
+.plush-stage figcaption { display: grid; justify-items: start; gap: 5px; min-width: 0; }
+.plush-stage figcaption strong { color: var(--text); font-size: 24px; line-height: 1.12; overflow-wrap: anywhere; }
+.plush-stage-tier {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--pop-bg);
+  color: var(--accent-ink, var(--accent));
+  font-size: 11px;
+  font-weight: 700;
+}
+.plush-expression-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.plush-expression-options button {
+  min-height: 44px;
+  padding: 4px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--pop-field);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.plush-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.plush-option {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  min-height: 48px;
+  min-width: 0;
+  padding: 4px 2px 6px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--pop-field);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.plush-option .plush-portrait { width: min(100%, 64px); }
+.plush-option > span:last-child { min-width: 0; max-width: 100%; }
+.plush-option[aria-pressed="true"], .plush-expression-options [aria-pressed="true"] {
+  background: color-mix(in srgb, var(--pop-bg), var(--accent) 15%);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.plush-option :is(.plush-option-lock, .plush-option-marker) {
+  position: absolute;
+  inset-block-start: 4px;
+  inset-inline-end: 4px;
+  color: var(--muted);
+}
+.plush-option .plush-option-marker {
+  border-radius: 999px;
+  background: var(--pop-bg);
+  color: var(--accent-ink, var(--accent));
+}
+.plush-option-lock {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--pop-bg);
+}
+.plush-picker .plush-actions { margin-top: 0; }
+.plush-picker .plush-actions button { min-width: 0; overflow-wrap: anywhere; }
+.movo-app .home-header > .plush-home-mascot { background: transparent; box-shadow: none; animation: none; overflow: visible; }
+.plush-home-mascot .plush-portrait { object-fit: contain; }
+@media (max-width: 350px) {
+  .plush-stage { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 8px; padding-inline: 10px; }
+  .plush-stage figcaption strong { font-size: 18px; }
+  .plush-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .plush-option .plush-portrait { width: min(100%, 50px); }
+  .plush-actions .primary-button > svg { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :is(.plush-stage-art, .plush-home-mascot) > .plush-portrait {
+    --plush-motion: plush-settle;
+    transform-origin: center 85%;
+    animation: var(--plush-motion) .42s cubic-bezier(.2,.7,.3,1) both;
+  }
+  :is(.plush-stage-art, .plush-home-mascot) > [data-expression="happy"] { --plush-motion: plush-lift; }
+  :is(.plush-stage-art, .plush-home-mascot) > [data-expression="concerned"] { --plush-motion: plush-tilt; }
+  .plush-option, .plush-expression-options button { transition: background-color .16s ease-out, box-shadow .16s ease-out; }
+}
+.ios-reduce-motion :is(.plush-stage-art, .plush-home-mascot) > .plush-portrait { animation: none; }
+.ios-reduce-motion :is(.plush-option, .plush-expression-options button) { transition: none; }
+@keyframes plush-settle { from { opacity: .68; transform: scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes plush-lift {
+  0% { opacity: .68; transform: scale(.97); }
+  45% { opacity: 1; transform: translateY(-4%) scale(1.015); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes plush-tilt {
+  0% { opacity: .68; transform: rotate(-4deg); }
+  100% { opacity: 1; transform: none; }
+}
