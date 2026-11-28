@@ -477,9 +477,12 @@ def verify_ai_reporting_candidate():
     thread = "b3480000-0000-4000-8000-000000000010"
     message = "c3480000-0000-4000-8000-000000000010"
     sql(f"""
+      select set_config('request.jwt.claims','{{"role":"service_role"}}',false);
       insert into auth.users(id,email_confirmed_at) values('{owner}',now());
       insert into public.movo_ai_conversations(id,user_id,title) values('{thread}','{owner}','Fictional concurrent report');
-      insert into public.movo_ai_messages(id,conversation_id,user_id,role,content) values('{message}','{thread}','{owner}','assistant','Fictional');
+      set role service_role;
+      insert into public.movo_ai_messages(id,conversation_id,user_id,role,content,server_generated) values('{message}','{thread}','{owner}','assistant','Fictional',true);
+      reset role;
     """, "seed synthetic report race")
     barrier = Barrier(2, timeout=10)
     def submit():
@@ -494,17 +497,47 @@ def verify_ai_reporting_candidate():
         results = [f.result(timeout=30) for f in futures]
     if results[0] != results[1] or results[0].get("ok") is not True:
         raise RuntimeError("Concurrent AI report receipts differ")
-    sql(f"""do $ begin
+    sql(f"""do $$ begin
       if (select count(*) from public.movo_ai_reports where user_id='{owner}')<>1
         or (select hits from public.movo_ai_report_rate where user_id='{owner}') is distinct from 1
       then raise exception 'duplicate AI report debit'; end if;
-    end $;""", "concurrent report one receipt and one debit")
-    sql(f"delete from auth.users where id='{owner}';", "erase synthetic concurrent reporter")
-    sql(f"""do $ begin
+    end $$;""", "concurrent report one receipt and one debit")
+
+    # The real account erasure request acquires the same owner lock.
+    # A freeze-first interleaving must reject a new report without a second debit.
+    from time import monotonic, sleep
+    marker = 937300
+    def freeze():
+        return command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE, stdin=f"""
+          begin; set local role service_role;
+          insert into public.movo_account_erasure_requests(user_id) values('{owner}');
+          select pg_advisory_xact_lock({marker}); select pg_sleep(1); commit;
+        """)
+    def retry():
+        return json.loads(command("psql", *CONN, "-X", "-Atq", "-v", "ON_ERROR_STOP=1", "-d", DATABASE, stdin=f"""
+          begin; set local role service_role; set local lock_timeout='10s';
+          select public.movo_report_ai_message('{owner}','{message}','privacy'); commit;
+        """).stdout.strip())
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first=executor.submit(freeze)
+        deadline=monotonic()+10
+        while monotonic()<deadline:
+            held=command("psql", *CONN, "-X", "-Atq", "-d", DATABASE, stdin=f"select exists(select 1 from pg_locks where locktype='advisory' and classid=0 and objid={marker} and granted);").stdout.strip()
+            if held=="t": break
+            if first.done(): first.result(); raise RuntimeError("freeze overlap ended early")
+            sleep(.05)
+        else: raise RuntimeError("freeze overlap timed out")
+        second=executor.submit(retry)
+        first.result(timeout=30)
+        if second.result(timeout=30).get("error")!="message_unavailable":
+            raise RuntimeError("Report accepted after freeze")
+    sql(f"""begin; set local request.jwt.claims = '{{"role":"service_role"}}'; set local role service_role;
+      select public.movo_finish_account_erasure('{owner}'); commit;""", "erase synthetic concurrent reporter via canonical RPC")
+    sql(f"""do $$ begin
       if exists(select 1 from public.movo_ai_reports where user_id='{owner}')
         or exists(select 1 from public.movo_ai_report_rate where user_id='{owner}')
       then raise exception 'AI report owner erase'; end if;
-    end $;""", "verify AI report erasure cascade")
+    end $$;""", "verify AI report erasure cascade")
 
 
 def main():

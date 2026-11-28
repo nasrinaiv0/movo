@@ -41,3 +41,6 @@ See [provider/privacy review](PROVIDER_AND_PRIVACY_REVIEW.md) and [inactive data
 
 ## Localization and database rehearsal
 The existing disposable PostgreSQL 17/18 matrix now exercises the non-migration SQL draft after the canonical financial regressions. This does not authorize migration or activation. See [moderation operations](MODERATION_OPERATIONS.md). Core safety translations and Cebuano are staged; human language review and new exact-head screenshot inspection remain pending.
+
+## Provenance and moderation candidate
+See MODERATION_OPERATIONS.md. The atomic service-only turn writer, moderation API, queue and retention DDL remain separately gated; the SQL is installed only at the end of existing disposable CI. No production migration, activation or legal approval.

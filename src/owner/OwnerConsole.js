@@ -145,6 +145,31 @@ function GrantForm({userId,session,onDone}) {
     <button type="submit" className="occ-primary" disabled={!confirmed||reason.trim().length<5||busy}>{busy?'Saving…':'Confirm and grant access'}</button>
   </form>;
 }
+function AIModerationQueue({session, reports, refresh}) {
+  const [detail,setDetail]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+  const generation=React.useRef(0), lock=React.useRef(false);
+  useEffect(()=>()=>{generation.current++;},[]);
+  async function actOn(reportId,decision,expectedStatus){
+    if(lock.current)return;
+    lock.current=true;const epoch=++generation.current;setBusy(true);setError('');
+    try{
+      const data=await api(session,'support',{}, {action:'ai_moderation',reportId,decision,expectedStatus});
+      if(epoch!==generation.current)return;
+      if(decision==='inspect')setDetail(data);else{setDetail(null);refresh();}
+    }catch{if(epoch===generation.current){setDetail(null);setError('Moderation request failed. Refresh and retry.');}}
+    finally{if(epoch===generation.current){lock.current=false;setBusy(false);}}
+  }
+  return <Surface className="occ-ai-moderation">
+    <div className="occ-heading"><div><h3>AI safety review</h3><p>Restricted review of reported responses. No financial context or prompt is copied into the queue.</p></div><Tag>Restricted</Tag></div>
+    {error&&<p role="alert">{error}</p>}
+    {!reports.length?<p>No pending AI reports.</p>:<div className="occ-ai-report-list">{reports.map(report=><div key={report.id} className="occ-ai-report-row"><div><strong>{report.reason}</strong><small>{report.status} · {date(report.created_at)}</small></div><button type="button" disabled={busy} onClick={()=>{setDetail(null);actOn(report.id,'inspect',null);}}>Review response</button></div>)}</div>}
+    {detail&&<section className="occ-ai-report-detail" aria-label="Reported AI response"><h4>Reported response</h4><p dir="auto">{detail.response}</p><div className="occ-ai-report-actions">
+      {['reviewed','dismissed','escalated'].filter(v=>v!==detail.status).map(decision=><button type="button" key={decision} disabled={busy} onClick={()=>actOn(detail.id,decision,detail.status)}>{decision}</button>)}
+      <button type="button" disabled={busy} onClick={()=>setDetail(null)}>Close</button>
+    </div></section>}
+    <p role="status">{busy?'Processing review…':''}</p>
+  </Surface>;
+}
 function OwnerContent({session}) {
   const [view,setView]=useState('overview');
   const [payload,setPayload]=useState(null);
@@ -225,6 +250,7 @@ function OwnerContent({session}) {
     {view==='security'&&<Surface><div className="occ-heading"><div><h3>Owner audit trail</h3><p>Recent privileged changes from the database</p></div><Tag>Immutable entries</Tag></div><div className="occ-table-scroll"><table><thead><tr><th>Action</th><th>Actor</th><th>Recipient</th><th>Timestamp</th><th>Details</th></tr></thead><tbody>{(payload?.events||[]).map(e=><tr key={e.id}><td><Tag>{e.action}</Tag></td><td>{e.actor_user_id?.slice(0,8)}…</td><td>{e.target_user_id?.slice(0,8)}…</td><td>{date(e.created_at)}</td><td><small>{String(e.details?.reason||'—').slice(0,100)}</small></td></tr>)}{!(payload?.events||[]).length&&<tr><td colSpan={5}><Empty title="No privileged actions" desc="Grants and revocations will appear here after the audit migration is applied."/></td></tr>}</tbody></table></div></Surface>}
     {view==='health'&&<div className="occ-two-col"><Surface><h3>Backend reachability</h3><div className="occ-health-rows">{[['Admin API',payload?.server||'Unavailable'],['Supabase',payload?.database||'Unavailable'],['Schema verification','Requires verification'],['Deployment feed','Not connected']].map(([k,v])=><div key={k} className="occ-health-row"><span>{k}</span><Tag tone={v==='reachable'?'occ-good':''}>{v}</Tag></div>)}</div></Surface><Surface><h3>Operational safeguards</h3><p>Owner actions require signed-in identity, verified MFA, allowlisted UID, scoped RPC permissions, and immutable audit records.</p><Tag>Fail closed</Tag></Surface></div>}
     {['sync','support','compliance','promotions','settings'].includes(view)&&<Surface className="occ-integration-note"><div className="occ-heading"><div><h3>Integration status</h3><p>Owner workflow is available; external provider telemetry is not yet connected.</p></div><Tag>Provider pending</Tag></div><p>Track operational tasks below. These records do not automatically change MOVO subscriptions, customer records, app-store listings or production flags.</p></Surface>}
+    {view==='support'&&payload?.aiModerationAvailable&&<AIModerationQueue session={session} reports={payload.aiReports||[]} refresh={reload}/>}
     {view==='support'&&payload?.reportsAvailable&&<Surface>
       <div className="occ-heading"><div><h3>Friends reports</h3><p>Latest reports submitted by MOVO members.</p></div><Tag>Owner only</Tag></div>
       {payload.reports.length ? <div className="occ-table-scroll"><table><thead><tr><th>Report</th><th>Reported account</th><th>Received</th></tr></thead><tbody>

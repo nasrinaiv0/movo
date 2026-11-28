@@ -150,3 +150,23 @@ test('billing view reports store checkout readiness by setting NAME only, never 
     keys.forEach(k=>{ if(saved[k]===undefined) delete process.env[k]; else process.env[k]=saved[k]; });
   }
 });
+
+test('AI moderation requires a distinct explicit allowlist even for MFA owners',async()=>{
+  const a=admin();createClient.mockReturnValueOnce(ownerAuth()).mockReturnValueOnce(a);
+  const response=res();await handler({method:'POST',headers:{authorization:'Bearer test'},body:{action:'ai_moderation',reportId:OTHER,decision:'inspect'}},response);
+  expect(response.status).toHaveBeenCalledWith(403);expect(a.rpc).not.toHaveBeenCalled();
+});
+test('authorized MFA moderator can inspect only an explicit report and cannot supply actor identity',async()=>{
+  const oldFlag=process.env.MOVO_AI_MODERATION_ENABLED,oldIds=process.env.MOVO_MODERATOR_USER_IDS;
+  process.env.MOVO_AI_MODERATION_ENABLED='true';process.env.MOVO_MODERATOR_USER_IDS=OWNER;
+  try{
+    const a=admin();a.rpc.mockResolvedValue({data:{id:OTHER,response:'Fictional',status:'pending'},error:null});
+    createClient.mockReturnValueOnce(ownerAuth()).mockReturnValueOnce(a);
+    const response=res();await handler({method:'POST',headers:{authorization:'Bearer test'},body:{action:'ai_moderation',reportId:OTHER,decision:'inspect',actor:OTHER}},response);
+    expect(a.rpc).toHaveBeenCalledWith('movo_ai_moderation_action',{p_actor:OWNER,p_action:'inspect',p_report:OTHER,p_expected:null});
+    expect(response.status).toHaveBeenCalledWith(200);
+  }finally{
+    if(oldFlag===undefined)delete process.env.MOVO_AI_MODERATION_ENABLED;else process.env.MOVO_AI_MODERATION_ENABLED=oldFlag;
+    if(oldIds===undefined)delete process.env.MOVO_MODERATOR_USER_IDS;else process.env.MOVO_MODERATOR_USER_IDS=oldIds;
+  }
+});
